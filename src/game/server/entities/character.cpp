@@ -97,6 +97,10 @@ void CCharacter::Unfreeze()
 
 	m_Frozen = false;
 	// SetWeapon(m_LastWeapon);
+	m_Ninja.m_ActivationTick = 0;
+	m_aWeapons[WEAPON_NINJA].m_Got = false;
+	m_aWeapons[WEAPON_NINJA].m_Ammo = 0;
+	SetWeapon(m_LastWeapon);
 }
 
 void CCharacter::Destroy()
@@ -726,8 +730,8 @@ void CCharacter::Freeze()
 
 bool CCharacter::TakeDamage(vec2 Force, vec2 Source, int Dmg, int From, int Weapon)
 {
-	if(From == m_pPlayer->GetCID())
-		m_Core.m_Vel += Force;
+	// if(From == m_pPlayer->GetCID())
+	// 	m_Core.m_Vel += Force;
 
 	// if(GameServer()->m_pController->IsFriendlyFire(m_pPlayer->GetCID(), From) || (From == m_pPlayer->GetCID() && !g_Config.m_SvRocketJumpDamage))
 	// 	return false;
