@@ -13,6 +13,8 @@
 #include "laser.h"
 #include "projectile.h"
 
+const int NinjaDuration = 3000; // 3s
+
 //input count
 struct CInputCount
 {
@@ -80,16 +82,28 @@ bool CCharacter::Spawn(CPlayer *pPlayer, vec2 Pos)
 
 	GameServer()->m_World.InsertEntity(this);
 	m_Alive = true;
+	m_Frozen = false;
 
 	GameServer()->m_pController->OnCharacterSpawn(this);
 
 	return true;
 }
 
+void CCharacter::Unfreeze()
+{
+	char aBuf[64];
+	str_format(aBuf, sizeof(aBuf), "unfrozen %d", m_pPlayer->GetCID());
+	GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "game", aBuf);
+
+	m_Frozen = false;
+	// SetWeapon(m_LastWeapon);
+}
+
 void CCharacter::Destroy()
 {
 	GameServer()->m_World.m_Core.m_apCharacters[m_pPlayer->GetCID()] = 0;
 	m_Alive = false;
+	m_Frozen = false;
 }
 
 void CCharacter::SetWeapon(int W)
@@ -122,7 +136,7 @@ void CCharacter::HandleNinja()
 	if(m_ActiveWeapon != WEAPON_NINJA)
 		return;
 
-	if ((Server()->Tick() - m_Ninja.m_ActivationTick) > (g_pData->m_Weapons.m_Ninja.m_Duration * Server()->TickSpeed() / 1000))
+	if ((Server()->Tick() - m_Ninja.m_ActivationTick) > (NinjaDuration * Server()->TickSpeed() / 1000))
 	{
 		// time's up, return
 		m_aWeapons[WEAPON_NINJA].m_Got = false;
@@ -156,45 +170,6 @@ void CCharacter::HandleNinja()
 
 		// reset velocity so the client doesn't predict stuff
 		m_Core.m_Vel = vec2(0.f, 0.f);
-
-		// check if we Hit anything along the way
-		/*
-		{
-			CCharacter *aEnts[MAX_CLIENTS];
-			vec2 Dir = m_Pos - OldPos;
-			float Radius = GetProximityRadius() * 2.0f;
-			vec2 Center = OldPos + Dir * 0.5f;
-			int Num = GameServer()->m_World.FindEntities(Center, Radius, (CEntity**)aEnts, MAX_CLIENTS, CGameWorld::ENTTYPE_CHARACTER);
-
-			for (int i = 0; i < Num; ++i)
-			{
-				if (aEnts[i] == this)
-					continue;
-
-				// make sure we haven't Hit this object before
-				bool bAlreadyHit = false;
-				for (int j = 0; j < m_NumObjectsHit; j++)
-				{
-					if (m_apHitObjects[j] == aEnts[i])
-						bAlreadyHit = true;
-				}
-				if (bAlreadyHit)
-					continue;
-
-				// check so we are sufficiently close
-				if (distance(aEnts[i]->m_Pos, m_Pos) > (GetProximityRadius() * 2.0f))
-					continue;
-
-				// Hit a player, give him damage and stuffs...
-				GameServer()->CreateSound(aEnts[i]->m_Pos, SOUND_NINJA_HIT);
-				// set his velocity to fast upward (for now)
-				if(m_NumObjectsHit < 10)
-					m_apHitObjects[m_NumObjectsHit++] = aEnts[i];
-
-				aEnts[i]->TakeDamage(vec2(0, -10.0f), m_Ninja.m_ActivationDir*-1, g_pData->m_Weapons.m_Ninja.m_pBase->m_Damage, m_pPlayer->GetCID(), WEAPON_NINJA);
-			}
-		}
-		*/
 
 		return;
 	}
@@ -301,12 +276,12 @@ void CCharacter::FireWeapon()
 			m_NumObjectsHit = 0;
 			GameServer()->CreateSound(m_Pos, SOUND_HAMMER_FIRE, CmaskRace(GameServer(), m_pPlayer->GetCID()));
 
-			/*
 			CCharacter *apEnts[MAX_CLIENTS];
 			int Hits = 0;
 			int Num = GameServer()->m_World.FindEntities(ProjStartPos, GetProximityRadius()*0.5f, (CEntity**)apEnts,
 														MAX_CLIENTS, CGameWorld::ENTTYPE_CHARACTER);
 
+			// commented by redix
 			for (int i = 0; i < Num; ++i)
 			{
 				CCharacter *pTarget = apEnts[i];
@@ -326,15 +301,16 @@ void CCharacter::FireWeapon()
 				else
 					Dir = vec2(0.f, -1.f);
 
-				pTarget->TakeDamage(vec2(0.f, -1.f) + normalize(Dir + vec2(0.f, -1.1f)) * 10.0f, Dir*-1, g_pData->m_Weapons.m_Hammer.m_pBase->m_Damage,
-					m_pPlayer->GetCID(), m_ActiveWeapon);
+				pTarget->TakeDamage(vec2(0.f, -1.f) + normalize(Dir + vec2(0.f, -1.1f)) * 10.0f, Dir*-1, 1,
+				 	m_pPlayer->GetCID(), m_ActiveWeapon);
 				Hits++;
+				pTarget->Unfreeze();
 			}
 
 			// if we Hit anything, we have to wait for the reload
 			if(Hits)
 				m_ReloadTimer = Server()->TickSpeed()/3;
-			*/
+			// commented by redix
 
 		} break;
 
@@ -487,6 +463,9 @@ void CCharacter::SetEmote(int Emote, int Tick)
 
 void CCharacter::OnPredictedInput(CNetObj_PlayerInput *pNewInput)
 {
+	if(m_Frozen)
+		return;
+
 	// check for changes
 	if(mem_comp(&m_Input, pNewInput, sizeof(CNetObj_PlayerInput)) != 0)
 		m_LastAction = Server()->Tick();
@@ -502,6 +481,9 @@ void CCharacter::OnPredictedInput(CNetObj_PlayerInput *pNewInput)
 
 void CCharacter::OnDirectInput(CNetObj_PlayerInput *pNewInput)
 {
+	if(m_Frozen)
+		return;
+
 	mem_copy(&m_LatestPrevInput, &m_LatestInput, sizeof(m_LatestInput));
 	mem_copy(&m_LatestInput, pNewInput, sizeof(m_LatestInput));
 
@@ -552,6 +534,14 @@ void CCharacter::Tick()
 		GameLayerClipped(m_Pos))
 	{
 		Die(m_pPlayer->GetCID(), WEAPON_WORLD);
+	}
+	// handle death-tiles and leaving gamelayer
+	if(GameServer()->Collision()->GetCollisionAt(m_Pos.x+GetProximityRadius()/3.f, m_Pos.y-GetProximityRadius()/3.f)&CCollision::COLFLAG_FREEZE ||
+		GameServer()->Collision()->GetCollisionAt(m_Pos.x+GetProximityRadius()/3.f, m_Pos.y+GetProximityRadius()/3.f)&CCollision::COLFLAG_FREEZE ||
+		GameServer()->Collision()->GetCollisionAt(m_Pos.x-GetProximityRadius()/3.f, m_Pos.y-GetProximityRadius()/3.f)&CCollision::COLFLAG_FREEZE ||
+		GameServer()->Collision()->GetCollisionAt(m_Pos.x-GetProximityRadius()/3.f, m_Pos.y+GetProximityRadius()/3.f)&CCollision::COLFLAG_FREEZE)
+	{
+		Freeze();
 	}
 
 	// handle Weapons
@@ -707,13 +697,41 @@ void CCharacter::Die(int Killer, int Weapon)
 	GameServer()->CreateDeath(m_Pos, m_pPlayer->GetCID());
 }
 
+void CCharacter::Freeze()
+{
+	// this is for auto unfreeze after 3 secs
+	m_pPlayer->m_FreezeTick = Server()->Tick();
+
+	if(m_Frozen)
+	{
+		// if we are only frozen, only refresh the freezetick
+		m_Ninja.m_ActivationTick = Server()->Tick();
+		return;
+	}
+	ResetInput();
+
+	m_Frozen = true;
+
+	char aBuf[256];
+	str_format(aBuf, sizeof(aBuf), "frozen: %d", m_pPlayer->GetCID());
+	GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "game", aBuf);
+
+	// a nice sound
+	GameServer()->CreateSound(m_Pos, SOUND_LASER_BOUNCE, CmaskRace(GameServer(), m_pPlayer->GetCID()));
+
+	// switch to ninja
+	// SetWeapon(WEAPON_NINJA);
+	GiveNinja();
+}
+
 bool CCharacter::TakeDamage(vec2 Force, vec2 Source, int Dmg, int From, int Weapon)
 {
 	if(From == m_pPlayer->GetCID())
 		m_Core.m_Vel += Force;
 
-	if(GameServer()->m_pController->IsFriendlyFire(m_pPlayer->GetCID(), From) || (From == m_pPlayer->GetCID() && !g_Config.m_SvRocketJumpDamage))
-		return false;
+	// if(GameServer()->m_pController->IsFriendlyFire(m_pPlayer->GetCID(), From) || (From == m_pPlayer->GetCID() && !g_Config.m_SvRocketJumpDamage))
+	// 	return false;
+
 
 	// m_pPlayer only inflicts half damage on self
 	if(From == m_pPlayer->GetCID())
@@ -747,6 +765,7 @@ bool CCharacter::TakeDamage(vec2 Force, vec2 Source, int Dmg, int From, int Weap
 
 	// create healthmod indicator
 	GameServer()->CreateDamage(m_Pos, m_pPlayer->GetCID(), Source, OldHealth-m_Health, OldArmor-m_Armor, From == m_pPlayer->GetCID());
+	m_Health = OldHealth;
 
 	// do damage Hit sound
 	/*
@@ -844,7 +863,7 @@ void CCharacter::Snap(int SnappingClient)
 		pCharacter->m_Health = m_Health;
 		pCharacter->m_Armor = m_Armor;
 		if(m_ActiveWeapon == WEAPON_NINJA)
-			pCharacter->m_AmmoCount = m_Ninja.m_ActivationTick + g_pData->m_Weapons.m_Ninja.m_Duration * Server()->TickSpeed() / 1000;
+			pCharacter->m_AmmoCount = m_Ninja.m_ActivationTick + NinjaDuration * Server()->TickSpeed() / 1000;
 		else if(m_aWeapons[m_ActiveWeapon].m_Ammo > 0)
 			pCharacter->m_AmmoCount = m_aWeapons[m_ActiveWeapon].m_Ammo;
 	}

@@ -19,6 +19,7 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, bool Dummy)
 {
 	m_pGameServer = pGameServer;
 	m_RespawnTick = Server()->Tick();
+	m_FreezeTick = Server()->Tick();
 	m_DieTick = Server()->Tick();
 	m_ScoreStartTick = Server()->Tick();
 	m_pCharacter = 0;
@@ -106,6 +107,12 @@ void CPlayer::Tick()
 		else if(m_Spawning && m_RespawnTick <= Server()->Tick())
 			TryRespawn();
 
+		// unfreeze
+		if(m_pCharacter && m_pCharacter->IsFrozen() && m_FreezeTick+Server()->TickSpeed()*3 <= Server()->Tick())
+		{
+			m_pCharacter->Unfreeze();
+		}
+
 		if(!m_DeadSpecMode && m_LastActionTick != Server()->Tick())
 			++m_InactivityTickCounter;
 	}
@@ -113,6 +120,7 @@ void CPlayer::Tick()
 	{
 		++m_RespawnTick;
 		++m_DieTick;
+		++m_FreezeTick;
 		++m_ScoreStartTick;
 		++m_LastActionTick;
 		++m_TeamChangeTick;

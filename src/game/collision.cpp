@@ -85,6 +85,9 @@ void CCollision::Init(class CLayers *pLayers)
 		case TILE_NOHOOK:
 			m_pTiles[i].m_Index = COLFLAG_SOLID|COLFLAG_NOHOOK;
 			break;
+		case TILE_FREEZE:
+			m_pTiles[i].m_Index = COLFLAG_FREEZE;
+			break;
 		default:
 			m_pTiles[i].m_Index = 0;
 		}
@@ -129,7 +132,7 @@ int CCollision::GetTile(int x, int y) const
 	int Ny = clamp(y/32, 0, m_Height-1);
 
 	int Index = m_pTiles[Ny*m_Width+Nx].m_Index;
-	if(Index == COLFLAG_SOLID || Index == (COLFLAG_SOLID|COLFLAG_NOHOOK) || Index == COLFLAG_DEATH)
+	if(Index == COLFLAG_SOLID || Index == (COLFLAG_SOLID|COLFLAG_NOHOOK) || Index == COLFLAG_DEATH || Index == COLFLAG_FREEZE)
 		return Index;
 	else
 		return 0;

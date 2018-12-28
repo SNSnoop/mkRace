@@ -10,7 +10,7 @@
 
 CGameControllerRACE::CGameControllerRACE(class CGameContext *pGameServer) : IGameController(pGameServer)
 {
-	m_pGameType = "Race";
+	m_pGameType = "DDRace";
 	
 	for(int i = 0; i < MAX_CLIENTS; i++)
 		m_aRace[i].Reset();

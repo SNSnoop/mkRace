@@ -91,6 +91,7 @@ public:
 
 	int m_RespawnTick;
 	int m_DieTick;
+	int m_FreezeTick;
 	int m_Score;
 	int m_ScoreStartTick;
 	int m_LastActionTick;

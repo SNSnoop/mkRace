@@ -42,6 +42,7 @@ public:
 	void FireWeapon();
 
 	void Die(int Killer, int Weapon);
+	void Freeze();
 	bool TakeDamage(vec2 Force, vec2 Source, int Dmg, int From, int Weapon);
 
 	bool Spawn(class CPlayer *pPlayer, vec2 Pos);
@@ -56,6 +57,8 @@ public:
 	void SetEmote(int Emote, int Tick);
 
 	bool IsAlive() const { return m_Alive; }
+	bool IsFrozen() const { return m_Frozen; }
+	void Unfreeze();
 	class CPlayer *GetPlayer() { return m_pPlayer; }
 
 	void SetActiveWeapon(int Weapon) { m_ActiveWeapon = Weapon; }
@@ -67,6 +70,9 @@ private:
 	class CPlayer *m_pPlayer;
 
 	bool m_Alive;
+
+	// ddrace stuff
+	bool m_Frozen; // not sure if we should use this
 
 	// weapon info
 	CEntity *m_apHitObjects[10];
