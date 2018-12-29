@@ -17,7 +17,7 @@ void CGameContext::ChatConInfo(IConsole::IResult *pResult, void *pUser)
 	CGameContext *pSelf = (CGameContext *)pUser;
 
 	char aBuf[128];
-	str_format(aBuf, sizeof(aBuf), "Race mod %s (C)Rajh, Redix and Sushi", RACE_VERSION);
+	str_format(aBuf, sizeof(aBuf), "Simple DDRace mod, modified from Race %s (C)Rajh, Redix and Sushi.", RACE_VERSION);
 	pSelf->m_pChatConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chat", aBuf);
 }
 
@@ -81,7 +81,7 @@ void CGameContext::ChatConHelp(IConsole::IResult *pResult, void *pUser)
 	pSelf->m_pChatConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chat", "\"/rank\" shows your rank");
 	pSelf->m_pChatConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chat", "\"/rank NAME\" shows the rank of a specific player");
 	pSelf->m_pChatConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chat", "\"/top5 X\" shows the top 5");
-	pSelf->m_pChatConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chat", "\"/show_others\" show other players?");
+	// pSelf->m_pChatConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chat", "\"/show_others\" show other players?");
 }
 
 void CGameContext::InitChatConsole()
@@ -97,7 +97,7 @@ void CGameContext::InitChatConsole()
 	m_pChatConsole->Register("info", "", CFGFLAG_SERVERCHAT, ChatConInfo, this, "");
 	m_pChatConsole->Register("top5", "?i", CFGFLAG_SERVERCHAT, ChatConTop5, this, "");
 	m_pChatConsole->Register("rank", "?r", CFGFLAG_SERVERCHAT, ChatConRank, this, "");
-	m_pChatConsole->Register("show_others", "", CFGFLAG_SERVERCHAT, ChatConShowOthers, this, "");
+	// m_pChatConsole->Register("show_others", "", CFGFLAG_SERVERCHAT, ChatConShowOthers, this, "");
 	m_pChatConsole->Register("help", "", CFGFLAG_SERVERCHAT, ChatConHelp, this, "");
 }
 

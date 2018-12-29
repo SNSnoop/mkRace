@@ -91,9 +91,9 @@ bool CCharacter::Spawn(CPlayer *pPlayer, vec2 Pos)
 
 void CCharacter::Unfreeze()
 {
-	char aBuf[64];
-	str_format(aBuf, sizeof(aBuf), "unfrozen %d", m_pPlayer->GetCID());
-	GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "game", aBuf);
+// 	char aBuf[64];
+// 	str_format(aBuf, sizeof(aBuf), "unfrozen %d", m_pPlayer->GetCID());
+// 	GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "game", aBuf);
 
 	m_Frozen = false;
 	// SetWeapon(m_LastWeapon);
@@ -162,6 +162,7 @@ void CCharacter::HandleNinja()
 		FreezeIndicator(clamp(3 - TimeSinceFrozen, 0, 3));
 		m_Ninja.m_IndicatorTick = Server()->Tick();
 	}
+
 
 	// force ninja Weapon
 	SetWeapon(WEAPON_NINJA);
@@ -478,6 +479,9 @@ void CCharacter::SetEmote(int Emote, int Tick)
 
 void CCharacter::OnPredictedInput(CNetObj_PlayerInput *pNewInput)
 {
+	// do direction for ddrace
+	// m_Input.m_Direction = 0;
+
 	if(m_Frozen)
 		return;
 
@@ -551,10 +555,10 @@ void CCharacter::Tick()
 		Die(m_pPlayer->GetCID(), WEAPON_WORLD);
 	}
 	// handle death-tiles and leaving gamelayer
-	if(GameServer()->Collision()->GetCollisionAt(m_Pos.x+GetProximityRadius()/3.f, m_Pos.y-GetProximityRadius()/3.f)&CCollision::COLFLAG_FREEZE ||
-		GameServer()->Collision()->GetCollisionAt(m_Pos.x+GetProximityRadius()/3.f, m_Pos.y+GetProximityRadius()/3.f)&CCollision::COLFLAG_FREEZE ||
-		GameServer()->Collision()->GetCollisionAt(m_Pos.x-GetProximityRadius()/3.f, m_Pos.y-GetProximityRadius()/3.f)&CCollision::COLFLAG_FREEZE ||
-		GameServer()->Collision()->GetCollisionAt(m_Pos.x-GetProximityRadius()/3.f, m_Pos.y+GetProximityRadius()/3.f)&CCollision::COLFLAG_FREEZE)
+	if(GameServer()->Collision()->GetCollisionAt(m_Pos.x+GetProximityRadius()/2.f, m_Pos.y-GetProximityRadius()/2.f)&CCollision::COLFLAG_FREEZE ||
+		GameServer()->Collision()->GetCollisionAt(m_Pos.x+GetProximityRadius()/2.f, m_Pos.y+GetProximityRadius()/2.f)&CCollision::COLFLAG_FREEZE ||
+		GameServer()->Collision()->GetCollisionAt(m_Pos.x-GetProximityRadius()/2.f, m_Pos.y-GetProximityRadius()/2.f)&CCollision::COLFLAG_FREEZE ||
+		GameServer()->Collision()->GetCollisionAt(m_Pos.x-GetProximityRadius()/2.f, m_Pos.y+GetProximityRadius()/2.f)&CCollision::COLFLAG_FREEZE)
 	{
 		Freeze();
 	}
@@ -728,9 +732,9 @@ void CCharacter::Freeze()
 
 	m_Frozen = true;
 
-	char aBuf[256];
-	str_format(aBuf, sizeof(aBuf), "frozen: %d", m_pPlayer->GetCID());
-	GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "game", aBuf);
+	// char aBuf[256];
+	// str_format(aBuf, sizeof(aBuf), "frozen: %d", m_pPlayer->GetCID());
+	// GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "game", aBuf);
 
 	// a nice sound
 	GameServer()->CreateSound(m_Pos, SOUND_LASER_BOUNCE, CmaskRace(GameServer(), m_pPlayer->GetCID()));
@@ -748,7 +752,7 @@ void CCharacter::FreezeIndicator(unsigned Amount)
 bool CCharacter::TakeDamage(vec2 Force, vec2 Source, int Dmg, int From, int Weapon)
 {
 	// if(From == m_pPlayer->GetCID())
-	// 	m_Core.m_Vel += Force;
+	m_Core.m_Vel += Force;
 
 	// if(GameServer()->m_pController->IsFriendlyFire(m_pPlayer->GetCID(), From) || (From == m_pPlayer->GetCID() && !g_Config.m_SvRocketJumpDamage))
 	// 	return false;
