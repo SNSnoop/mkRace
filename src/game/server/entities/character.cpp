@@ -140,6 +140,7 @@ void CCharacter::HandleNinja()
 	if(m_ActiveWeapon != WEAPON_NINJA)
 		return;
 
+
 	if ((Server()->Tick() - m_Ninja.m_ActivationTick) > (NinjaDuration * Server()->TickSpeed() / 1000))
 	{
 		// time's up, return
@@ -152,6 +153,14 @@ void CCharacter::HandleNinja()
 
 		SetWeapon(m_ActiveWeapon);
 		return;
+	}
+
+	// indicator every second
+	if (Server()->Tick() - m_Ninja.m_IndicatorTick > Server()->TickSpeed()) // more than 1s elapsed
+	{
+		int TimeSinceFrozen = (Server()->Tick() - m_Ninja.m_ActivationTick + Server()->TickSpeed()/5)/Server()->TickSpeed();
+		FreezeIndicator(clamp(3 - TimeSinceFrozen, 0, 3));
+		m_Ninja.m_IndicatorTick = Server()->Tick();
 	}
 
 	// force ninja Weapon
@@ -449,6 +458,7 @@ bool CCharacter::GiveWeapon(int Weapon, int Ammo)
 void CCharacter::GiveNinja()
 {
 	m_Ninja.m_ActivationTick = Server()->Tick();
+	m_Ninja.m_IndicatorTick = Server()->Tick();
 	m_Ninja.m_CurrentMoveTime = -1;
 	m_aWeapons[WEAPON_NINJA].m_Got = true;
 	m_aWeapons[WEAPON_NINJA].m_Ammo = -1;
@@ -456,7 +466,8 @@ void CCharacter::GiveNinja()
 		m_LastWeapon = m_ActiveWeapon;
 	m_ActiveWeapon = WEAPON_NINJA;
 
-	GameServer()->CreateSound(m_Pos, SOUND_PICKUP_NINJA, CmaskRace(GameServer(), m_pPlayer->GetCID()));
+	FreezeIndicator(3);
+	// GameServer()->CreateSound(m_Pos, SOUND_PICKUP_NINJA, CmaskRace(GameServer(), m_pPlayer->GetCID()));
 }
 
 void CCharacter::SetEmote(int Emote, int Tick)
@@ -710,6 +721,7 @@ void CCharacter::Freeze()
 	{
 		// if we are only frozen, only refresh the freezetick
 		m_Ninja.m_ActivationTick = Server()->Tick();
+		// m_Ninja.m_IndicatorTick = Server()->Tick();
 		return;
 	}
 	ResetInput();
@@ -726,6 +738,11 @@ void CCharacter::Freeze()
 	// switch to ninja
 	// SetWeapon(WEAPON_NINJA);
 	GiveNinja();
+}
+
+void CCharacter::FreezeIndicator(unsigned Amount)
+{
+	GameServer()->CreateDamage(m_Pos, m_pPlayer->GetCID(), vec2(1,0), Amount, 0, 1);
 }
 
 bool CCharacter::TakeDamage(vec2 Force, vec2 Source, int Dmg, int From, int Weapon)

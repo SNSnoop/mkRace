@@ -53,6 +53,7 @@ public:
 
 	bool GiveWeapon(int Weapon, int Ammo);
 	void GiveNinja();
+	void FreezeIndicator(unsigned Amount);
 
 	void SetEmote(int Emote, int Tick);
 
@@ -119,6 +120,7 @@ private:
 	{
 		vec2 m_ActivationDir;
 		int m_ActivationTick;
+		int m_IndicatorTick;
 		int m_CurrentMoveTime;
 		int m_OldVelAmount;
 	} m_Ninja;
