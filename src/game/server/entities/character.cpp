@@ -555,10 +555,10 @@ void CCharacter::Tick()
 		Die(m_pPlayer->GetCID(), WEAPON_WORLD);
 	}
 	// handle death-tiles and leaving gamelayer
-	if(GameServer()->Collision()->GetCollisionAt(m_Pos.x+GetProximityRadius()/2.f, m_Pos.y-GetProximityRadius()/2.f)&CCollision::COLFLAG_FREEZE ||
-		GameServer()->Collision()->GetCollisionAt(m_Pos.x+GetProximityRadius()/2.f, m_Pos.y+GetProximityRadius()/2.f)&CCollision::COLFLAG_FREEZE ||
-		GameServer()->Collision()->GetCollisionAt(m_Pos.x-GetProximityRadius()/2.f, m_Pos.y-GetProximityRadius()/2.f)&CCollision::COLFLAG_FREEZE ||
-		GameServer()->Collision()->GetCollisionAt(m_Pos.x-GetProximityRadius()/2.f, m_Pos.y+GetProximityRadius()/2.f)&CCollision::COLFLAG_FREEZE)
+	if(GameServer()->Collision()->GetCollisionAt(m_Pos.x, m_Pos.y)&CCollision::COLFLAG_FREEZE ||
+		GameServer()->Collision()->GetCollisionAt(m_Pos.x, m_Pos.y)&CCollision::COLFLAG_FREEZE ||
+		GameServer()->Collision()->GetCollisionAt(m_Pos.x, m_Pos.y)&CCollision::COLFLAG_FREEZE ||
+		GameServer()->Collision()->GetCollisionAt(m_Pos.x, m_Pos.y)&CCollision::COLFLAG_FREEZE)
 	{
 		Freeze();
 	}

@@ -1098,8 +1098,9 @@ void CGameContext::ConTuneReset(IConsole::IResult *pResult, void *pUserData)
 {
 	CGameContext *pSelf = (CGameContext *)pUserData;
 	CTuningParams TuningParams;
-	TuningParams.m_PlayerCollision = 0;
-	TuningParams.m_PlayerHooking = 0;
+	// ddrace
+	// TuningParams.m_PlayerCollision = 0;
+	// TuningParams.m_PlayerHooking = 0;
 	*pSelf->Tuning() = TuningParams;
 	pSelf->SendTuningParams(-1);
 	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "tuning", "Tuning reset");
@@ -1513,8 +1514,9 @@ void CGameContext::OnInit()
 
 	m_pScore->OnMapLoad();
 
-	m_Tuning.m_PlayerCollision = 0;
-	m_Tuning.m_PlayerHooking = 0;
+	// ddrace
+	// m_Tuning.m_PlayerCollision = 0;
+	// m_Tuning.m_PlayerHooking = 0;
 
 	// create all entities from the game layer
 	CMapItemLayerTilemap *pTileMap = m_Layers.GameLayer();
