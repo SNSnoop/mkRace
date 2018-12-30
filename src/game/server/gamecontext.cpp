@@ -424,8 +424,8 @@ void CGameContext::AbortVoteOnTeamChange(int ClientID)
 bool CGameContext::IsPureTuning() const
 {
 	CTuningParams Tuning;
-	Tuning.m_PlayerCollision = 0;
-	Tuning.m_PlayerHooking = 0;
+	// Tuning.m_PlayerCollision = 0;
+	// Tuning.m_PlayerHooking = 0;
 
 	return mem_comp(&Tuning, &m_Tuning, sizeof(Tuning)) == 0;
 }
