@@ -146,6 +146,9 @@ MACRO_CONFIG_INT(SvShowOthers, sv_show_others, 1, 0, 1, CFGFLAG_SERVER, "Shows t
 
 MACRO_CONFIG_STR(SvScore, sv_score, 32, "file", CFGFLAG_SERVER, "Scoring (file)")
 
+// ddrace
+MACRO_CONFIG_INT(SvWallHammer, sv_wall_hammer, 0, 0, 1, CFGFLAG_SERVER, "Enable wall hammer")
+
 // debug
 #ifdef CONF_DEBUG // this one can crash the server if not used correctly
 	MACRO_CONFIG_INT(DbgDummies, dbg_dummies, 0, 0, MAX_CLIENTS-1, CFGFLAG_SERVER, "")
