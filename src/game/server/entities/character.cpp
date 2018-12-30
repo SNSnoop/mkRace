@@ -98,9 +98,10 @@ void CCharacter::Unfreeze()
 	m_Frozen = false;
 	// SetWeapon(m_LastWeapon);
 	m_Ninja.m_ActivationTick = 0;
+	if(m_aWeapons[WEAPON_NINJA].m_Got)
+		SetWeapon(m_LastWeapon);
 	m_aWeapons[WEAPON_NINJA].m_Got = false;
 	m_aWeapons[WEAPON_NINJA].m_Ammo = 0;
-	SetWeapon(m_LastWeapon);
 }
 
 void CCharacter::Destroy()
@@ -554,13 +555,20 @@ void CCharacter::Tick()
 	{
 		Die(m_pPlayer->GetCID(), WEAPON_WORLD);
 	}
-	// handle death-tiles and leaving gamelayer
+	// handle freeze tiles
 	if(GameServer()->Collision()->GetCollisionAt(m_Pos.x, m_Pos.y)&CCollision::COLFLAG_FREEZE ||
 		GameServer()->Collision()->GetCollisionAt(m_Pos.x, m_Pos.y)&CCollision::COLFLAG_FREEZE ||
 		GameServer()->Collision()->GetCollisionAt(m_Pos.x, m_Pos.y)&CCollision::COLFLAG_FREEZE ||
 		GameServer()->Collision()->GetCollisionAt(m_Pos.x, m_Pos.y)&CCollision::COLFLAG_FREEZE)
 	{
 		Freeze();
+	}
+	if(GameServer()->Collision()->GetCollisionAt(m_Pos.x, m_Pos.y)&CCollision::COLFLAG_UNFREEZE ||
+		GameServer()->Collision()->GetCollisionAt(m_Pos.x, m_Pos.y)&CCollision::COLFLAG_UNFREEZE ||
+		GameServer()->Collision()->GetCollisionAt(m_Pos.x, m_Pos.y)&CCollision::COLFLAG_UNFREEZE ||
+		GameServer()->Collision()->GetCollisionAt(m_Pos.x, m_Pos.y)&CCollision::COLFLAG_UNFREEZE)
+	{
+		Unfreeze();
 	}
 
 	// handle Weapons
