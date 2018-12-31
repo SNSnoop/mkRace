@@ -45,17 +45,7 @@ void CGameContext::ChatConRank(IConsole::IResult *pResult, void *pUser)
 	{
 		char aStr[256];
 		str_copy(aStr, pResult->GetString(0), sizeof(aStr));
-
-		// strip trailing spaces
-		int i = str_length(aStr);
-		while(i >= 0)
-		{
-			if (aStr[i] < 0 || aStr[i] > 32)
-				break;
-			aStr[i] = 0;
-			i--;
-		}
-
+		str_clean_whitespaces(aStr);
 		pSelf->Score()->ShowRank(pSelf->m_ChatConsoleClientID, aStr);
 	}
 	else

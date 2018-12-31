@@ -73,8 +73,10 @@ bool CCharacter::Spawn(CPlayer *pPlayer, vec2 Pos)
 	m_Core.Reset();
 	m_Core.Init(&GameServer()->m_World.m_Core, GameServer()->Collision());
 	m_Core.m_Pos = m_Pos;
-	m_Core.m_PrevPos = m_Pos;
 	GameServer()->m_World.m_Core.m_apCharacters[m_pPlayer->GetCID()] = &m_Core;
+
+	m_Core.m_Race.m_pfnPhysicsStepCallback = CCharacter::OnPhysicsStep;
+	m_Core.m_Race.m_pPhysicsStepUserData = this;
 
 	m_ReckoningTick = 0;
 	mem_zero(&m_SendCore, sizeof(m_SendCore));
@@ -628,11 +630,6 @@ void CCharacter::TickDefered()
 			m_aWeapons[i].m_Got = false;
 	}
 
-	int TilePos = GameServer()->Collision()->CheckRaceTile(StartPos, m_Pos, CCollision::RACECHECK_TILES_MAIN);
-
-	CGameControllerRACE *pRace = GameServer()->RaceController();
-	pRace->ProcessRaceTile(m_pPlayer->GetCID(), TilePos, StartPos, m_Pos);
-
 	if(!StuckBefore && (StuckAfterMove || StuckAfterQuant))
 	{
 		// Hackish solution to get rid of strict-aliasing warning
@@ -866,6 +863,12 @@ bool CCharacter::TakeDamage(vec2 Force, vec2 Source, int Dmg, int From, int Weap
 	}
 
 	return true;
+}
+
+void CCharacter::OnPhysicsStep(vec2 Pos, float IntraTick, void *pUserData)
+{
+	CCharacter *pChr = (CCharacter*)pUserData;
+	pChr->GameServer()->RaceController()->OnPhysicsStep(pChr->m_pPlayer->GetCID(), Pos, IntraTick);
 }
 
 void CCharacter::Snap(int SnappingClient)

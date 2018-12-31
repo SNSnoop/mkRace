@@ -57,6 +57,7 @@ class IScore
 protected:
 	CPlayerData m_aPlayerData[MAX_CLIENTS];
 	int m_CurrentRecord;
+	int m_LastPrintInChat[MAX_CLIENTS];
 	
 public:
 	IScore() { m_CurrentRecord = 0; }
@@ -78,6 +79,7 @@ public:
 		m_CurrentRecord = 0;
 		for(int i = 0; i < MAX_CLIENTS; i++)
 			m_aPlayerData[i].Reset();
+		mem_zero(m_LastPrintInChat, sizeof(m_LastPrintInChat));
 	}
 
 	virtual void Tick() { }

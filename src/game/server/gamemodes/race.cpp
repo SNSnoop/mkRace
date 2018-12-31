@@ -106,7 +106,7 @@ void CGameControllerRACE::OnCheckpoint(int ID, int z)
 	}
 }
 
-void CGameControllerRACE::OnRaceStart(int ID, int StartAddTime)
+void CGameControllerRACE::OnRaceStart(int ID)
 {
 	CRaceData *p = &m_aRace[ID];
 	CCharacter *pChr = GameServer()->GetPlayerChar(ID);
@@ -120,7 +120,7 @@ void CGameControllerRACE::OnRaceStart(int ID, int StartAddTime)
 	
 	p->m_RaceState = RACE_STARTED;
 	p->m_StartTick = Server()->Tick();
-	p->m_StartAddTime = StartAddTime;
+	p->m_AddTime = 0.f;
 }
 
 void CGameControllerRACE::OnRaceEnd(int ID, int FinishTime)
@@ -129,16 +129,12 @@ void CGameControllerRACE::OnRaceEnd(int ID, int FinishTime)
 	p->m_RaceState = RACE_FINISHED;
 
 	if(!FinishTime)
-	{
 		return;
-	}
 
 	// TODO:
 	// move all this into the scoring classes so the selected
 	// scoring backend can decide how to handle the situation
 
-	// add the time from the start
-	FinishTime += p->m_StartAddTime;
 	int Improved = FinishTime - GameServer()->Score()->PlayerData(ID)->m_Time;
 
 	// save the score
@@ -158,35 +154,41 @@ void CGameControllerRACE::OnRaceEnd(int ID, int FinishTime)
 	}
 }
 
-bool CGameControllerRACE::IsStart(int TilePos, vec2 Pos, int Team) const
+bool CGameControllerRACE::IsStart(vec2 Pos, int Team) const
 {
-	return GameServer()->Collision()->CheckIndexEx(TilePos, TILE_BEGIN)
-		|| GameServer()->Collision()->CheckIndexEx(Pos, TILE_BEGIN);
+	return GameServer()->Collision()->CheckIndexEx(Pos, TILE_BEGIN);
 }
 
-bool CGameControllerRACE::IsEnd(int TilePos, vec2 Pos, int Team) const
+bool CGameControllerRACE::IsEnd(vec2 Pos, int Team) const
 {
-	return GameServer()->Collision()->CheckIndexEx(TilePos, TILE_END)
-		|| GameServer()->Collision()->CheckIndexEx(Pos, TILE_END);
+	return GameServer()->Collision()->CheckIndexEx(Pos, TILE_END);
 }
 
-void CGameControllerRACE::ProcessRaceTile(int ID, int TilePos, vec2 PrevPos, vec2 Pos)
+void CGameControllerRACE::OnPhysicsStep(int ID, vec2 Pos, float IntraTick)
 {
-	int Cp = GameServer()->Collision()->CheckCheckpoint(TilePos);
+	int Cp = GameServer()->Collision()->CheckCheckpoint(Pos);
 	if(Cp != -1)
 		OnCheckpoint(ID, Cp);
 
+	float IntraTime = 1000.f / Server()->TickSpeed() * IntraTick;
 	int Team = GameServer()->m_apPlayers[ID]->GetTeam();
-	if(CanStartRace(ID) && IsStart(TilePos, Pos, Team))
-		OnRaceStart(ID, CalculateStartAddTime(PrevPos, Pos, Team));
-	else if(CanEndRace(ID) && IsEnd(TilePos, Pos, Team))
-		OnRaceEnd(ID, CalculateFinishTime(GetTime(ID), PrevPos, Pos, Team));
+	if(CanStartRace(ID) && IsStart(Pos, Team))
+	{
+		OnRaceStart(ID);
+		m_aRace[ID].m_AddTime -= IntraTime;
+	}
+	else if(CanEndRace(ID) && IsEnd(Pos, Team))
+	{
+		m_aRace[ID].m_AddTime += IntraTime;
+		OnRaceEnd(ID, GetTimeExact(ID));
+	}
 }
 
 bool CGameControllerRACE::CanStartRace(int ID) const
 {
 	CCharacter *pChr = GameServer()->GetPlayerChar(ID);
-	return (m_aRace[ID].m_RaceState == RACE_NONE || (!pChr->HasWeapon(WEAPON_GRENADE) && !pChr->Armor())) && GameServer()->IsPureTuning();
+	bool AllowRestart = g_Config.m_SvAllowRestartOld && !pChr->HasWeapon(WEAPON_GRENADE) && !pChr->Armor();
+	return (m_aRace[ID].m_RaceState == RACE_NONE || AllowRestart) && GameServer()->IsPureTuning();
 }
 
 bool CGameControllerRACE::CanEndRace(int ID) const
@@ -206,28 +208,7 @@ int CGameControllerRACE::GetTime(int ID) const
 	return (Server()->Tick() - m_aRace[ID].m_StartTick) * 1000 / Server()->TickSpeed();
 }
 
-int CGameControllerRACE::CalculateStartAddTime(vec2 PrevPos, vec2 Pos, int Team) const
+int CGameControllerRACE::GetTimeExact(int ID) const
 {
-	int Num = 1000 / Server()->TickSpeed();
-	for(int i = 0; i <= Num; i++)
-	{
-		float a = i / (float)Num;
-		vec2 TmpPos = mix(Pos, PrevPos, a);
-		if(IsStart(-1, TmpPos, Team))
-			return i;
-	}
-	return Num;
-}
-
-int CGameControllerRACE::CalculateFinishTime(int Time, vec2 PrevPos, vec2 Pos, int Team) const
-{
-	int Num = 1000 / Server()->TickSpeed();
-	for(int i = 0; i <= Num; i++)
-	{
-		float a = i / (float)Num;
-		vec2 TmpPos = mix(PrevPos, Pos, a);
-		if(IsEnd(-1, TmpPos, Team))
-			return Time - Num + i;
-	}
-	return Time;
+	return GetTime(ID) + round_to_int(m_aRace[ID].m_AddTime);
 }

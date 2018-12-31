@@ -11,10 +11,10 @@ class CGameControllerFC : public CGameControllerRACE
 	bool IsEnemyFlagStand(vec2 Pos, int Team) const;
 
 protected:
-	virtual bool IsStart(int TilePos, vec2 Pos, int Team) const { return IsEnemyFlagStand(Pos, Team); }
-	virtual bool IsEnd(int TilePos, vec2 Pos, int Team) const { return IsOwnFlagStand(Pos, Team); }
+	virtual bool IsStart(vec2 Pos, int Team) const { return IsEnemyFlagStand(Pos, Team); }
+	virtual bool IsEnd(vec2 Pos, int Team) const { return IsOwnFlagStand(Pos, Team); }
 
-	virtual void OnRaceStart(int ID, int StartAddTime);
+	virtual void OnRaceStart(int ID);
 	virtual void OnRaceEnd(int ID, int FinishTime);
 
 public:

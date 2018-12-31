@@ -56,6 +56,8 @@ class CFileScore : public IScore
 	void WriteEntry(IOHANDLE File, const CPlayerScore *pEntry) const;
 	IOHANDLE OpenFile(int Flags) const;
 	
+	void PrintInChat(int From, int Mode, int To, const char *pText, bool IsBlock = true);
+
 public:
 	CFileScore(CGameContext *pGameServer);
 	~CFileScore();

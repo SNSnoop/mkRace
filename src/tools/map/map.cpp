@@ -812,27 +812,50 @@ int CEditorMap::Load(class IStorage *pStorage, const char *pFileName, int Storag
 
 			if(Mod == MOD_RACE)
 			{
+				int TileCount[1<<8] = {0};
+				for(int i = 0; i < m_pGameLayer->m_Width*m_pGameLayer->m_Height; i++)
+					TileCount[m_pGameLayer->m_pTiles[i].m_Index]++;
+				
+				bool Race = TileCount[TILE_BEGIN] > 0 && TileCount[TILE_END] > 0;
+				bool FastCap = TileCount[ENTITY_FLAGSTAND_RED + ENTITY_OFFSET] > 0 && TileCount[ENTITY_FLAGSTAND_BLUE + ENTITY_OFFSET] > 0;
+
+				bool AllowRestart = Race;
+
+				if(Race && FastCap)
+					dbg_msg("race", "warning: cannot determine race type");
+				else if(!Race && !FastCap)
+					dbg_msg("race", "warning: not a valid race map");
+				else if(Race && !FastCap)
+					dbg_msg("race", "race type: race");
+				else if(!Race && FastCap)
+					dbg_msg("race", "race type: fastcap");
+
+				// map settings
+				bool AddMapSettings = AllowRestart;
+
+				int NumVars = 8;
+				static int s_aValues[9];
+				static CIntVariableData s_aVars[] = {
+					{ m_pConsole, "sv_regen", &s_aValues[0], 0, 0, 50 },
+					{ m_pConsole, "sv_strip", &s_aValues[1], 0, 0, 1 },
+					{ m_pConsole, "sv_infinite_ammo", &s_aValues[2], 0, 0, 1 },
+					{ m_pConsole, "sv_no_items", &s_aValues[3], 0, 0, 1 },
+					{ m_pConsole, "sv_teleport_grenade", &s_aValues[4], 0, 0, 1 },
+					{ m_pConsole, "sv_delete_grenades_after_death", &s_aValues[5], 1, 0, 1 },
+					{ m_pConsole, "sv_rocket_jump_damage", &s_aValues[6], 1, 0, 1 },
+					{ m_pConsole, "sv_pickup_respawn", &s_aValues[7], -1, -1, 120 },
+					{ m_pConsole, "sv_allow_restart_old", &s_aValues[8], 0, 0, 1 }
+				};
+				static CIntVariableData s_TeleportVelResetVar = { m_pConsole, "sv_teleport_vel_reset", &s_TeleportVelReset, 0, 0, 1 };
+
+				for(int i = 0; i < NumVars; i++)
+					s_aVars[i].Register();
+				s_TeleportVelResetVar.Register();
+
 				int Start, Num;
 				DataFile.GetType(MAPITEMTYPE_INFO, &Start, &Num);
 				for(int e = 0; e < Num; e++)
 				{
-					static int s_aValues[8];
-					static CIntVariableData s_aVars[] = {
-						{ m_pConsole, "sv_regen", &s_aValues[0], 0, 0, 50 },
-						{ m_pConsole, "sv_strip", &s_aValues[1], 0, 0, 1 },
-						{ m_pConsole, "sv_infinite_ammo", &s_aValues[2], 0, 0, 1 },
-						{ m_pConsole, "sv_no_items", &s_aValues[3], 0, 0, 1 },
-						{ m_pConsole, "sv_teleport_grenade", &s_aValues[4], 0, 0, 1 },
-						{ m_pConsole, "sv_delete_grenades_after_death", &s_aValues[5], 1, 0, 1 },
-						{ m_pConsole, "sv_rocket_jump_damage", &s_aValues[6], 1, 0, 1 },
-						{ m_pConsole, "sv_pickup_respawn", &s_aValues[7], -1, -1, 120 }
-					};
-					static CIntVariableData s_TeleportVelResetVar = { m_pConsole, "sv_teleport_vel_reset", &s_TeleportVelReset, 0, 0, 1 };
-
-					for(int i = 0; i < (sizeof(s_aVars)/sizeof(s_aVars[0])); i++)
-						s_aVars[i].Register();
-					s_TeleportVelResetVar.Register();
-
 					int ItemID;
 					CMapItemInfo *pItem = (CMapItemInfo *)DataFile.GetItem(Start + e, 0, &ItemID);
 					int ItemSize = DataFile.GetItemSize(Start + e) - sizeof(int) * 2;
@@ -849,26 +872,37 @@ int CEditorMap::Load(class IStorage *pStorage, const char *pFileName, int Storag
 						{
 							m_pConsole->ExecuteLineFlag(pTmp, CFGFLAG_MAPSETTINGS);
 							pTmp += str_length(pTmp) + 1;
+							AddMapSettings = true;
 						}
 						DataFile.UnloadData(pItemRace->m_Settings);
-
-						char aBuf[64];
-						int MaxLen = 0;
-						for(int i = 0; i < (sizeof(s_aVars)/sizeof(s_aVars[0])); i++)
-						{
-							str_format(aBuf, sizeof(aBuf), "%s %d", s_aVars[i].m_pName, s_aValues[i]);
-							MaxLen = max(MaxLen, str_length(aBuf));
-						}
-						
-						pSettings = CreateCustomLayer(this, MaxLen, (sizeof(s_aVars)/sizeof(s_aVars[0])), "#settings", "_letters");
-						for(int i = 0; i < (sizeof(s_aVars)/sizeof(s_aVars[0])); i++)
-						{
-							str_format(aBuf, sizeof(aBuf), "%s %d", s_aVars[i].m_pName, s_aValues[i]);
-							for(int j = 0; j < str_length(aBuf); j++)
-								pSettings->m_pTiles[i*MaxLen+j].m_Index = aBuf[j];
-						}
 					}
 					break;
+				}
+
+				if(AddMapSettings)
+				{
+					if(AllowRestart) // TODO: only add this for teerace maps?
+					{
+						NumVars++;
+						s_aVars[8].Register();
+						s_aValues[8] = 1;
+					}
+
+					char aBuf[64];
+					int MaxLen = 0;
+					for(int i = 0; i < NumVars; i++)
+					{
+						str_format(aBuf, sizeof(aBuf), "%s %d", s_aVars[i].m_pName, s_aValues[i]);
+						MaxLen = max(MaxLen, str_length(aBuf));
+					}
+					
+					pSettings = CreateCustomLayer(this, MaxLen, NumVars, "#settings", "_letters");
+					for(int i = 0; i < NumVars; i++)
+					{
+						str_format(aBuf, sizeof(aBuf), "%s %d", s_aVars[i].m_pName, s_aValues[i]);
+						for(int j = 0; j < str_length(aBuf); j++)
+							pSettings->m_pTiles[i*MaxLen+j].m_Index = aBuf[j];
+					}
 				}
 			}
 
@@ -878,6 +912,8 @@ int CEditorMap::Load(class IStorage *pStorage, const char *pFileName, int Storag
 				{
 					CTeleTile *pTeleTiles = (CTeleTile *)DataFile.GetData(Tele);
 					int NumTiles = 0;
+					bool aTeleporterIn[1<<8] = {0};
+					bool aTeleporterOut[1<<8] = {0};
 
 					for(int i = 0; i < m_pGameLayer->m_Width*m_pGameLayer->m_Height; i++)
 					{
@@ -896,6 +932,10 @@ int CEditorMap::Load(class IStorage *pStorage, const char *pFileName, int Storag
 								pGameLayer->m_pTiles[i].m_Index = TILE_TELEIN_STOP;
 							pTele->m_pTiles[i].m_Index = pTeleTiles[i].m_Number;
 							NumTiles++;
+							if(pTeleTiles[i].m_Type == TILE_TELEIN)
+								aTeleporterIn[pTeleTiles[i].m_Number] = true;
+							if(pTeleTiles[i].m_Type == TILE_TELEOUT)
+								aTeleporterOut[pTeleTiles[i].m_Number] = true;
 						}
 					}
 
@@ -904,6 +944,10 @@ int CEditorMap::Load(class IStorage *pStorage, const char *pFileName, int Storag
 						delete pTele;
 						pTele = 0;
 					}
+
+					for(int i = 1; i < 1<<8; i++)
+						if(aTeleporterIn[i] != aTeleporterOut[i])
+							dbg_msg("race", "warning: missing %s for tele #%d", aTeleporterIn[i] ? "out" : "in", i);
 
 					DataFile.UnloadData(Tele);
 				}

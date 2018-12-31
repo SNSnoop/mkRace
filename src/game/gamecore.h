@@ -132,12 +132,6 @@ enum
 
 enum
 {
-	PHYSICSFLAG_STOPPER=1,
-	PHYSICSFLAG_TELEPORT=2,
-	PHYSICSFLAG_SPEEDUP=4,
-
-	PHYSICSFLAG_RACE_ALL=PHYSICSFLAG_STOPPER|PHYSICSFLAG_TELEPORT|PHYSICSFLAG_SPEEDUP,
-
 	COREEVENTFLAG_TELEPORTED=1<<16,
 	COREEVENTFLAG_MASK_VANILLA=0xffff
 };
@@ -163,7 +157,6 @@ class CCharacterCore
 	CCollision *m_pCollision;
 public:
 	vec2 m_Pos;
-	vec2 m_PrevPos;
 	vec2 m_Vel;
 
 	vec2 m_HookPos;
@@ -180,7 +173,7 @@ public:
 
 	int m_TriggeredEvents;
 
-	int m_LastSpeedup;
+	CCollisionData m_Race;
 
 	void Init(CWorldCore *pWorld, CCollision *pCollision);
 	void Reset();

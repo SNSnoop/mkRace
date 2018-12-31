@@ -60,12 +60,12 @@ void CCharacterCore::Init(CWorldCore *pWorld, CCollision *pCollision)
 {
 	m_pWorld = pWorld;
 	m_pCollision = pCollision;
+	m_Race.m_PhysicsFlags = m_pWorld->m_PhysicsFlags;
 }
 
 void CCharacterCore::Reset()
 {
 	m_Pos = vec2(0,0);
-	m_PrevPos = vec2(0,0);
 	m_Vel = vec2(0,0);
 	m_HookPos = vec2(0,0);
 	m_HookDir = vec2(0,0);
@@ -74,15 +74,13 @@ void CCharacterCore::Reset()
 	m_HookedPlayer = -1;
 	m_Jumped = 0;
 	m_TriggeredEvents = 0;
-	m_LastSpeedup = -1;
+	m_Race.m_LastSpeedupTilePos = ivec2(-1,-1);
 }
 
 void CCharacterCore::Tick(bool UseInput)
 {
 	float PhysSize = 28.0f;
 	m_TriggeredEvents = 0;
-
-	int Jumped = m_Jumped;
 
 	// get ground state
 	bool Grounded = false;
@@ -348,91 +346,6 @@ void CCharacterCore::Tick(bool UseInput)
 	// clamp the velocity to something sane
 	if(length(m_Vel) > 6000)
 		m_Vel = normalize(m_Vel) * 6000;
-
-	// TODO: rework race physics
-	int Mask = 0;
-	if(m_pWorld->m_PhysicsFlags&PHYSICSFLAG_STOPPER) Mask |= CCollision::RACECHECK_TILES_STOP;
-	if(m_pWorld->m_PhysicsFlags&PHYSICSFLAG_SPEEDUP) Mask |= CCollision::RACECHECK_SPEEDUP;
-	if(m_pWorld->m_PhysicsFlags&PHYSICSFLAG_TELEPORT) Mask |= CCollision::RACECHECK_TELE;
-	int TilePos = m_pCollision->CheckRaceTile(m_PrevPos, m_Pos, Mask);
-
-	if(m_pWorld->m_PhysicsFlags&PHYSICSFLAG_STOPPER)
-	{
-		if(m_pCollision->CheckIndexEx(TilePos, TILE_STOPL))
-		{
-			if(m_Vel.x > 0)
-			{
-				if((int)m_pCollision->GetPos(TilePos).x < (int)m_Pos.x)
-					m_Pos.x = m_PrevPos.x;
-				m_Vel.x = 0;
-			}
-		}
-		else if(m_pCollision->CheckIndexEx(TilePos, TILE_STOPR))
-		{
-			if(m_Vel.x < 0)
-			{
-				if((int)m_pCollision->GetPos(TilePos).x > (int)m_Pos.x)
-					m_Pos.x = m_PrevPos.x;
-				m_Vel.x = 0;
-			}
-		}
-		else if(m_pCollision->CheckIndexEx(TilePos, TILE_STOPB))
-		{
-			if(m_Vel.y < 0)
-			{
-				if((int)m_pCollision->GetPos(TilePos).y > (int)m_Pos.y)
-					m_Pos.y = m_PrevPos.y;
-				m_Vel.y = 0;
-			}
-		}
-		else if(m_pCollision->CheckIndexEx(TilePos, TILE_STOPT))
-		{
-			if(m_Vel.y > 0)
-			{
-				if((int)m_pCollision->GetPos(TilePos).y < (int)m_Pos.y)
-					m_Pos.y = m_PrevPos.y;
-				if(Jumped&3 && m_Jumped != Jumped) // check double jump
-					m_Jumped = Jumped;
-				m_Vel.y = 0;
-			}
-		}
-	}
-
-	if(m_pWorld->m_PhysicsFlags&PHYSICSFLAG_SPEEDUP)
-	{
-		int SpeedupPos = m_pCollision->CheckSpeedup(TilePos);
-		if(m_LastSpeedup != SpeedupPos && SpeedupPos > -1)
-		{
-			vec2 Direction;
-			int Force;
-			m_pCollision->GetSpeedup(SpeedupPos, &Direction, &Force);
-			m_Vel += Direction*Force;
-		}
-		m_LastSpeedup = SpeedupPos;
-	}
-
-	if(m_pWorld->m_PhysicsFlags&PHYSICSFLAG_TELEPORT)
-	{
-		bool Stop;
-		int Tele = m_pCollision->CheckTeleport(TilePos, &Stop);
-		if(Tele)
-		{
-			// check double jump
-			if(Jumped&3 && m_Jumped != Jumped)
-				m_Jumped = Jumped;
-
-			m_HookedPlayer = -1;
-			m_HookState = HOOK_RETRACTED;
-			m_Pos = m_pCollision->GetTeleportDestination(Tele);
-			m_HookPos = m_Pos;
-			m_TriggeredEvents |= COREEVENTFLAG_TELEPORTED;
-
-			if(Stop)
-				m_Vel = vec2(0,0);
-		}
-	}
-
-	m_PrevPos = m_Pos;
 }
 
 void CCharacterCore::Move()
@@ -445,7 +358,16 @@ void CCharacterCore::Move()
 	m_Vel.x = m_Vel.x*RampValue;
 
 	vec2 NewPos = m_Pos;
-	m_pCollision->MoveBox(&NewPos, &m_Vel, vec2(28.0f, 28.0f), 0);
+	m_Race.m_Teleported = 0;
+	m_pCollision->MoveBox(&NewPos, &m_Vel, vec2(28.0f, 28.0f), 0, &m_Race);
+
+	if(m_Race.m_Teleported)
+	{
+		m_HookedPlayer = -1;
+		m_HookState = HOOK_RETRACTED;
+		m_HookPos = m_Pos;
+		m_TriggeredEvents |= COREEVENTFLAG_TELEPORTED;
+	}
 
 	m_Vel.x = m_Vel.x*(1.0f/RampValue);
 
@@ -516,16 +438,12 @@ void CCharacterCore::Read(const CNetObj_CharacterCore *pObjCore)
 	m_Jumped = pObjCore->m_Jumped;
 	m_Direction = pObjCore->m_Direction;
 	m_Angle = pObjCore->m_Angle;
-
-	m_PrevPos = m_Pos;
 }
 
 void CCharacterCore::Quantize()
 {
-	vec2 Prev = m_PrevPos;
 	CNetObj_CharacterCore Core;
 	Write(&Core);
 	Read(&Core);
-	m_PrevPos = Prev;
 }
 

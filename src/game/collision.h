@@ -5,6 +5,26 @@
 
 #include <base/vmath.h>
 
+enum
+{
+	PHYSICSFLAG_STOPPER=1,
+	PHYSICSFLAG_TELEPORT=2,
+	PHYSICSFLAG_SPEEDUP=4,
+
+	PHYSICSFLAG_RACE_ALL=PHYSICSFLAG_STOPPER|PHYSICSFLAG_TELEPORT|PHYSICSFLAG_SPEEDUP,
+};
+
+typedef void (*FPhysicsStepCallback)(vec2 Pos, float IntraTick, void *pUserData);
+
+struct CCollisionData
+{
+	FPhysicsStepCallback m_pfnPhysicsStepCallback;
+	void *m_pPhysicsStepUserData;
+	int m_PhysicsFlags;
+	ivec2 m_LastSpeedupTilePos;
+	bool m_Teleported;
+};
+
 class CCollision
 {
 	class CTile *m_pTiles;
@@ -16,9 +36,7 @@ class CCollision
 	int m_Height;
 	class CLayers *m_pLayers;
 
-	vec2 *m_pTeleporter;
-	bool m_MainTiles;
-	bool m_StopTiles;
+	vec2 m_aTeleporter[1<<8];
 
 	void InitTeleporter();
 
@@ -35,15 +53,9 @@ public:
 		COLFLAG_NOHOOK=4,
 		COLFLAG_FREEZE=8,
 		COLFLAG_UNFREEZE=16,
-
-		RACECHECK_TILES_MAIN=1,
-		RACECHECK_TILES_STOP=2,
-		RACECHECK_TELE=4,
-		RACECHECK_SPEEDUP=8,
 	};
 
 	CCollision();
-	virtual ~CCollision();
 	void Init(class CLayers *pLayers);
 	bool CheckPoint(float x, float y) const { return IsTileSolid(round_to_int(x), round_to_int(y)); }
 	bool CheckPoint(vec2 Pos) const { return CheckPoint(Pos.x, Pos.y); }
@@ -52,25 +64,21 @@ public:
 	int GetHeight() const { return m_Height; };
 	int IntersectLine(vec2 Pos0, vec2 Pos1, vec2 *pOutCollision, vec2 *pOutBeforeCollision) const;
 	void MovePoint(vec2 *pInoutPos, vec2 *pInoutVel, float Elasticity, int *pBounces) const;
-	void MoveBox(vec2 *pInoutPos, vec2 *pInoutVel, vec2 Size, float Elasticity) const;
+	void MoveBox(vec2 *pInoutPos, vec2 *pInoutVel, vec2 Size, float Elasticity, CCollisionData *pCollisionData = 0) const;
 	bool TestBox(vec2 Pos, vec2 Size) const;
 
 	// race
-	int GetTilePos(vec2 Pos);
-	int GetTilePosLayer(const class CMapItemLayerTilemap *pLayer, int TilePos);
-	vec2 GetPos(int TilePos);
+	vec2 GetPos(int TilePos) const;
+	int GetTilePosLayer(const class CMapItemLayerTilemap *pLayer, vec2 Pos) const;
 
-	bool CheckIndexEx(vec2 Pos, int Index) { return CheckIndexEx(GetTilePos(Pos), Index); }
-	bool CheckIndexEx(int TilePos, int Index);
-	int CheckIndexExRange(int TilePos, int MinIndex, int MaxIndex);
+	bool CheckIndexEx(vec2 Pos, int Index) const;
+	int CheckIndexExRange(vec2 Pos, int MinIndex, int MaxIndex) const;
 
-	int CheckRaceTile(vec2 PrevPos, vec2 Pos, int Mask);
-
-	int CheckCheckpoint(int TilePos);
-	int CheckSpeedup(int TilePos);
-	void GetSpeedup(int SpeedupPos, vec2 *Dir, int *Force);
-	int CheckTeleport(int TilePos, bool *pStop);
-	vec2 GetTeleportDestination(int Number);
+	int CheckCheckpoint(vec2 Pos) const;
+	int CheckSpeedup(vec2 Pos) const;
+	vec2 GetSpeedupForce(int Speedup) const;
+	int CheckTeleport(vec2 Pos, bool *pStop) const;
+	vec2 GetTeleportDestination(int Tele) const { return m_aTeleporter[Tele - 1]; };
 };
 
 #endif

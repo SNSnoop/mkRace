@@ -292,16 +292,16 @@ void CFileScore::ShowTop5(int ClientID, int Debut)
 {
 	char aBuf[512];
 	char aTime[64];
-	GameServer()->SendChat(-1, CHAT_ALL, ClientID, "----------- Top 5 -----------");
+	PrintInChat(ClientID, CHAT_ALL, ClientID, "----------- Top 5 -----------", true);
 	for(int i = 0; i < 5 && i + Debut - 1 < m_lTop.size(); i++)
 	{
 		const CPlayerScore *r = &m_lTop[i+Debut-1];
 		IRace::FormatTimeLong(aTime, sizeof(aTime), r->m_Time);
 		str_format(aBuf, sizeof(aBuf), "%d. %s Time: %s",
 			i + Debut, r->m_aName, aTime);
-		GameServer()->SendChat(-1, CHAT_ALL, ClientID, aBuf);
+		PrintInChat(ClientID, CHAT_ALL, ClientID, aBuf, true);
 	}
-	GameServer()->SendChat(-1, CHAT_ALL, ClientID, "------------------------------");
+	PrintInChat(ClientID, CHAT_ALL, ClientID, "------------------------------");
 }
 
 void CFileScore::ShowRank(int ClientID, const char *pName)
@@ -329,7 +329,7 @@ void CFileScore::ShowRank(int ClientID, const char *pName)
 	else
 		str_format(aBuf, sizeof(aBuf), "%s is not ranked", pName);
 
-	GameServer()->SendChat(-1, CHAT_ALL, To, aBuf);
+	PrintInChat(ClientID, CHAT_ALL, To, aBuf);
 }
 
 void CFileScore::ShowRank(int ClientID)
@@ -353,5 +353,16 @@ void CFileScore::ShowRank(int ClientID)
 	else
 		str_format(aBuf, sizeof(aBuf), "You are not ranked");
 
-	GameServer()->SendChat(-1, CHAT_ALL, To, aBuf);
+	PrintInChat(ClientID, CHAT_ALL, To, aBuf);
+}
+
+void CFileScore::PrintInChat(int From, int Mode, int To, const char *pText, bool IsBlock)
+{
+	// 3 seconds cooldown for chat commands
+	if(g_Config.m_SvSpamprotection && m_LastPrintInChat[From] && m_LastPrintInChat[From]+Server()->TickSpeed()*3 > Server()->Tick())	
+		return;
+
+	GameServer()->SendChat(-1, Mode, To, pText);
+	if(IsBlock)
+		m_LastPrintInChat[From] = Server()->Tick();
 }

@@ -50,6 +50,7 @@ MACRO_CONFIG_INT(EdColorSelectionTile, ed_color_selection_tile, 0xFFFFFF66, 0, 0
 
 MACRO_CONFIG_INT(ClShowWelcome, cl_show_welcome, 1, 0, 1, CFGFLAG_CLIENT|CFGFLAG_SAVE, "")
 MACRO_CONFIG_INT(ClMotdTime, cl_motd_time, 10, 0, 100, CFGFLAG_CLIENT|CFGFLAG_SAVE, "How long to show the server message of the day")
+MACRO_CONFIG_INT(ClShowXmasHats, cl_show_xmas_hats, 1, 0, 2, CFGFLAG_CLIENT | CFGFLAG_SAVE, "0=never, 1=during christmas, 2=always")
 
 MACRO_CONFIG_STR(ClVersionServer, cl_version_server, 100, "version.teeworlds.com", CFGFLAG_CLIENT|CFGFLAG_SAVE, "Server to use to check for new versions")
 
@@ -129,6 +130,12 @@ MACRO_CONFIG_INT(SvVoteKickMin, sv_vote_kick_min, 0, 0, MAX_CLIENTS, CFGFLAG_SAV
 MACRO_CONFIG_INT(SvVoteKickBantime, sv_vote_kick_bantime, 5, 0, 1440, CFGFLAG_SAVE|CFGFLAG_SERVER, "The time to ban a player if kicked by vote. 0 makes it just use kick")
 
 // race
+MACRO_CONFIG_INT(ClPredictRace, cl_predict_race, 1, 0, 1, CFGFLAG_CLIENT|CFGFLAG_SAVE, "Predict race")
+MACRO_CONFIG_INT(ClPredictTeleport, cl_predict_teleport, 1, 0, 1, CFGFLAG_CLIENT|CFGFLAG_SAVE, "Predict teleport")
+MACRO_CONFIG_INT(ClPredictSpeedup, cl_predict_speedup, 1, 0, 1, CFGFLAG_CLIENT|CFGFLAG_SAVE, "Predict speedup")
+MACRO_CONFIG_INT(ClPredictStopTiles, cl_predict_stop_tiles, 1, 0, 1, CFGFLAG_CLIENT|CFGFLAG_SAVE, "Predict stop tiles")
+
+// map settings
 MACRO_CONFIG_INT(SvRegen, sv_regen, 0, 0, 50, CFGFLAG_MAPSETTINGS, "Set regeneration")
 MACRO_CONFIG_INT(SvStrip, sv_strip, 0, 0, 1, CFGFLAG_MAPSETTINGS, "Enable or disable keeping weapon after teleporting")
 MACRO_CONFIG_INT(SvInfiniteAmmo, sv_infinite_ammo, 1, 0, 1, CFGFLAG_MAPSETTINGS, "Enable or disable infinite ammo")
@@ -137,6 +144,7 @@ MACRO_CONFIG_INT(SvTeleportGrenade, sv_teleport_grenade, 0, 0, 1, CFGFLAG_MAPSET
 MACRO_CONFIG_INT(SvDeleteGrenadesAfterDeath, sv_delete_grenades_after_death, 1, 0, 1, CFGFLAG_MAPSETTINGS, "Delete grenades after the player dies")
 MACRO_CONFIG_INT(SvRocketJumpDamage, sv_rocket_jump_damage, 0, 0, 1, CFGFLAG_MAPSETTINGS, "Enable or disable rocket jump damage")
 MACRO_CONFIG_INT(SvPickupRespawn, sv_pickup_respawn, -1, -1, 120, CFGFLAG_MAPSETTINGS, "Time before a pickup respawn")
+MACRO_CONFIG_INT(SvAllowRestartOld, sv_allow_restart_old, 0, 0, 1, CFGFLAG_MAPSETTINGS, "Allow restarting the race when the character has no armor and no grenades (deprecated)")
 
 //MACRO_CONFIG_INT(SvScoreIP, sv_score_ip, 1, 0, 1, CFGFLAG_SERVER, "Check score for ip, too")
 MACRO_CONFIG_INT(SvLoadBest, sv_load_best, 1, 0, 1, CFGFLAG_SERVER, "Loads the best time from scoring")

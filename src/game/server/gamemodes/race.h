@@ -11,8 +11,7 @@ class CGameControllerRACE : public IGameController
 	void OnCheckpoint(int ID, int z);
 
 	int GetTime(int ID) const;
-	int CalculateStartAddTime(vec2 PrevPos, vec2 Pos, int Team) const;
-	int CalculateFinishTime(int Time, vec2 PrevPos, vec2 Pos, int Team) const;
+	int GetTimeExact(int ID) const;
 
 protected:
 	struct CRaceData
@@ -23,7 +22,7 @@ protected:
 		int m_CpTick;
 		int m_CpDiff;
 
-		int m_StartAddTime;
+		float m_AddTime;
 
 		void Reset()
 		{
@@ -32,15 +31,15 @@ protected:
 			mem_zero(m_aCpCurrent, sizeof(m_aCpCurrent));
 			m_CpTick = -1;
 			m_CpDiff = 0;
-			m_StartAddTime = 0;
+			m_AddTime = 0.f;
 		}
 	} m_aRace[MAX_CLIENTS];
 
-	virtual bool IsStart(int TilePos, vec2 Pos, int Team) const;
-	virtual bool IsEnd(int TilePos, vec2 Pos, int Team) const;
+	virtual bool IsStart(vec2 Pos, int Team) const;
+	virtual bool IsEnd(vec2 Pos, int Team) const;
 	virtual bool CanEndRace(int ID) const;
 
-	virtual void OnRaceStart(int ID, int StartAddTime);
+	virtual void OnRaceStart(int ID);
 	virtual void OnRaceEnd(int ID, int FinishTime);
 
 	void ResetPickups(int ClientID);
@@ -63,7 +62,7 @@ public:
 	virtual int OnCharacterDeath(class CCharacter *pVictim, class CPlayer *pKiller, int Weapon);
 	virtual bool IsFriendlyFire(int ClientID1, int ClientID2) const { return ClientID1 != ClientID2; };
 
-	void ProcessRaceTile(int ID, int TilePos, vec2 PrevPos, vec2 Pos);
+	void OnPhysicsStep(int ID, vec2 Pos, float IntraTick);
 
 	virtual bool CanStartRace(int ID) const;
 

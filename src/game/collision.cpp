@@ -23,14 +23,6 @@ CCollision::CCollision()
 	m_pTele = 0;
 	m_pSpeedupForce = 0;
 	m_pSpeedupAngle = 0;
-	m_pTeleporter = 0;
-	m_MainTiles = false;
-	m_StopTiles = false;
-}
-
-CCollision::~CCollision()
-{
-	delete[] m_pTeleporter;
 }
 
 void CCollision::Init(class CLayers *pLayers)
@@ -39,11 +31,6 @@ void CCollision::Init(class CLayers *pLayers)
 	m_pTele = 0;
 	m_pSpeedupForce = 0;
 	m_pSpeedupAngle = 0;
-	m_MainTiles = false;
-	m_StopTiles = false;
-
-	delete[] m_pTeleporter;
-	m_pTeleporter = 0x0;
 
 	m_pLayers = pLayers;
 	m_Width = m_pLayers->GameLayer()->m_Width;
@@ -98,35 +85,21 @@ void CCollision::Init(class CLayers *pLayers)
 		// race tiles
 		if(Index >= TILE_TELEIN_STOP && Index <= 59)
 			m_pTiles[i].m_Index = Index;
-		if(CheckIndexExRange(i, TILE_BEGIN, 59) != -1)
-			m_MainTiles = true;
-		if(CheckIndexExRange(i, TILE_STOPL, TILE_STOPT) != -1)
-			m_StopTiles = true;
 	}
 }
 
 void CCollision::InitTeleporter()
 {
-	int ArraySize = 0;
-	int Width = m_pLayers->TeleLayer()->m_Width;
-	int Height = m_pLayers->TeleLayer()->m_Height;
+	mem_zero(m_aTeleporter, sizeof(m_aTeleporter));
 
-	for(int i = 0; i < Width * Height; i++)
-		ArraySize = max(ArraySize, (int)m_pTele[i].m_Index);
-
-	if(!ArraySize)
-		return;
-
-	m_pTeleporter = new vec2[ArraySize];
-	mem_zero(m_pTeleporter, ArraySize*sizeof(vec2));
-
-	// assign the values
-	for(int i = 0; i < m_Width * m_Height; i++)
-	{
-		int TilePosTele = GetTilePosLayer(m_pLayers->TeleLayer(), i);
-		if(TilePosTele >= 0 && m_pTele[TilePosTele].m_Index > 0 && CheckIndexEx(i, TILE_TELEOUT))
-			m_pTeleporter[m_pTele[TilePosTele].m_Index - 1] = vec2(i % Width * 32 + 16, i / Width * 32 + 16);
-	}
+	for(int Ny = 0; Ny < m_pLayers->TeleLayer()->m_Height; Ny++)
+		for(int Nx = 0; Nx < m_pLayers->TeleLayer()->m_Width; Nx++)
+		{
+			vec2 Pos = vec2(Nx*32+16, Ny*32+16);
+			int TilePosTele = Ny*m_pLayers->TeleLayer()->m_Width+Nx;
+			if(m_pTele[TilePosTele].m_Index > 0 && CheckIndexEx(Pos, TILE_TELEOUT))
+				m_aTeleporter[m_pTele[TilePosTele].m_Index - 1] = Pos;
+		}
 }
 
 int CCollision::GetTile(int x, int y) const
@@ -148,26 +121,7 @@ bool CCollision::IsTileSolid(int x, int y) const
 }
 
 // race
-int CCollision::GetTilePos(vec2 Pos)
-{
-	int Nx = clamp((int)Pos.x/32, 0, m_Width-1);
-	int Ny = clamp((int)Pos.y/32, 0, m_Height-1);
-	
-	return Ny*m_Width+Nx;
-}
-
-int CCollision::GetTilePosLayer(const CMapItemLayerTilemap *pLayer, int TilePos)
-{
-	int x = TilePos % m_Width;
-	int y = TilePos / m_Width;
-
-	if(TilePos < 0 || !pLayer || x < 0 || y < 0 || x >= pLayer->m_Width || y >= pLayer->m_Height)
-		return -1;
-
-	return y*pLayer->m_Width+x;
-}
-
-vec2 CCollision::GetPos(int TilePos)
+vec2 CCollision::GetPos(int TilePos) const
 {
 	int x = TilePos%m_Width;
 	int y = TilePos/m_Width;
@@ -175,88 +129,65 @@ vec2 CCollision::GetPos(int TilePos)
 	return vec2(x*32+16, y*32+16);
 }
 
-bool CCollision::CheckIndexEx(int TilePos, int Index)
+int CCollision::GetTilePosLayer(const CMapItemLayerTilemap *pLayer, vec2 Pos) const
 {
-	if(TilePos >= 0 && m_pTiles[TilePos].m_Index == Index)
-		return true;
-	int TilePosEx = GetTilePosLayer(m_pLayers->GameExLayer(), TilePos);
-	if(TilePosEx != -1 && m_pTilesEx[TilePosEx].m_Index == Index)
-		return true;
-	return false;
-}
+	int Nx = round_to_int(Pos.x)/32;
+	int Ny = round_to_int(Pos.y)/32;
 
-int CCollision::CheckIndexExRange(int TilePos, int MinIndex, int MaxIndex)
-{
-	if(TilePos >= 0 && m_pTiles[TilePos].m_Index >= MinIndex && m_pTiles[TilePos].m_Index <= MaxIndex)
-		return m_pTiles[TilePos].m_Index;
-	int TilePosEx = GetTilePosLayer(m_pLayers->GameExLayer(), TilePos);
-	if(TilePosEx >= 0 && m_pTilesEx[TilePosEx].m_Index >= MinIndex && m_pTilesEx[TilePosEx].m_Index <= MaxIndex)
-		return m_pTilesEx[TilePosEx].m_Index;
-	return -1;
-}
-
-bool CCollision::IsRaceTile(int TilePos, int Mask)
-{
-	if(Mask&RACECHECK_TILES_MAIN && CheckIndexExRange(TilePos, TILE_BEGIN, 59) != -1)
-		return true;
-	if(Mask&RACECHECK_TILES_STOP && CheckIndexExRange(TilePos, TILE_STOPL, TILE_STOPT) != -1)
-		return true;
-	if(Mask&RACECHECK_TELE && CheckIndexExRange(TilePos, TILE_TELEIN_STOP, TILE_TELEIN) != -1)
-		return true;
-	if(Mask&RACECHECK_SPEEDUP && CheckIndexEx(TilePos, TILE_BOOST))
-		return true;
-	return false;
-}
-
-int CCollision::CheckRaceTile(vec2 PrevPos, vec2 Pos, int Mask)
-{
-	if(Mask&RACECHECK_TILES_MAIN && !m_MainTiles)
-		Mask ^= RACECHECK_TILES_MAIN;
-	if(Mask&RACECHECK_TILES_STOP && !m_StopTiles)
-		Mask ^= RACECHECK_TILES_STOP;
-	if(Mask&RACECHECK_TELE && !m_pTeleporter)
-		Mask ^= RACECHECK_TELE;
-	if(Mask&RACECHECK_SPEEDUP && !m_pSpeedupForce)
-		Mask ^= RACECHECK_SPEEDUP;
-
-	if(!Mask)
+	if(!pLayer)
 		return -1;
 
-	float Distance = distance(PrevPos, Pos);
-	int End = Distance+1;
+	if(/*!Ex && */(Nx < 0 || Ny < 0 || Nx >= pLayer->m_Width || Ny >= pLayer->m_Height))
+		return -1;
 
-	for(int i = 0; i <= End; i++)
-	{
-		float a = i/float(End);
-		vec2 Tmp = mix(PrevPos, Pos, a);
-		int TilePos = GetTilePos(Tmp);
-		if(IsRaceTile(TilePos, Mask))
-			return TilePos;
-	}
+	//Nx = clamp(Nx, 0, pLayer->m_Width-1);
+	//Ny = clamp(Ny, 0, pLayer->m_Height-1);
+	
+	return Ny*pLayer->m_Width+Nx;
+}
 
+bool CCollision::CheckIndexEx(vec2 Pos, int Index) const
+{
+	int TilePos = GetTilePosLayer(m_pLayers->GameLayer(), Pos);
+	if(TilePos >= 0 && m_pTiles[TilePos].m_Index == Index)
+		return true;
+	TilePos = GetTilePosLayer(m_pLayers->GameExLayer(), Pos);
+	if(TilePos >= 0 && m_pTilesEx[TilePos].m_Index == Index)
+		return true;
+	return false;
+}
+
+int CCollision::CheckIndexExRange(vec2 Pos, int MinIndex, int MaxIndex) const
+{
+	int TilePos = GetTilePosLayer(m_pLayers->GameLayer(), Pos);
+	if(TilePos >= 0 && m_pTiles[TilePos].m_Index >= MinIndex && m_pTiles[TilePos].m_Index <= MaxIndex)
+		return m_pTiles[TilePos].m_Index;
+	TilePos = GetTilePosLayer(m_pLayers->GameExLayer(), Pos);
+	if(TilePos >= 0 && m_pTilesEx[TilePos].m_Index >= MinIndex && m_pTilesEx[TilePos].m_Index <= MaxIndex)
+		return m_pTilesEx[TilePos].m_Index;
 	return -1;
 }
 
-int CCollision::CheckCheckpoint(int TilePos)
+int CCollision::CheckCheckpoint(vec2 Pos) const
 {
-	int Cp = CheckIndexExRange(TilePos, 35, 59);
-	if(Cp != -1)
+	int Cp = CheckIndexExRange(Pos, 35, 59);
+	if(Cp >= 0)
 		return Cp-35;
 	return -1;
 }
 
-int CCollision::CheckSpeedup(int TilePos)
+int CCollision::CheckSpeedup(vec2 Pos) const
 {
-	int TilePosTele = GetTilePosLayer(m_pLayers->SpeedupForceLayer(), TilePos);
-	if(TilePosTele < 0 || !CheckIndexEx(TilePos, TILE_BOOST) || m_pSpeedupForce[TilePosTele].m_Index == 0)
+	int TilePosSpeedup = GetTilePosLayer(m_pLayers->SpeedupForceLayer(), Pos);
+	if(TilePosSpeedup < 0 || !m_pSpeedupAngle || !CheckIndexEx(Pos, TILE_BOOST) || m_pSpeedupForce[TilePosSpeedup].m_Index == 0)
 		return -1;
-	return TilePosTele;
+	return TilePosSpeedup;
 }
 
-void CCollision::GetSpeedup(int SpeedupPos, vec2 *Dir, int *Force)
+vec2 CCollision::GetSpeedupForce(int Speedup) const
 {
-	int SpeedupAngle = m_pSpeedupAngle[SpeedupPos].m_Index % 90;
-	unsigned char Flags = m_pSpeedupAngle[SpeedupPos].m_Flags;
+	int SpeedupAngle = m_pSpeedupAngle[Speedup].m_Index % 90;
+	unsigned char Flags = m_pSpeedupAngle[Speedup].m_Flags;
 	// TODO: handle all cases
 	if(Flags == ROTATION_90)
 		SpeedupAngle += 90;
@@ -265,28 +196,21 @@ void CCollision::GetSpeedup(int SpeedupPos, vec2 *Dir, int *Force)
 	else if(Flags == ROTATION_270)
 		SpeedupAngle += 270;
 	float Angle = SpeedupAngle * pi / 180.0f;
-	*Force = m_pSpeedupForce[SpeedupPos].m_Index;
-	*Dir = vec2(cos(Angle), sin(Angle));
+	float Force = m_pSpeedupForce[Speedup].m_Index;
+	return vec2(cos(Angle), sin(Angle)) * Force;
 }
 
-int CCollision::CheckTeleport(int TilePos, bool *pStop)
+int CCollision::CheckTeleport(vec2 Pos, bool *pStop) const
 {
-	int TilePosTele = GetTilePosLayer(m_pLayers->TeleLayer(), TilePos);
+	int TilePosTele = GetTilePosLayer(m_pLayers->TeleLayer(), Pos);
 	if(TilePosTele >= 0)
 	{
-		int Index = CheckIndexExRange(TilePos, TILE_TELEIN_STOP, TILE_TELEIN);
+		int Index = CheckIndexExRange(Pos, TILE_TELEIN_STOP, TILE_TELEIN);
 		*pStop = Index == TILE_TELEIN_STOP;
 		if(Index != -1)
 			return m_pTele[TilePosTele].m_Index;
 	}
 	return 0;
-}
-
-vec2 CCollision::GetTeleportDestination(int Number)
-{
-	if(m_pTeleporter && Number > 0)
-		return m_pTeleporter[Number - 1];
-	return vec2(0,0);
 }
 
 // TODO: rewrite this smarter!
@@ -370,7 +294,7 @@ bool CCollision::TestBox(vec2 Pos, vec2 Size) const
 	return false;
 }
 
-void CCollision::MoveBox(vec2 *pInoutPos, vec2 *pInoutVel, vec2 Size, float Elasticity) const
+void CCollision::MoveBox(vec2 *pInoutPos, vec2 *pInoutVel, vec2 Size, float Elasticity, CCollisionData *pCollisionData) const
 {
 	// do the move
 	vec2 Pos = *pInoutPos;
@@ -418,6 +342,51 @@ void CCollision::MoveBox(vec2 *pInoutPos, vec2 *pInoutVel, vec2 Size, float Elas
 					NewPos.x = Pos.x;
 					Vel.x *= -Elasticity;
 				}
+			}
+
+			if(pCollisionData)
+			{
+				if(pCollisionData->m_PhysicsFlags&PHYSICSFLAG_STOPPER)
+				{
+					int Index =  CheckIndexExRange(NewPos, TILE_STOPL, TILE_STOPT);
+					if((Index == TILE_STOPL && Vel.x > 0) || (Index == TILE_STOPR && Vel.x < 0))
+					{
+						NewPos.x = Pos.x;
+						Vel.x = 0;
+					}
+					if((Index == TILE_STOPB && Vel.y < 0) || (Index == TILE_STOPT && Vel.y > 0))
+					{
+						NewPos.y = Pos.y;
+						Vel.y = 0;
+					}
+				}
+
+				if(pCollisionData->m_PhysicsFlags&PHYSICSFLAG_TELEPORT)
+				{
+					bool Stop;
+					int Tele = CheckTeleport(NewPos, &Stop);
+					if(Tele)
+					{
+						pCollisionData->m_Teleported = true;
+						NewPos = GetTeleportDestination(Tele);
+						if(Stop)
+							Vel = vec2(0,0);
+					}
+				}
+
+				if(pCollisionData->m_PhysicsFlags&PHYSICSFLAG_SPEEDUP)
+				{
+					ivec2 SpeedupTilePos = ivec2(round_to_int(Pos.x)/32, round_to_int(Pos.y)/32);
+					int Speedup = CheckSpeedup(NewPos);
+					if(pCollisionData->m_LastSpeedupTilePos != SpeedupTilePos && Speedup > -1)
+					{
+						Vel += GetSpeedupForce(Speedup);
+						pCollisionData->m_LastSpeedupTilePos = SpeedupTilePos;
+					}
+				}
+
+				if(pCollisionData->m_pfnPhysicsStepCallback)
+					pCollisionData->m_pfnPhysicsStepCallback(NewPos, i/(float)Max, pCollisionData->m_pPhysicsStepUserData);
 			}
 
 			Pos = NewPos;

@@ -78,9 +78,9 @@ bool CGameControllerFC::CanBeMovedOnBalance(int Cid)
 	return false;
 }
 
-void CGameControllerFC::OnRaceStart(int ID, int StartAddTime)
+void CGameControllerFC::OnRaceStart(int ID)
 {
-	CGameControllerRACE::OnRaceStart(ID, StartAddTime);
+	CGameControllerRACE::OnRaceStart(ID);
 
 	m_apPlFlags[ID] = new CFlag(&GameServer()->m_World, GameServer()->m_apPlayers[ID]->GetTeam()^1, vec2(0,0));
 	m_apPlFlags[ID]->Grab(GameServer()->GetPlayerChar(ID));
