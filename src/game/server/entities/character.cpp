@@ -95,13 +95,32 @@ void CCharacter::Unfreeze()
 // 	str_format(aBuf, sizeof(aBuf), "unfrozen %d", m_pPlayer->GetCID());
 // 	GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "game", aBuf);
 
+	if(!m_Frozen)
+		return;
+
 	m_Frozen = false;
-	// SetWeapon(m_LastWeapon);
 	m_Ninja.m_ActivationTick = 0;
 	if(m_aWeapons[WEAPON_NINJA].m_Got)
 		SetWeapon(m_LastWeapon);
 	m_aWeapons[WEAPON_NINJA].m_Got = false;
 	m_aWeapons[WEAPON_NINJA].m_Ammo = 0;
+
+	GameServer()->SendTuningParams(m_pPlayer->GetCID());
+}
+
+void CCharacter::GetCustomTuning(CTuningParams* Tuning) const
+{
+	if(IsFrozen())
+	{
+		Tuning->m_GroundControlSpeed = 0;
+		Tuning->m_HookLength = 0;
+		Tuning->m_GroundJumpImpulse = 0;
+	}
+}
+
+bool CCharacter::RequiresCustomTuning() const
+{
+	return IsFrozen();
 }
 
 void CCharacter::Destroy()
@@ -729,26 +748,22 @@ void CCharacter::Freeze()
 	// this is for auto unfreeze after 3 secs
 	m_pPlayer->m_FreezeTick = Server()->Tick();
 
-	if(m_Frozen)
+	if(m_Frozen) // already frozen
 	{
 		// if we are only frozen, only refresh the freezetick
 		m_Ninja.m_ActivationTick = Server()->Tick();
 		// m_Ninja.m_IndicatorTick = Server()->Tick();
 		return;
 	}
-	ResetInput();
-
 	m_Frozen = true;
 
-	// char aBuf[256];
-	// str_format(aBuf, sizeof(aBuf), "frozen: %d", m_pPlayer->GetCID());
-	// GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "game", aBuf);
+	ResetInput();
+	GameServer()->SendTuningParams(m_pPlayer->GetCID()); // must be called after m_Frozen = true
 
 	// a nice sound
 	GameServer()->CreateSound(m_Pos, SOUND_LASER_BOUNCE, CmaskRace(GameServer(), m_pPlayer->GetCID()));
 
 	// switch to ninja
-	// SetWeapon(WEAPON_NINJA);
 	GiveNinja();
 }
 

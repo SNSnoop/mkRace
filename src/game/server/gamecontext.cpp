@@ -454,12 +454,42 @@ void CGameContext::CheckPureTuning()
 void CGameContext::SendTuningParams(int ClientID)
 {
 	CheckPureTuning();
+	CTuningParams CustomTuning;
+	mem_copy(&CustomTuning, &m_Tuning, sizeof(CustomTuning));
+	if(ClientID > -1 && m_apPlayers[ClientID])
+		m_apPlayers[ClientID]->GetCustomTuning(&CustomTuning);
 
 	CMsgPacker Msg(NETMSGTYPE_SV_TUNEPARAMS);
-	int *pParams = (int *)&m_Tuning;
-	for(unsigned i = 0; i < sizeof(m_Tuning)/sizeof(int); i++)
-		Msg.AddInt(pParams[i]);
-	Server()->SendMsg(&Msg, MSGFLAG_VITAL, ClientID);
+	if(ClientID != -1)
+	{
+		// this bugs if the server changes tunings to -1 (unfreezes everyone)
+		int *pParams = (int *)&CustomTuning;
+		for(unsigned i = 0; i < sizeof(CustomTuning)/sizeof(int); i++)
+			Msg.AddInt(pParams[i]);
+		Server()->SendMsg(&Msg, MSGFLAG_VITAL, ClientID);
+	}
+	else
+	{
+		for(int j = 0; j < MAX_CLIENTS; j++) // need to send individual packets because of custom tunings
+		{
+			if(!m_apPlayers[j])
+				continue;
+			if(m_apPlayers[j]->RequiresCustomTuning())
+			{
+				int *pParams = (int *)&CustomTuning;
+				for(unsigned i = 0; i < sizeof(CustomTuning)/sizeof(int); i++)
+					Msg.AddInt(pParams[i]);
+				Server()->SendMsg(&Msg, MSGFLAG_VITAL, j);
+			}
+			else // no custom tuning
+			{
+				int *pParams = (int *)&m_Tuning;
+				for(unsigned i = 0; i < sizeof(m_Tuning)/sizeof(int); i++)
+					Msg.AddInt(pParams[i]);
+				Server()->SendMsg(&Msg, MSGFLAG_VITAL, j);
+			}
+		}
+	}
 }
 
 void CGameContext::SwapTeams()

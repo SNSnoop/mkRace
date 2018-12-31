@@ -334,6 +334,28 @@ CCharacter *CPlayer::GetCharacter()
 	return 0;
 }
 
+const CCharacter *CPlayer::GetCharacter() const
+{
+	if(m_pCharacter && m_pCharacter->IsAlive())
+		return m_pCharacter;
+	return 0;
+}
+
+void CPlayer::GetCustomTuning(CTuningParams* Tuning) const
+{
+	if(const CCharacter* c = GetCharacter())
+		c->GetCustomTuning(Tuning);
+	// else send world defaults
+}
+
+bool CPlayer::RequiresCustomTuning() const
+{
+	if(const CCharacter* c = GetCharacter())
+		return c->RequiresCustomTuning();
+	else
+		return false;
+}
+
 void CPlayer::KillCharacter(int Weapon)
 {
 	if(m_pCharacter)

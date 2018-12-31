@@ -39,8 +39,11 @@ public:
 	void OnPredictedInput(CNetObj_PlayerInput *NewInput);
 	void OnDisconnect();
 
+	void GetCustomTuning(CTuningParams* Tuning) const;
+	bool RequiresCustomTuning() const;
 	void KillCharacter(int Weapon = WEAPON_GAME);
 	CCharacter *GetCharacter();
+	const CCharacter *GetCharacter() const;
 
 	//---------------------------------------------------------
 	// this is used for snapping so we know how we can clip the view for the player
