@@ -17,7 +17,7 @@ void CGameContext::ChatConInfo(IConsole::IResult *pResult, void *pUser)
 	CGameContext *pSelf = (CGameContext *)pUser;
 
 	char aBuf[128];
-	str_format(aBuf, sizeof(aBuf), "Simple DDRace mod, modified from Race %s (C)Rajh, Redix and Sushi.", RACE_VERSION);
+	str_format(aBuf, sizeof(aBuf), "Simple DDRace %s, modified from Race %s (C)Rajh, Redix and Sushi.", DDRACE_VERSION, RACE_VERSION);
 	pSelf->m_pChatConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chat", aBuf);
 }
 
