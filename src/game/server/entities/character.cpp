@@ -115,7 +115,7 @@ void CCharacter::GetCustomTuning(CTuningParams* Tuning) const
 	if(IsFrozen())
 	{
 		Tuning->m_GroundControlSpeed = 0;
-		Tuning->m_HookLength = 0;
+		Tuning->m_HookFireSpeed = 0;
 		Tuning->m_GroundJumpImpulse = 0;
 	}
 }
