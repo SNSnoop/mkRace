@@ -499,9 +499,6 @@ void CCharacter::SetEmote(int Emote, int Tick)
 
 void CCharacter::OnPredictedInput(CNetObj_PlayerInput *pNewInput)
 {
-	// do direction for ddrace
-	// m_Input.m_Direction = 0;
-
 	if(m_Frozen)
 		return;
 
@@ -521,7 +518,14 @@ void CCharacter::OnPredictedInput(CNetObj_PlayerInput *pNewInput)
 void CCharacter::OnDirectInput(CNetObj_PlayerInput *pNewInput)
 {
 	if(m_Frozen)
+	{
+		// do target for ddrace
+		m_Input.m_TargetX = pNewInput->m_TargetX;
+		m_Input.m_TargetY = pNewInput->m_TargetY;
+		if(m_Input.m_TargetX == 0 && m_Input.m_TargetY == 0)
+			m_Input.m_TargetY = -1;
 		return;
+	}
 
 	mem_copy(&m_LatestPrevInput, &m_LatestInput, sizeof(m_LatestInput));
 	mem_copy(&m_LatestInput, pNewInput, sizeof(m_LatestInput));
@@ -713,6 +717,7 @@ bool CCharacter::IncreaseArmor(int Amount)
 
 void CCharacter::Die(int Killer, int Weapon)
 {
+	Unfreeze();
 	// we got to wait 0.5 secs before respawning
 	m_Alive = false;
 	m_pPlayer->m_RespawnTick = Server()->Tick()+Server()->TickSpeed()/2;
