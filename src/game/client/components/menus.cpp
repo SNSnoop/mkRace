@@ -63,6 +63,7 @@ CMenus::CMenus()
 	m_UseMouseButtons = true;
 
 	SetMenuPage(PAGE_START);
+	m_MenuPageOld = PAGE_START;
 
 	m_PopupActive = false;
 
@@ -448,11 +449,10 @@ int CMenus::DoEditBox(void *pID, const CUIRect *pRect, char *pStr, unsigned StrS
 			s_DoScroll = true;
 			s_ScrollStart = UI()->MouseX();
 			int MxRel = (int)(UI()->MouseX() - pRect->x);
-			float Offset = pRect->w/2.0f-TextRender()->TextWidth(0, FontSize, pStr, -1)/2.0f;
 
 			for(int i = 1; i <= Len; i++)
 			{
-				if(Offset + TextRender()->TextWidth(0, FontSize, pStr, i) - *pOffset > MxRel)
+				if(TextRender()->TextWidth(0, FontSize, pStr, i) - *pOffset > MxRel)
 				{
 					s_AtIndex = i - 1;
 					break;
@@ -487,7 +487,7 @@ int CMenus::DoEditBox(void *pID, const CUIRect *pRect, char *pStr, unsigned StrS
 			{
 				Len = str_length(pStr);
 				int NumChars = Len;
-				ReturnValue |= CLineInput::Manipulate(Input()->GetEvent(i), pStr, StrSize, StrSize, &Len, &s_AtIndex, &NumChars);
+				ReturnValue |= CLineInput::Manipulate(Input()->GetEvent(i), pStr, StrSize, StrSize, &Len, &s_AtIndex, &NumChars, Input());
 			}
 		}
 	}
@@ -562,15 +562,14 @@ int CMenus::DoEditBox(void *pID, const CUIRect *pRect, char *pStr, unsigned StrS
 	UI()->ClipEnable(pRect);
 	Textbox.x -= *pOffset;
 
-	UI()->DoLabel(&Textbox, pDisplayStr, FontSize, CUI::ALIGN_CENTER);
+	UI()->DoLabel(&Textbox, pDisplayStr, FontSize, CUI::ALIGN_LEFT);
 
 	// render the cursor
 	if(UI()->LastActiveItem() == pID && !JustGotActive)
 	{
-		float w = TextRender()->TextWidth(0, FontSize, pDisplayStr, -1);
+		float w = TextRender()->TextWidth(0, FontSize, pDisplayStr, s_AtIndex);
 		Textbox = *pRect;
-		Textbox.x += Textbox.w/2.0f-w/2.0f;
-		w = TextRender()->TextWidth(0, FontSize, pDisplayStr, s_AtIndex);
+		Textbox.VSplitLeft(2.0f, 0, &Textbox);
 		Textbox.x += (w-*pOffset-TextRender()->TextWidth(0, FontSize, "|", -1)/2);
 
 		if((2*time_get()/time_freq()) % 2)	// make it blink
@@ -596,21 +595,24 @@ void CMenus::DoEditBoxOption(void *pID, char *pOption, int OptionLength, const C
 	DoEditBox(pID, &EditBox, pOption, OptionLength, pRect->h*ms_FontmodHeight*0.8f, pOffset, Hidden);
 }
 
-void CMenus::DoScrollbarOption(void *pID, int *pOption, const CUIRect *pRect, const char *pStr, float VSplitVal, int Min, int Max, bool infinite)
+void CMenus::DoScrollbarOption(void *pID, int *pOption, const CUIRect *pRect, const char *pStr, int Min, int Max, bool infinite)
 {
 	RenderTools()->DrawUIRect(pRect, vec4(0.0f, 0.0f, 0.0f, 0.25f), CUI::CORNER_ALL, 5.0f);
 
 	CUIRect Label, ScrollBar;
-	pRect->VSplitLeft(VSplitVal, &Label, &ScrollBar);
 
-	char aBuf[32];
+	char aBuf[128];
 	if(*pOption || !infinite)
 		str_format(aBuf, sizeof(aBuf), "%s: %i", pStr, *pOption);
 	else
 		str_format(aBuf, sizeof(aBuf), "%s: \xe2\x88\x9e", pStr);
+	float FontSize = pRect->h*ms_FontmodHeight*0.8f;
+	float VSplitVal = TextRender()->TextWidth(0, FontSize, aBuf, -1);
+
+	pRect->VSplitLeft(pRect->h+10.0f+VSplitVal, &Label, &ScrollBar);
 	Label.VSplitLeft(Label.h+5.0f, 0, &Label);
 	Label.y += 2.0f;
-	UI()->DoLabel(&Label, aBuf, pRect->h*ms_FontmodHeight*0.8f, CUI::ALIGN_LEFT);
+	UI()->DoLabel(&Label, aBuf, FontSize, CUI::ALIGN_LEFT);
 
 	ScrollBar.VMargin(4.0f, &ScrollBar);
 	*pOption = round_to_int(DoScrollbarH(pOption, &ScrollBar, (float)(*pOption-Min)/(float)(Max-Min))*(float)(Max-Min)+(float)Min+0.1f);
@@ -1398,15 +1400,15 @@ void CMenus::RenderBackButton(CUIRect MainView)
 	static CButtonContainer s_MenuButton;
 	if(DoButton_Menu(&s_MenuButton, Localize("Back"), 0, &Button) || m_EscapePressed)
 	{
-		SetMenuPage(PAGE_START);
+		SetMenuPage(m_MenuPageOld);
+		m_MenuPageOld = PAGE_START;
 	}
 }
 
 int CMenus::MenuImageScan(const char *pName, int IsDir, int DirType, void *pUser)
 {
 	CMenus *pSelf = (CMenus *)pUser;
-	int l = str_length(pName);
-	if(l < 4 || IsDir || str_comp(pName+l-4, ".png") != 0)
+	if(IsDir || !str_endswith(pName, ".png"))
 		return 0;
 
 	char aBuf[512];
@@ -1477,7 +1479,7 @@ int CMenus::MenuImageScan(const char *pName, int IsDir, int DirType, void *pUser
 	mem_free(Info.m_pData);
 
 	// set menu image data
-	str_copy(MenuImage.m_aName, pName, min((int)sizeof(MenuImage.m_aName),l-3));
+	str_truncate(MenuImage.m_aName, sizeof(MenuImage.m_aName), pName, str_length(pName) - 4);
 	str_format(aBuf, sizeof(aBuf), "load menu image %s", MenuImage.m_aName);
 	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "game", aBuf);
 	pSelf->m_lMenuImages.add(MenuImage);
@@ -1690,12 +1692,12 @@ int CMenus::Render()
 				m_MenuPage = PAGE_INTERNET;
 			}*/
 
-			// quit button
 			{
-				CUIRect Button;
+				// quit button
+				CUIRect Button, Row;
 				float TopOffset = 27.0f;
-				Screen.HSplitTop(TopOffset, &Button, 0);
-				Button.VSplitRight(TopOffset/* - 3.0f*/, 0, &Button);
+				Screen.HSplitTop(TopOffset, &Row, 0);
+				Row.VSplitRight(TopOffset/* - 3.0f*/, &Row, &Button);
 				static CButtonContainer s_QuitButton;
 
 				// draw red-blending button
@@ -1710,6 +1712,19 @@ int CMenus::Render()
 				if(UI()->DoButtonLogic(s_QuitButton.GetID(), "\xE2\x9C\x95", 0, &Button))
 				// if(DoButton_SpriteCleanID(&s_QuitButton, IMAGE_FRIENDICONS, SPRITE_FRIEND_X_A, &Button, false))
 					m_Popup = POPUP_QUIT;
+
+				// settings button
+				if(Client()->State() == IClient::STATE_OFFLINE && (m_MenuPage == PAGE_INTERNET || m_MenuPage == PAGE_LAN || m_MenuPage == PAGE_DEMOS))
+				{
+					Row.VSplitRight(5.0f, &Row, 0);
+					Row.VSplitRight(TopOffset, &Row, &Button);
+					static CButtonContainer s_SettingsButton;
+					if(DoButton_MenuTabTop(&s_SettingsButton, "\xE2\x9A\x99", false, &Button, 1.0f, 1.0f, CUI::CORNER_B))
+					{
+						m_MenuPageOld = m_MenuPage;
+						m_MenuPage = PAGE_SETTINGS;
+					}
+				}
 			}
 
 			// render current page
