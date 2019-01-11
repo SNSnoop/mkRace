@@ -863,7 +863,7 @@ int CEditorMap::Load(class IStorage *pStorage, const char *pFileName, int Storag
 						continue;
 
 					CMapItemInfoRace *pItemRace = (CMapItemInfoRace *)pItem;
-					if(pItemRace->m_Version == 1 && ItemSize >= (int)sizeof(CMapItemInfo) && pItemRace->m_Settings > -1)
+					if(pItemRace->m_Version == 1 && ItemSize >= (int)sizeof(CMapItemInfoRace) && pItemRace->m_Settings > -1)
 					{
 						int Size = DataFile.GetUncompressedDataSize(pItemRace->m_Settings);
 						const char *pTmp = (char*)DataFile.GetData(pItemRace->m_Settings);

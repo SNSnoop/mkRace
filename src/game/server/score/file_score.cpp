@@ -290,6 +290,9 @@ void CFileScore::OnPlayerFinish(int ClientID, int Time, int *pCpTime)
 
 void CFileScore::ShowTop5(int ClientID, int Debut)
 {
+	if(CheckSpamProtection(ClientID))
+		return;
+
 	char aBuf[512];
 	char aTime[64];
 	GameServer()->SendChat(-1, CHAT_ALL, ClientID, "----------- Top 5 -----------");
@@ -297,15 +300,18 @@ void CFileScore::ShowTop5(int ClientID, int Debut)
 	{
 		const CPlayerScore *r = &m_lTop[i+Debut-1];
 		IRace::FormatTimeLong(aTime, sizeof(aTime), r->m_Time);
-		str_format(aBuf, sizeof(aBuf), "%d. %s Time: %s",
-			i + Debut, r->m_aName, aTime);
+		str_format(aBuf, sizeof(aBuf), "%d. %s Time: %s", i + Debut, r->m_aName, aTime);
 		GameServer()->SendChat(-1, CHAT_ALL, ClientID, aBuf);
 	}
 	GameServer()->SendChat(-1, CHAT_ALL, ClientID, "------------------------------");
+	m_LastPrintInChat[ClientID] = Server()->Tick();
 }
 
 void CFileScore::ShowRank(int ClientID, const char *pName)
 {
+	if(CheckSpamProtection(ClientID))
+		return;
+
 	int Pos = 0;
 	char aBuf[512];
 
@@ -330,10 +336,14 @@ void CFileScore::ShowRank(int ClientID, const char *pName)
 		str_format(aBuf, sizeof(aBuf), "%s is not ranked", pName);
 
 	GameServer()->SendChat(-1, CHAT_ALL, To, aBuf);
+	m_LastPrintInChat[ClientID] = Server()->Tick();
 }
 
 void CFileScore::ShowRank(int ClientID)
 {
+	if(CheckSpamProtection(ClientID))
+		return;
+
 	int To = ClientID;
 	int Pos = 0;
 	char aBuf[512];
@@ -352,5 +362,13 @@ void CFileScore::ShowRank(int ClientID)
 		str_format(aBuf, sizeof(aBuf), "Several players were found.");
 	else
 		str_format(aBuf, sizeof(aBuf), "You are not ranked");
+
 	GameServer()->SendChat(-1, CHAT_ALL, To, aBuf);
+	m_LastPrintInChat[ClientID] = Server()->Tick();
+}
+
+bool CFileScore::CheckSpamProtection(int ClientID)
+{
+	return g_Config.m_SvSpamprotection && m_LastPrintInChat[ClientID] &&
+		m_LastPrintInChat[ClientID]+Server()->TickSpeed()*3 > Server()->Tick();
 }

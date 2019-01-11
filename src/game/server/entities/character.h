@@ -71,6 +71,9 @@ public:
 	bool HasWeapon(int Weapon) const { return m_aWeapons[Weapon].m_Got; }
 	int Armor() const { return m_Armor; }
 
+	// only for debugging... do not modify the position outside of gamecore!
+	void SetPos(vec2 Pos) { m_Core.m_Pos = Pos; }
+
 	static void OnPhysicsStep(vec2 Pos, float IntraTick, void *pUserData);
 
 private:

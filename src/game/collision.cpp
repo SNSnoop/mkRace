@@ -386,7 +386,7 @@ void CCollision::MoveBox(vec2 *pInoutPos, vec2 *pInoutVel, vec2 Size, float Elas
 				}
 
 				if(pCollisionData->m_pfnPhysicsStepCallback)
-					pCollisionData->m_pfnPhysicsStepCallback(NewPos, i/(float)Max, pCollisionData->m_pPhysicsStepUserData);
+					pCollisionData->m_pfnPhysicsStepCallback(NewPos, (i+1)*Fraction, pCollisionData->m_pPhysicsStepUserData);
 			}
 
 			Pos = NewPos;

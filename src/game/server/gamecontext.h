@@ -69,6 +69,11 @@ class CGameContext : public IGameServer
 	static void ConchainSettingUpdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConchainGameinfoUpdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 
+	// race
+	static void ConTeleport(IConsole::IResult *pResult, void *pUserData);
+	static void ConTeleportTo(IConsole::IResult *pResult, void *pUserData);
+	static void ConGetPos(IConsole::IResult *pResult, void *pUserData);
+
 	static void SendChatResponse(const char *pLine, void *pUser, bool Highlighted);
 	static void ChatConInfo(IConsole::IResult *pResult, void *pUser);
 	static void ChatConTop5(IConsole::IResult *pResult, void *pUser);

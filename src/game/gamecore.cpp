@@ -371,7 +371,7 @@ void CCharacterCore::Move()
 
 	m_Vel.x = m_Vel.x*(1.0f/RampValue);
 
-	if(m_pWorld->m_Tuning.m_PlayerCollision)
+	if(m_pWorld->m_Tuning.m_PlayerCollision && !m_Race.m_Teleported)
 	{
 		// check player collision
 		float Distance = distance(m_Pos, NewPos);

@@ -9,8 +9,59 @@
 #include "gamecontext.h"
 #include "player.h"
 
+#include "entities/character.h"
+
 #include "gamemodes/race.h"
 #include "score.h"
+
+void CGameContext::ConTeleport(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	int CID1 = clamp(pResult->GetInteger(0), 0, (int)MAX_CLIENTS-1);
+	int CID2 = clamp(pResult->GetInteger(1), 0, (int)MAX_CLIENTS-1);
+	if(pSelf->m_apPlayers[CID1] && pSelf->m_apPlayers[CID2])
+	{
+		CCharacter* pChr = pSelf->GetPlayerChar(CID1);
+		if(pChr)
+		{
+			pChr->SetPos(pSelf->m_apPlayers[CID2]->m_ViewPos);
+			pSelf->RaceController()->StopRace(CID1);
+		}
+		else
+			pSelf->m_apPlayers[CID1]->m_ViewPos = pSelf->m_apPlayers[CID2]->m_ViewPos;
+	}
+}
+
+void CGameContext::ConTeleportTo(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	int CID = clamp(pResult->GetInteger(0), 0, (int)MAX_CLIENTS-1);
+	if(pSelf->m_apPlayers[CID])
+	{
+		CCharacter* pChr = pSelf->GetPlayerChar(CID);
+		vec2 TelePos = vec2(pResult->GetInteger(1), pResult->GetInteger(2));
+		if(pChr)
+		{
+			pChr->SetPos(TelePos);
+			pSelf->RaceController()->StopRace(CID);
+		}
+		else
+			pSelf->m_apPlayers[CID]->m_ViewPos = TelePos;
+	}
+}
+
+void CGameContext::ConGetPos(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	int CID = clamp(pResult->GetInteger(0), 0, (int)MAX_CLIENTS-1);
+	if(pSelf->m_apPlayers[CID])
+	{
+		char aBuf[64];
+		str_format(aBuf, sizeof(aBuf), "%s pos: %d @ %d", pSelf->Server()->ClientName(CID),
+			(int)pSelf->m_apPlayers[CID]->m_ViewPos.x, (int)pSelf->m_apPlayers[CID]->m_ViewPos.y);
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "race", aBuf);
+	}
+}
 
 void CGameContext::ChatConInfo(IConsole::IResult *pResult, void *pUser)
 {

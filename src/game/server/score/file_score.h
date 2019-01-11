@@ -56,6 +56,8 @@ class CFileScore : public IScore
 	void WriteEntry(IOHANDLE File, const CPlayerScore *pEntry) const;
 	IOHANDLE OpenFile(int Flags) const;
 	
+	bool CheckSpamProtection(int ClientID);
+
 public:
 	CFileScore(CGameContext *pGameServer);
 	~CFileScore();
