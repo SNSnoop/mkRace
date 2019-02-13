@@ -135,7 +135,7 @@ void CGameControllerRACE::OnRaceEnd(int ID, int FinishTime)
 	// move all this into the scoring classes so the selected
 	// scoring backend can decide how to handle the situation
 
-	int Improved = FinishTime - GameServer()->Score()->PlayerData(ID)->m_Time;
+	int Improved = GameServer()->Score()->PlayerData(ID)->m_Time - FinishTime;
 
 	// save the score
 	GameServer()->Score()->OnPlayerFinish(ID, FinishTime, p->m_aCpCurrent);
@@ -147,9 +147,9 @@ void CGameControllerRACE::OnRaceEnd(int ID, int FinishTime)
 	int To = g_Config.m_SvShowTimes ? -1 : ID;
 	GameServer()->SendChat(-1, CHAT_ALL, To, aBuf);
 
-	if(Improved < 0)
+	if(Improved > 0)
 	{
-		str_format(aBuf, sizeof(aBuf), "New record: -%d.%03d second(s) better", abs(Improved) / 1000, abs(Improved) % 1000);
+		str_format(aBuf, sizeof(aBuf), "New record: %d.%03d second(s) better", Improved / 1000, Improved % 1000);
 		GameServer()->SendChat(-1, CHAT_ALL, To, aBuf);
 	}
 }

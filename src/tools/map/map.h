@@ -1,7 +1,7 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
-#ifndef GAME_EDITOR_EDITOR_H
-#define GAME_EDITOR_EDITOR_H
+#ifndef GAME_TOOLS_MAP_H
+#define GAME_TOOLS_MAP_H
 
 #include <math.h>
 
