@@ -427,7 +427,12 @@ bool CGameContext::IsPureTuning() const
 	// Tuning.m_PlayerCollision = 0;
 	// Tuning.m_PlayerHooking = 0;
 
-	return mem_comp(&Tuning, &m_Tuning, sizeof(Tuning)) == 0;
+	// ddrace: allow any variation of player_hooking and player_collision
+	for(Tuning.m_PlayerCollision = 0; Tuning.m_PlayerCollision <= 1; Tuning.m_PlayerCollision = Tuning.m_PlayerCollision + 1)
+		for(Tuning.m_PlayerHooking = 0; Tuning.m_PlayerHooking <= 1; Tuning.m_PlayerHooking = Tuning.m_PlayerHooking + 1)
+			if(mem_comp(&Tuning, &m_Tuning, sizeof(Tuning)) == 0)
+				return true;
+	return false;
 }
 
 void CGameContext::CheckPureTuning()
