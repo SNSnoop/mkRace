@@ -781,7 +781,7 @@ bool CCharacter::TakeDamage(vec2 Force, vec2 Source, int Dmg, int From, int Weap
 	if(From == m_pPlayer->GetCID())
 		Dmg = max(1, Dmg/2);
 
-	int OldHealth = m_Health, OldArmor = m_Armor;
+	int OldHealth = m_Health;//, OldArmor = m_Armor;
 	if(Dmg)
 	{
 		if(m_Armor)
@@ -808,7 +808,8 @@ bool CCharacter::TakeDamage(vec2 Force, vec2 Source, int Dmg, int From, int Weap
 	}
 
 	// create healthmod indicator
-	GameServer()->CreateDamage(m_Pos, m_pPlayer->GetCID(), Source, OldHealth-m_Health, OldArmor-m_Armor, From == m_pPlayer->GetCID());
+	// ddr: no damage indicator
+	// GameServer()->CreateDamage(m_Pos, m_pPlayer->GetCID(), Source, OldHealth-m_Health, OldArmor-m_Armor, From == m_pPlayer->GetCID());
 	m_Health = OldHealth;
 
 	// do damage Hit sound
