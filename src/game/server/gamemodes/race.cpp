@@ -114,7 +114,7 @@ void CGameControllerRACE::OnRaceStart(int ID)
 	if(p->m_RaceState != RACE_NONE)
 	{
 		// reset pickups
-		if(!pChr->HasWeapon(WEAPON_GRENADE))
+		if(!pChr->GetWeaponGot(WEAPON_GRENADE))
 			ResetPickups(ID);
 	}
 	
@@ -187,7 +187,7 @@ void CGameControllerRACE::OnPhysicsStep(int ID, vec2 Pos, float IntraTick)
 bool CGameControllerRACE::CanStartRace(int ID) const
 {
 	CCharacter *pChr = GameServer()->GetPlayerChar(ID);
-	bool AllowRestart = g_Config.m_SvAllowRestartOld && !pChr->HasWeapon(WEAPON_GRENADE) && !pChr->Armor();
+	bool AllowRestart = g_Config.m_SvAllowRestartOld && !pChr->GetWeaponGot(WEAPON_GRENADE) && !pChr->Armor();
 	return (m_aRace[ID].m_RaceState == RACE_NONE || AllowRestart) && GameServer()->IsPureTuning();
 }
 

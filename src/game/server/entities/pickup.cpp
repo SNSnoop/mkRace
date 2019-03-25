@@ -59,25 +59,32 @@ void CPickup::Tick()
 		switch (m_Type)
 		{
 			case PICKUP_HEALTH:
-				if(pChr->IncreaseHealth(1))
-				{
-					Picked = true;
-					GameServer()->CreateSound(m_Pos, SOUND_PICKUP_HEALTH, CmaskOne(ClientID));
-				}
+				if(pChr->Freeze()) GameServer()->CreateSound(m_Pos, SOUND_PICKUP_HEALTH, CmaskOne(ClientID));
 				break;
 
 			case PICKUP_ARMOR:
-				if(pChr->IncreaseArmor(1))
+				if(!pChr->m_FreezeTime && pChr->GetActiveWeapon() >= WEAPON_SHOTGUN)
+					pChr->SetActiveWeapon(WEAPON_HAMMER);
+				for(int i = WEAPON_SHOTGUN; i < NUM_WEAPONS; i++)
 				{
-					Picked = true;
-					GameServer()->CreateSound(m_Pos, SOUND_PICKUP_ARMOR, CmaskOne(ClientID));
+					if(pChr->GetWeaponGot(i))
+					{
+						if(!(pChr->m_FreezeTime && i == WEAPON_NINJA))
+						{
+							pChr->SetWeaponGot(i, false);
+							pChr->SetWeaponAmmo(i, 0);
+							GameServer()->CreateSound(m_Pos, SOUND_PICKUP_ARMOR, CmaskOne(ClientID));
+						}
+					}
 				}
+				pChr->SetNinjaActivationDir(vec2(0,0));
+				pChr->SetNinjaActivationTick(-500);
+				pChr->SetNinjaCurrentMoveTime(0);
 				break;
 
 			case PICKUP_GRENADE:
 				if(pChr->GiveWeapon(WEAPON_GRENADE, g_pData->m_Weapons.m_aId[WEAPON_GRENADE].m_Maxammo))
 				{
-					Picked = true;
 					GameServer()->CreateSound(m_Pos, SOUND_PICKUP_GRENADE, CmaskOne(ClientID));
 					if(pChr->GetPlayer())
 						GameServer()->SendWeaponPickup(pChr->GetPlayer()->GetCID(), WEAPON_GRENADE);
@@ -86,7 +93,6 @@ void CPickup::Tick()
 			case PICKUP_SHOTGUN:
 				if(pChr->GiveWeapon(WEAPON_SHOTGUN, g_pData->m_Weapons.m_aId[WEAPON_SHOTGUN].m_Maxammo))
 				{
-					Picked = true;
 					GameServer()->CreateSound(m_Pos, SOUND_PICKUP_SHOTGUN, CmaskOne(ClientID));
 					if(pChr->GetPlayer())
 						GameServer()->SendWeaponPickup(pChr->GetPlayer()->GetCID(), WEAPON_SHOTGUN);
@@ -95,7 +101,6 @@ void CPickup::Tick()
 			case PICKUP_LASER:
 				if(pChr->GiveWeapon(WEAPON_LASER, g_pData->m_Weapons.m_aId[WEAPON_LASER].m_Maxammo))
 				{
-					Picked = true;
 					GameServer()->CreateSound(m_Pos, SOUND_PICKUP_SHOTGUN, CmaskOne(ClientID));
 					if(pChr->GetPlayer())
 						GameServer()->SendWeaponPickup(pChr->GetPlayer()->GetCID(), WEAPON_LASER);
@@ -104,7 +109,6 @@ void CPickup::Tick()
 
 			case PICKUP_NINJA:
 				{
-					Picked = true;
 					// activate ninja on target player
 					pChr->GiveNinja();
 

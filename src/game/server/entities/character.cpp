@@ -99,11 +99,11 @@ bool CCharacter::Unfreeze()
 			 {
 				 m_aWeapons[i].m_Ammo = -1;
 			 }
-		if(!m_aWeapons[m_Core.m_ActiveWeapon].m_Got)
-			m_Core.m_ActiveWeapon = WEAPON_GUN;
+		if(!m_aWeapons[m_ActiveWeapon].m_Got)
+			m_ActiveWeapon = WEAPON_GUN;
 		m_FreezeTime = 0;
 		m_FreezeTick = 0;
-		if (m_Core.m_ActiveWeapon==WEAPON_HAMMER) m_ReloadTimer = 0;
+		if (m_ActiveWeapon==WEAPON_HAMMER) m_ReloadTimer = 0;
 		return true;
 	}
 	return false;
@@ -245,7 +245,7 @@ void CCharacter::FireWeapon()
 	if(m_ReloadTimer != 0)
 		return;
 
-	DoWeaponSwitch();
+	//DoWeaponSwitch();
 	vec2 Direction = normalize(vec2(m_LatestInput.m_TargetX, m_LatestInput.m_TargetY));
 
 	bool FullAuto = false;
@@ -265,7 +265,7 @@ void CCharacter::FireWeapon()
 		return;
 	
 	// check if in freeze (allow gun to be fired anyways)
-	if(!m_aWeapons[m_Core.m_ActiveWeapon].m_Ammo && m_ActiveWeapon != WEAPON_GUN)
+	if(!m_aWeapons[m_ActiveWeapon].m_Ammo && m_ActiveWeapon != WEAPON_GUN)
 	{
 		// Timer stuff to avoid shrieking orchestra
 		if(m_PainSoundTimer<=0)

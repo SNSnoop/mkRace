@@ -68,7 +68,6 @@ public:
 
 	class CPlayer *GetPlayer() { return m_pPlayer; }
 
-	bool HasWeapon(int Weapon) const { return m_aWeapons[Weapon].m_Got; }
 	int Armor() const { return m_Armor; }
 
 	// only for debugging... do not modify the position outside of gamecore!
@@ -84,8 +83,8 @@ public:
 	int m_FreezeTick;
 	int GetLastWeapon() { return m_LastWeapon; };
 	void SetLastWeapon(int LastWeap) {m_LastWeapon = LastWeap; };
-	int GetActiveWeapon() { return m_Core.m_ActiveWeapon; };
-	void SetActiveWeapon(int ActiveWeap) {m_Core.m_ActiveWeapon = ActiveWeap; };
+	int GetActiveWeapon() { return m_ActiveWeapon; };
+	void SetActiveWeapon(int ActiveWeap) {m_ActiveWeapon = ActiveWeap; };
 	bool GetWeaponGot(int Type) { return m_aWeapons[Type].m_Got; };
 	void SetWeaponGot(int Type, bool Value) { m_aWeapons[Type].m_Got = Value; };
 	int GetWeaponAmmo(int Type) { return m_aWeapons[Type].m_Ammo; };
