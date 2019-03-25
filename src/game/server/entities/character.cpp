@@ -13,8 +13,6 @@
 #include "laser.h"
 #include "projectile.h"
 
-const int NinjaDuration = 3000; // 3s
-
 //input count
 struct CInputCount
 {
@@ -91,23 +89,24 @@ bool CCharacter::Spawn(CPlayer *pPlayer, vec2 Pos)
 	return true;
 }
 
-void CCharacter::Unfreeze()
+bool CCharacter::Unfreeze()
 {
-// 	char aBuf[64];
-// 	str_format(aBuf, sizeof(aBuf), "unfrozen %d", m_pPlayer->GetCID());
-// 	GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "game", aBuf);
-
-	if(!m_Frozen)
-		return;
-
-	m_Frozen = false;
-	m_Ninja.m_ActivationTick = 0;
-	if(m_aWeapons[WEAPON_NINJA].m_Got)
-		SetWeapon(m_LastWeapon);
-	m_aWeapons[WEAPON_NINJA].m_Got = false;
-	m_aWeapons[WEAPON_NINJA].m_Ammo = 0;
-
-	GameServer()->SendTuningParams(m_pPlayer->GetCID());
+	if (m_FreezeTime > 0)
+	{
+		m_Armor=10;
+		for(int i=0;i<NUM_WEAPONS;i++)
+			if(m_aWeapons[i].m_Got)
+			 {
+				 m_aWeapons[i].m_Ammo = -1;
+			 }
+		if(!m_aWeapons[m_Core.m_ActiveWeapon].m_Got)
+			m_Core.m_ActiveWeapon = WEAPON_GUN;
+		m_FreezeTime = 0;
+		m_FreezeTick = 0;
+		if (m_Core.m_ActiveWeapon==WEAPON_HAMMER) m_ReloadTimer = 0;
+		return true;
+	}
+	return false;
 }
 
 void CCharacter::GetCustomTuning(CTuningParams* Tuning) const
@@ -161,30 +160,6 @@ void CCharacter::HandleNinja()
 {
 	if(m_ActiveWeapon != WEAPON_NINJA)
 		return;
-
-
-	if ((Server()->Tick() - m_Ninja.m_ActivationTick) > (NinjaDuration * Server()->TickSpeed() / 1000))
-	{
-		// time's up, return
-		m_aWeapons[WEAPON_NINJA].m_Got = false;
-		m_ActiveWeapon = m_LastWeapon;
-		
-		// reset velocity
-		if(m_Ninja.m_CurrentMoveTime > 0)
-			m_Core.m_Vel = m_Ninja.m_ActivationDir*m_Ninja.m_OldVelAmount;
-
-		SetWeapon(m_ActiveWeapon);
-		return;
-	}
-
-	// indicator every second
-	if (Server()->Tick() - m_Ninja.m_IndicatorTick > Server()->TickSpeed()) // more than 1s elapsed
-	{
-		int TimeSinceFrozen = (Server()->Tick() - m_Ninja.m_ActivationTick + Server()->TickSpeed()/5)/Server()->TickSpeed();
-		FreezeIndicator(clamp(3 - TimeSinceFrozen, 0, 3));
-		m_Ninja.m_IndicatorTick = Server()->Tick();
-	}
-
 
 	// force ninja Weapon
 	SetWeapon(WEAPON_NINJA);
@@ -288,16 +263,15 @@ void CCharacter::FireWeapon()
 
 	if(!WillFire)
 		return;
-
-	// check for ammo
-	if(!m_aWeapons[m_ActiveWeapon].m_Ammo)
+	
+	// check if in freeze (allow gun to be fired anyways)
+	if(!m_aWeapons[m_Core.m_ActiveWeapon].m_Ammo && m_ActiveWeapon != WEAPON_GUN)
 	{
-		// 125ms is a magical limit of how fast a human can click
-		m_ReloadTimer = 125 * Server()->TickSpeed() / 1000;
-		if(m_LastNoAmmoSound+Server()->TickSpeed() <= Server()->Tick())
+		// Timer stuff to avoid shrieking orchestra
+		if(m_PainSoundTimer<=0)
 		{
-			GameServer()->CreateSound(m_Pos, SOUND_WEAPON_NOAMMO, CmaskRace(GameServer(), m_pPlayer->GetCID()));
-			m_LastNoAmmoSound = Server()->Tick();
+				m_PainSoundTimer = 1 * Server()->TickSpeed();
+				GameServer()->CreateSound(m_Pos, SOUND_PLAYER_PAIN_LONG, CmaskRace(GameServer(), m_pPlayer->GetCID()));
 		}
 		return;
 	}
@@ -386,12 +360,19 @@ void CCharacter::FireWeapon()
 
 		case WEAPON_GRENADE:
 		{
-			new CProjectile(GameWorld(), WEAPON_GRENADE,
+			new CProjectile(
+				GameWorld(),
+				WEAPON_GRENADE,
 				m_pPlayer->GetCID(),
 				ProjStartPos,
 				Direction,
 				(int)(Server()->TickSpeed()*GameServer()->Tuning()->m_GrenadeLifetime),
-				g_pData->m_Weapons.m_Grenade.m_pBase->m_Damage, true, 0, SOUND_GRENADE_EXPLODE, WEAPON_GRENADE);
+				g_pData->m_Weapons.m_Grenade.m_pBase->m_Damage,
+				true,
+				0,
+				SOUND_GRENADE_EXPLODE,
+				WEAPON_GRENADE
+				);
 
 			GameServer()->CreateSound(m_Pos, SOUND_GRENADE_FIRE, CmaskRace(GameServer(), m_pPlayer->GetCID()));
 		} break;
@@ -429,6 +410,9 @@ void CCharacter::HandleWeapons()
 {
 	//ninja
 	HandleNinja();
+	
+	if(m_PainSoundTimer > 0)
+		m_PainSoundTimer--;
 
 	// check reload timer
 	if(m_ReloadTimer)
@@ -489,8 +473,7 @@ void CCharacter::GiveNinja()
 		m_LastWeapon = m_ActiveWeapon;
 	m_ActiveWeapon = WEAPON_NINJA;
 
-	FreezeIndicator(3);
-	// GameServer()->CreateSound(m_Pos, SOUND_PICKUP_NINJA, CmaskRace(GameServer(), m_pPlayer->GetCID()));
+	GameServer()->CreateSound(m_Pos, SOUND_PICKUP_NINJA, CmaskRace(GameServer(), m_pPlayer->GetCID()));
 }
 
 void CCharacter::SetEmote(int Emote, int Tick)
@@ -559,6 +542,8 @@ void CCharacter::ResetInput()
 
 void CCharacter::Tick()
 {
+	DDRaceTick();
+	
 	m_Core.m_Input = m_Input;
 	m_Core.Tick(true);
 
@@ -739,28 +724,30 @@ void CCharacter::Die(int Killer, int Weapon)
 	GameServer()->CreateDeath(m_Pos, m_pPlayer->GetCID());
 }
 
-void CCharacter::Freeze()
+bool CCharacter::Freeze(int Seconds)
 {
-	// this is for auto unfreeze after 3 secs
-	m_pPlayer->m_FreezeTick = Server()->Tick();
-
-	if(m_Frozen) // already frozen
+	if ((Seconds <= 0 || m_FreezeTime == -1 || m_FreezeTime > Seconds * Server()->TickSpeed()) && Seconds != -1)
+		 return false;
+	if (m_FreezeTick < Server()->Tick() - Server()->TickSpeed() || Seconds == -1)
 	{
-		// if we are only frozen, only refresh the freezetick
-		m_Ninja.m_ActivationTick = Server()->Tick();
-		// m_Ninja.m_IndicatorTick = Server()->Tick();
-		return;
+		for(int i = 0; i < NUM_WEAPONS; i++)
+			if(m_aWeapons[i].m_Got)
+			 {
+				 m_aWeapons[i].m_Ammo = 0;
+			 }
+		m_Armor = 0;
+		m_FreezeTime = Seconds == -1 ? Seconds : Seconds * Server()->TickSpeed();
+		m_FreezeTick = Server()->Tick();
+		m_Ninja.m_ActivationTick = m_FreezeTick;
+		return true;
 	}
-	m_Frozen = true;
+	
+	return false;
+}
 
-	ResetInput();
-	GameServer()->SendTuningParams(m_pPlayer->GetCID()); // must be called after m_Frozen = true
-
-	// a nice sound
-	GameServer()->CreateSound(m_Pos, SOUND_LASER_BOUNCE, CmaskRace(GameServer(), m_pPlayer->GetCID()));
-
-	// switch to ninja
-	GiveNinja();
+bool CCharacter::Freeze()
+{
+	return Freeze(g_Config.m_SvFreezeDelay);
 }
 
 void CCharacter::FreezeIndicator(unsigned Amount)
@@ -770,87 +757,7 @@ void CCharacter::FreezeIndicator(unsigned Amount)
 
 bool CCharacter::TakeDamage(vec2 Force, vec2 Source, int Dmg, int From, int Weapon)
 {
-	// if(From == m_pPlayer->GetCID())
 	m_Core.m_Vel += Force;
-
-	// if(GameServer()->m_pController->IsFriendlyFire(m_pPlayer->GetCID(), From) || (From == m_pPlayer->GetCID() && !g_Config.m_SvRocketJumpDamage))
-	// 	return false;
-
-
-	// m_pPlayer only inflicts half damage on self
-	if(From == m_pPlayer->GetCID())
-		Dmg = max(1, Dmg/2);
-
-	int OldHealth = m_Health;//, OldArmor = m_Armor;
-	if(Dmg)
-	{
-		if(m_Armor)
-		{
-			if(Dmg > 1)
-			{
-				m_Health--;
-				Dmg--;
-			}
-
-			if(Dmg > m_Armor)
-			{
-				Dmg -= m_Armor;
-				m_Armor = 0;
-			}
-			else
-			{
-				m_Armor -= Dmg;
-				Dmg = 0;
-			}
-		}
-
-		m_Health -= Dmg;
-	}
-
-	// create healthmod indicator
-	// ddr: no damage indicator
-	// GameServer()->CreateDamage(m_Pos, m_pPlayer->GetCID(), Source, OldHealth-m_Health, OldArmor-m_Armor, From == m_pPlayer->GetCID());
-	m_Health = OldHealth;
-
-	// do damage Hit sound
-	/*
-	if(From >= 0 && From != m_pPlayer->GetCID() && GameServer()->m_apPlayers[From])
-	{
-		int64 Mask = CmaskOne(From);
-		for(int i = 0; i < MAX_CLIENTS; i++)
-		{
-			if(GameServer()->m_apPlayers[i] && (GameServer()->m_apPlayers[i]->GetTeam() == TEAM_SPECTATORS ||  GameServer()->m_apPlayers[i]->m_DeadSpecMode) &&
-				GameServer()->m_apPlayers[i]->GetSpectatorID() == From)
-				Mask |= CmaskOne(i);
-		}
-		GameServer()->CreateSound(GameServer()->m_apPlayers[From]->m_ViewPos, SOUND_HIT, Mask);
-	}
-	*/
-
-	// check for death
-	if(m_Health <= 0)
-	{
-		Die(From, Weapon);
-
-		// set attacker's face to happy (taunt!)
-		if (From >= 0 && From != m_pPlayer->GetCID() && GameServer()->m_apPlayers[From])
-		{
-			CCharacter *pChr = GameServer()->m_apPlayers[From]->GetCharacter();
-			if (pChr)
-			{
-				pChr->m_EmoteType = EMOTE_HAPPY;
-				pChr->m_EmoteStop = Server()->Tick() + Server()->TickSpeed();
-			}
-		}
-
-		return false;
-	}
-
-	if (Dmg > 2)
-		GameServer()->CreateSound(m_Pos, SOUND_PLAYER_PAIN_LONG, CmaskRace(GameServer(), m_pPlayer->GetCID()));
-	else
-		GameServer()->CreateSound(m_Pos, SOUND_PLAYER_PAIN_SHORT, CmaskRace(GameServer(), m_pPlayer->GetCID()));
-
 	if(From == m_pPlayer->GetCID())
 	{
 		m_EmoteType = EMOTE_PAIN;
@@ -907,16 +814,27 @@ void CCharacter::Snap(int SnappingClient)
 	pCharacter->m_AttackTick = m_AttackTick;
 
 	pCharacter->m_Direction = m_Input.m_Direction;
+	
+	// change eyes and use ninja graphic if player is freeze
+	if (m_DeepFreeze)
+	{
+		if (pCharacter->m_Emote == EMOTE_NORMAL)
+			pCharacter->m_Emote = EMOTE_PAIN;
+		pCharacter->m_Weapon = WEAPON_NINJA;
+	}
+	else if (m_FreezeTime > 0 || m_FreezeTime == -1)
+	{
+		if (pCharacter->m_Emote == EMOTE_NORMAL)
+			pCharacter->m_Emote = EMOTE_BLINK;
+		pCharacter->m_Weapon = WEAPON_NINJA;
+	}
 
 	if(m_pPlayer->GetCID() == SnappingClient || SnappingClient == -1 ||
 		(!g_Config.m_SvStrictSpectateMode && m_pPlayer->GetCID() == GameServer()->m_apPlayers[SnappingClient]->GetSpectatorID()))
 	{
 		pCharacter->m_Health = m_Health;
 		pCharacter->m_Armor = m_Armor;
-		if(m_ActiveWeapon == WEAPON_NINJA)
-			pCharacter->m_AmmoCount = m_Ninja.m_ActivationTick + NinjaDuration * Server()->TickSpeed() / 1000;
-		else if(m_aWeapons[m_ActiveWeapon].m_Ammo > 0)
-			pCharacter->m_AmmoCount = m_aWeapons[m_ActiveWeapon].m_Ammo;
+		pCharacter->m_AmmoCount =  m_Ninja.m_ActivationTick + g_Config.m_SvFreezeDelay * Server()->TickSpeed();
 	}
 
 	if(pCharacter->m_Emote == EMOTE_NORMAL)
@@ -929,4 +847,28 @@ void CCharacter::Snap(int SnappingClient)
 void CCharacter::PostSnap()
 {
 	m_TriggeredEvents = 0;
+}
+
+void CCharacter::DDRaceTick()
+{
+	//mem_copy(&m_Input, &m_SavedInput, sizeof(m_Input));
+	m_Armor=(m_FreezeTime >= 0)?10-(m_FreezeTime/15):0;
+	if(m_Input.m_Direction != 0 || m_Input.m_Jump != 0)
+		m_LastMove = Server()->Tick();
+
+	if(m_FreezeTime > 0 || m_FreezeTime == -1)
+	{
+		if (m_FreezeTime % Server()->TickSpeed() == Server()->TickSpeed() - 1 || m_FreezeTime == -1)
+		{
+			GameServer()->CreateDamage(m_Pos, m_pPlayer->GetCID(), vec2(1,0), (m_FreezeTime + 1) / Server()->TickSpeed(), 0, 1);
+			m_Ninja.m_IndicatorTick = Server()->Tick();
+		}
+		if(m_FreezeTime > 0)
+			m_FreezeTime--;
+		m_Input.m_Direction = 0;
+		m_Input.m_Jump = 0;
+		m_Input.m_Hook = 0;
+		if (m_FreezeTime == 1)
+			Unfreeze();
+	}
 }

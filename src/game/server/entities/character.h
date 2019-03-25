@@ -56,8 +56,9 @@ public:
 
 	void SetEmote(int Emote, int Tick);
 
-	void Freeze();
-	void Unfreeze();
+	bool Freeze(int Time);
+	bool Freeze();
+	bool Unfreeze();
 
 	bool IsAlive() const { return m_Alive; }
 	bool IsFrozen() const { return m_Frozen; }
@@ -67,7 +68,6 @@ public:
 
 	class CPlayer *GetPlayer() { return m_pPlayer; }
 
-	void SetActiveWeapon(int Weapon) { m_ActiveWeapon = Weapon; }
 	bool HasWeapon(int Weapon) const { return m_aWeapons[Weapon].m_Got; }
 	int Armor() const { return m_Armor; }
 
@@ -75,6 +75,24 @@ public:
 	void SetPos(vec2 Pos) { m_Core.m_Pos = Pos; }
 
 	static void OnPhysicsStep(vec2 Pos, float IntraTick, void *pUserData);
+	
+	//mkRace
+	int m_PainSoundTimer;
+	bool m_DeepFreeze;
+	int m_LastMove;
+	int m_FreezeTime;
+	int m_FreezeTick;
+	int GetLastWeapon() { return m_LastWeapon; };
+	void SetLastWeapon(int LastWeap) {m_LastWeapon = LastWeap; };
+	int GetActiveWeapon() { return m_Core.m_ActiveWeapon; };
+	void SetActiveWeapon(int ActiveWeap) {m_Core.m_ActiveWeapon = ActiveWeap; };
+	bool GetWeaponGot(int Type) { return m_aWeapons[Type].m_Got; };
+	void SetWeaponGot(int Type, bool Value) { m_aWeapons[Type].m_Got = Value; };
+	int GetWeaponAmmo(int Type) { return m_aWeapons[Type].m_Ammo; };
+	void SetWeaponAmmo(int Type, int Value) { m_aWeapons[Type].m_Ammo = Value; };
+	void SetNinjaActivationDir(vec2 ActivationDir) { m_Ninja.m_ActivationDir = ActivationDir; };
+	void SetNinjaActivationTick(int ActivationTick) { m_Ninja.m_ActivationTick = ActivationTick; };
+	void SetNinjaCurrentMoveTime(int CurrentMoveTime) { m_Ninja.m_CurrentMoveTime = CurrentMoveTime; };
 
 private:
 	// player controlling this character
@@ -143,6 +161,8 @@ private:
 	CCharacterCore m_SendCore; // core that we should send
 	CCharacterCore m_ReckoningCore; // the dead reckoning core
 
+	//mkRace
+	void DDRaceTick();
 };
 
 #endif
