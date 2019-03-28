@@ -560,9 +560,6 @@ int CPlayer::Pause(int State, bool Force)
 	if(!m_pCharacter)
 		return 0;
 
-	char aBuf[128];
-	str_format(aBuf, sizeof(aBuf), "Pause(%d)", State);
-	GameServer()->SendChat(-1, CHAT_ALL, m_ClientID, aBuf);
 	if(State != m_Paused)
 	{
 		// Get to wanted state
@@ -583,6 +580,7 @@ int CPlayer::Pause(int State, bool Force)
 		case PAUSE_SPEC:
 			if(g_Config.m_SvPauseMessages)
 			{
+				char aBuf[128];
 				str_format(aBuf, sizeof(aBuf), (State > PAUSE_NONE) ? "'%s' speced" : "'%s' resumed", Server()->ClientName(m_ClientID));
 				GameServer()->SendChat(-1, CHAT_ALL, m_ClientID, aBuf);
 			}

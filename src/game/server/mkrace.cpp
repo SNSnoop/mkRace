@@ -1,8 +1,6 @@
 //mkRace
 #include "gamecontext.h"
-//#include <engine/engine.h>
 #include <engine/shared/config.h>
-//#include <engine/shared/protocol.h>
 #include <game/server/player.h>
 #include <game/server/gamemodes/race.h>
 #include <game/version.h>
@@ -52,11 +50,9 @@ void ToggleSpecPause(IConsole::IResult *pResult, void *pUserData, int PauseType)
 void CGameContext::ConToggleSpec(IConsole::IResult *pResult, void *pUserData)
 {
 	ToggleSpecPause(pResult, pUserData, g_Config.m_SvPauseable ? CPlayer::PAUSE_SPEC : CPlayer::PAUSE_PAUSED);
-	//ToggleSpecPause(pResult, pUserData, CPlayer::PAUSE_SPEC);
 }
 
 void CGameContext::ConTogglePause(IConsole::IResult *pResult, void *pUserData)
 {
 	ToggleSpecPause(pResult, pUserData, CPlayer::PAUSE_PAUSED);
-	//ToggleSpecPause(pResult, pUserData, CPlayer::PAUSE_SPEC);
 }
