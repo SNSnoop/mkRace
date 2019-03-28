@@ -41,6 +41,9 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, bool Dummy)
 	m_ShowOthers = true;
 	m_Paused = PAUSE_NONE;
 	m_LastPause = 0;
+	m_EyeEmote = true;
+	m_DefEmote = EMOTE_NORMAL;
+	m_DefEmoteReset = -1;
 }
 
 CPlayer::~CPlayer()

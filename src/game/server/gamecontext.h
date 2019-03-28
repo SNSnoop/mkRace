@@ -84,6 +84,8 @@ class CGameContext : public IGameServer
 	// mkRace
 	static void ConTogglePause(IConsole::IResult *pResult, void *pUserData);
 	static void ConToggleSpec(IConsole::IResult *pResult, void *pUserData);
+	static void ConSetEyeEmote(IConsole::IResult *pResult, void *pUserData);
+	static void ConEyeEmote(IConsole::IResult *pResult, void *pUserData);
 
 	int m_ChatConsoleClientID;
 

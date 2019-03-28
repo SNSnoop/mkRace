@@ -132,6 +132,10 @@ public:
 	int m_SpectatorID;
 	int64 m_ForcePauseTime;
 	int64 m_LastPause;
+	int64 m_LastEyeEmote;
+	bool m_EyeEmote;
+	int m_DefEmote;
+	int m_DefEmoteReset;
 	void SpectatePlayerName(const char *pName);
 	
 
