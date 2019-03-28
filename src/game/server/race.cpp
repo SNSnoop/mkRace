@@ -122,6 +122,7 @@ void CGameContext::ChatConHelp(IConsole::IResult *pResult, void *pUser)
 	pSelf->m_pChatConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chat", "\"/rank\" shows your rank");
 	pSelf->m_pChatConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chat", "\"/rank NAME\" shows the rank of a specific player");
 	pSelf->m_pChatConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chat", "\"/top5 X\" shows the top 5");
+	pSelf->m_pChatConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chat", "\"/pause /spec\" Toggles pause");
 	// pSelf->m_pChatConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chat", "\"/show_others\" show other players?");
 }
 
@@ -140,6 +141,9 @@ void CGameContext::InitChatConsole()
 	m_pChatConsole->Register("rank", "?r", CFGFLAG_SERVERCHAT, ChatConRank, this, "");
 	// m_pChatConsole->Register("show_others", "", CFGFLAG_SERVERCHAT, ChatConShowOthers, this, "");
 	m_pChatConsole->Register("help", "", CFGFLAG_SERVERCHAT, ChatConHelp, this, "");
+	
+	#define CHAT_COMMAND(name, params, flags, callback, userdata, help) m_pChatConsole->Register(name, params, flags, callback, userdata, help);
+	#include "mkrace.h"
 }
 
 void CGameContext::SendChatResponse(const char *pLine, void *pUser, bool Highlighted)

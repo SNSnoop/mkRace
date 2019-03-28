@@ -39,6 +39,8 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, bool Dummy)
 	m_Spawning = 0;
 
 	m_ShowOthers = true;
+	m_Paused = PAUSE_NONE;
+	m_LastPause = 0;
 }
 
 CPlayer::~CPlayer()
@@ -102,7 +104,16 @@ void CPlayer::Tick()
 		if(m_pCharacter)
 		{
 			if(m_pCharacter->IsAlive())
-				m_ViewPos = m_pCharacter->GetPos();
+			{
+				ProcessPause();
+				if(!m_Paused)
+					m_ViewPos = m_pCharacter->GetPos();
+			}
+			else if(!m_pCharacter->IsPaused())
+			{
+				delete m_pCharacter;
+				m_pCharacter = 0;
+			}
 		}
 		else if(m_Spawning && m_RespawnTick <= Server()->Tick())
 			TryRespawn();
@@ -138,9 +149,9 @@ void CPlayer::PostTick()
 				m_aActLatency[i] = GameServer()->m_apPlayers[i]->m_Latency.m_Min;
 		}
 	}
-
+	
 	// update view pos for spectators and dead players
-	if((m_Team == TEAM_SPECTATORS || m_DeadSpecMode) && m_SpecMode != SPEC_FREEVIEW)
+	if((m_Team == TEAM_SPECTATORS || m_DeadSpecMode/* || m_Paused*/) && m_SpecMode != SPEC_FREEVIEW)
 	{
 		if(m_pSpecFlag)
 			m_ViewPos = m_pSpecFlag->GetPos();
@@ -165,7 +176,7 @@ void CPlayer::Snap(int SnappingClient)
 		pPlayerInfo->m_PlayerFlags |= PLAYERFLAG_READY;
 	if(m_RespawnDisabled && (!GetCharacter() || !GetCharacter()->IsAlive()))
 		pPlayerInfo->m_PlayerFlags |= PLAYERFLAG_DEAD;
-	if(SnappingClient != -1 && (m_Team == TEAM_SPECTATORS || m_DeadSpecMode) && (SnappingClient == m_SpectatorID))
+	if(SnappingClient != -1 && (m_Team == TEAM_SPECTATORS || m_DeadSpecMode/* || m_Paused*/) && (SnappingClient == m_SpectatorID))
 		pPlayerInfo->m_PlayerFlags |= PLAYERFLAG_WATCHING;
 
 	pPlayerInfo->m_Latency = SnappingClient == -1 ? m_Latency.m_Min : GameServer()->m_apPlayers[SnappingClient]->m_aActLatency[m_ClientID];
@@ -174,7 +185,7 @@ void CPlayer::Snap(int SnappingClient)
 	int TimeScore = CurTime ? -(CurTime / 1000) : -9999;
 	pPlayerInfo->m_Score = (g_Config.m_SvShowTimes || SnappingClient == m_ClientID) ? TimeScore : 0;
 
-	if(m_ClientID == SnappingClient && (m_Team == TEAM_SPECTATORS || m_DeadSpecMode))
+	if(m_ClientID == SnappingClient && (m_Team == TEAM_SPECTATORS || m_DeadSpecMode || m_Paused))
 	{
 		CNetObj_SpectatorInfo *pSpectatorInfo = static_cast<CNetObj_SpectatorInfo *>(Server()->SnapNewItem(NETOBJTYPE_SPECTATORINFO, m_ClientID, sizeof(CNetObj_SpectatorInfo)));
 		if(!pSpectatorInfo)
@@ -245,7 +256,7 @@ void CPlayer::OnPredictedInput(CNetObj_PlayerInput *NewInput)
 	if((m_PlayerFlags&PLAYERFLAG_CHATTING) && (NewInput->m_PlayerFlags&PLAYERFLAG_CHATTING))
 		return;
 
-	if(m_pCharacter)
+	if(m_pCharacter && !m_Paused)
 		m_pCharacter->OnPredictedInput(NewInput);
 }
 
@@ -257,6 +268,9 @@ void CPlayer::OnDirectInput(CNetObj_PlayerInput *NewInput)
 		return;
 	}
 
+	//if(((!m_pCharacter && m_Team == TEAM_SPECTATORS) || m_Paused) && m_SpectatorID == SPEC_FREEVIEW)
+		m_ViewPos = vec2(NewInput->m_TargetX, NewInput->m_TargetY);
+
 	if(NewInput->m_PlayerFlags&PLAYERFLAG_CHATTING)
 	{
 		// skip the input if chat is active
@@ -264,8 +278,8 @@ void CPlayer::OnDirectInput(CNetObj_PlayerInput *NewInput)
 			return;
 
 		// reset input
-		if(m_pCharacter)
-			m_pCharacter->ResetInput();
+		//if(m_pCharacter)
+		//	m_pCharacter->ResetInput();
 
 		m_PlayerFlags = NewInput->m_PlayerFlags;
 		return;
@@ -273,8 +287,10 @@ void CPlayer::OnDirectInput(CNetObj_PlayerInput *NewInput)
 
 	m_PlayerFlags = NewInput->m_PlayerFlags;
 
-	if(m_pCharacter)
+	if(m_pCharacter && !m_Paused)
 		m_pCharacter->OnDirectInput(NewInput);
+	//else
+	//	m_pCharacter->ResetInput();
 
 	if(!m_pCharacter && m_Team != TEAM_SPECTATORS && (NewInput->m_Fire&1))
 		Respawn();
@@ -515,4 +531,88 @@ void CPlayer::TryRespawn()
 bool CPlayer::ShowOthers() const
 {
 	return g_Config.m_SvShowOthers && (m_ShowOthers || m_Team == TEAM_SPECTATORS);
+}
+
+
+// mkRace
+void CPlayer::ProcessPause()
+{
+	if(m_ForcePauseTime && m_ForcePauseTime < Server()->Tick())
+	{
+		m_ForcePauseTime = 0;
+		Pause(PAUSE_NONE, true);
+	}
+
+	if(m_Paused == PAUSE_SPEC && !m_pCharacter->IsPaused() && m_pCharacter->IsGrounded() && m_pCharacter->m_Pos == m_pCharacter->m_PrevPos)
+	{
+		m_pCharacter->Pause(true);
+		GameServer()->CreateDeath(m_pCharacter->m_Pos, m_ClientID);
+		GameServer()->CreateSound(m_pCharacter->m_Pos, SOUND_PLAYER_DIE, CmaskRace(GameServer(), GetCID()));
+	}
+}
+
+int CPlayer::Pause(int State, bool Force)
+{
+	//GameServer()->SendChat(-1, CHAT_ALL, m_ClientID, "Pause()");
+	if(State < PAUSE_NONE || State > PAUSE_SPEC) // Invalid pause state passed
+		return 0;
+
+	if(!m_pCharacter)
+		return 0;
+
+	char aBuf[128];
+	str_format(aBuf, sizeof(aBuf), "Pause(%d)", State);
+	GameServer()->SendChat(-1, CHAT_ALL, m_ClientID, aBuf);
+	if(State != m_Paused)
+	{
+		// Get to wanted state
+		switch(State){
+		case PAUSE_PAUSED:
+		case PAUSE_NONE:
+			if(m_pCharacter->IsPaused()) // First condition might be unnecessary
+			{
+				if(!Force && m_LastPause && m_LastPause + g_Config.m_SvSpecFrequency * Server()->TickSpeed() > Server()->Tick())
+				{
+					GameServer()->SendChat(-1, CHAT_ALL, m_ClientID, "Can't /spec that quickly.");
+					return m_Paused; // Do not update state. Do not collect $200
+				}
+				m_pCharacter->Pause(false);
+				GameServer()->CreatePlayerSpawn(m_pCharacter->m_Pos, CmaskRace(GameServer(), GetCID()));
+			}
+			// fall-thru
+		case PAUSE_SPEC:
+			if(g_Config.m_SvPauseMessages)
+			{
+				str_format(aBuf, sizeof(aBuf), (State > PAUSE_NONE) ? "'%s' speced" : "'%s' resumed", Server()->ClientName(m_ClientID));
+				GameServer()->SendChat(-1, CHAT_ALL, m_ClientID, aBuf);
+			}
+			break;
+		}
+
+		// Update state
+		m_Paused = State;
+		m_LastPause = Server()->Tick();
+	}
+
+	return m_Paused;
+}
+
+int CPlayer::IsPaused()
+{
+	return m_ForcePauseTime ? m_ForcePauseTime : -1 * m_Paused;
+}
+
+void CPlayer::SpectatePlayerName(const char *pName)
+{
+	if(!pName)
+		return;
+
+	for(int i = 0; i < MAX_CLIENTS; ++i)
+	{
+		if(i != m_ClientID && Server()->ClientIngame(i) && !str_comp(pName, Server()->ClientName(i)))
+		{
+			m_SpectatorID = i;
+			return;
+		}
+	}
 }

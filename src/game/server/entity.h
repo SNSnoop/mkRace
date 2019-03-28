@@ -41,16 +41,16 @@ private:
 protected:
 	/* State */
 
+	/* Getters */
+	int GetID() const					{ return m_ID; }
+
+public:
 	/*
 		Variable: m_Pos
 			Contains the current posititon of the entity.
 	*/
 	vec2 m_Pos;
 
-	/* Getters */
-	int GetID() const					{ return m_ID; }
-
-public:
 	/* Constructor */
 	CEntity(CGameWorld *pGameWorld, int Objtype, vec2 Pos, int ProximityRadius=0);
 

@@ -542,6 +542,9 @@ void CCharacter::ResetInput()
 
 void CCharacter::Tick()
 {
+	if (m_Paused)
+		return;
+	
 	DDRaceTick();
 	
 	m_Core.m_Input = m_Input;
@@ -872,3 +875,36 @@ void CCharacter::DDRaceTick()
 			Unfreeze();
 	}
 }
+
+void CCharacter::Pause(bool Pause)
+{
+	m_Paused = Pause;
+	if(Pause)
+	{
+		GameServer()->m_World.m_Core.m_apCharacters[m_pPlayer->GetCID()] = 0;
+		GameServer()->m_World.RemoveEntity(this);
+
+		if (m_Core.m_HookedPlayer != -1) // Keeping hook would allow cheats
+		{
+			m_Core.m_HookedPlayer = -1;
+			m_Core.m_HookState = HOOK_RETRACTED;
+			//m_Core.m_TriggeredEvents |= COREEVENT_HOOK_RETRACT;
+		}
+	}
+	else
+	{
+		m_Core.m_Vel = vec2(0,0);
+		GameServer()->m_World.m_Core.m_apCharacters[m_pPlayer->GetCID()] = &m_Core;
+		GameServer()->m_World.InsertEntity(this);
+	}
+}
+/*
+int CCharacter::Team()
+{
+	return Teams()->m_Core.Team(m_pPlayer->GetCID());
+}
+
+CGameTeams* CCharacter::Teams()
+{
+	return &((CGameControllerDDRace*)GameServer()->m_pController)->m_Teams;
+}*/

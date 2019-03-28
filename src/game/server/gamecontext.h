@@ -80,6 +80,10 @@ class CGameContext : public IGameServer
 	static void ChatConRank(IConsole::IResult *pResult, void *pUser);
 	static void ChatConShowOthers(IConsole::IResult *pResult, void *pUser);
 	static void ChatConHelp(IConsole::IResult *pResult, void *pUser);
+	
+	// mkRace
+	static void ConTogglePause(IConsole::IResult *pResult, void *pUserData);
+	static void ConToggleSpec(IConsole::IResult *pResult, void *pUserData);
 
 	int m_ChatConsoleClientID;
 

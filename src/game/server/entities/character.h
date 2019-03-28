@@ -8,6 +8,7 @@
 #include <game/gamecore.h>
 #include <game/server/entity.h>
 
+//class CGameTeams;
 
 class CCharacter : public CEntity
 {
@@ -75,12 +76,17 @@ public:
 
 	static void OnPhysicsStep(vec2 Pos, float IntraTick, void *pUserData);
 	
-	//mkRace
+	// mkRace
+	//CGameTeams* Teams();
 	int m_PainSoundTimer;
 	bool m_DeepFreeze;
 	int m_LastMove;
 	int m_FreezeTime;
 	int m_FreezeTick;
+	vec2 m_PrevPos;
+	//int Team();
+	void Pause(bool Pause);
+	bool IsPaused() const { return m_Paused; }
 	int GetLastWeapon() { return m_LastWeapon; };
 	void SetLastWeapon(int LastWeap) {m_LastWeapon = LastWeap; };
 	int GetActiveWeapon() { return m_ActiveWeapon; };
@@ -160,7 +166,8 @@ private:
 	CCharacterCore m_SendCore; // core that we should send
 	CCharacterCore m_ReckoningCore; // the dead reckoning core
 
-	//mkRace
+	// mkRace
+	bool m_Paused;
 	void DDRaceTick();
 };
 

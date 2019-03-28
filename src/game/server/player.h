@@ -118,6 +118,22 @@ public:
 		int m_Min;
 		int m_Max;
 	} m_Latency;
+	
+	// mkRace
+	enum
+	{
+		PAUSE_NONE=0,
+		PAUSE_PAUSED,
+		PAUSE_SPEC
+	};
+	void ProcessPause();
+	int Pause(int State, bool Force);
+	int IsPaused();
+	int m_SpectatorID;
+	int64 m_ForcePauseTime;
+	int64 m_LastPause;
+	void SpectatePlayerName(const char *pName);
+	
 
 private:
 	CCharacter *m_pCharacter;
@@ -134,11 +150,13 @@ private:
 
 	// used for spectator mode
 	int m_SpecMode;
-	int m_SpectatorID;
 	class CFlag *m_pSpecFlag;
 	bool m_ActiveSpecSwitch;
 
 	bool m_ShowOthers;
+	
+	// mkRace
+	int m_Paused;
 };
 
 #endif

@@ -60,7 +60,7 @@ class CConsole : public IConsole
 	static void ConModCommandStatus(IConsole::IResult *pResult, void *pUser);
 
 	void ExecuteFileRecurse(const char *pFilename);
-	void ExecuteLineStroked(int Stroke, const char *pStr);
+	void ExecuteLineStroked(int Stroke, const char *pStr, int ClientID = -1, bool InterpretSemicolons = true);
 
 	struct
 	{
@@ -171,7 +171,7 @@ public:
 	virtual void StoreCommands(bool Store);
 
 	virtual bool LineIsValid(const char *pStr);
-	virtual void ExecuteLine(const char *pStr);
+	virtual void ExecuteLine(const char *pStr, int ClientID = -1, bool InterpretSemicolons = true);
 	virtual void ExecuteLineFlag(const char *pStr, int FlagMask);
 	virtual void ExecuteFile(const char *pFilename);
 
@@ -180,6 +180,9 @@ public:
 	virtual void Print(int Level, const char *pFrom, const char *pStr, bool Highlighted=false);
 
 	void SetAccessLevel(int AccessLevel) { m_AccessLevel = clamp(AccessLevel, (int)(ACCESS_LEVEL_ADMIN), (int)(ACCESS_LEVEL_MOD)); }
+	
+	// mkRace
+	void SetFlagMask(int FlagMask) { m_FlagMask = FlagMask; }
 };
 
 #endif

@@ -41,6 +41,7 @@ public:
 		virtual const char *GetString(unsigned Index) = 0;
 
 		int NumArguments() const { return m_NumArgs; }
+		int m_ClientID;
 	};
 
 	class CCommandInfo
@@ -77,9 +78,9 @@ public:
 	virtual void StoreCommands(bool Store) = 0;
 
 	virtual bool LineIsValid(const char *pStr) = 0;
-	virtual void ExecuteLine(const char *pStr) = 0;
+	virtual void ExecuteLine(const char *Sptr, int ClientID = -1, bool InterpretSemicolons = true) = 0;
 	virtual void ExecuteLineFlag(const char *pStr, int FlagMask) = 0;
-	virtual void ExecuteLineStroked(int Stroke, const char *pStr) = 0;
+	virtual void ExecuteLineStroked(int Stroke, const char *pStr, int ClientID = -1, bool InterpretSemicolons = true) = 0;
 	virtual void ExecuteFile(const char *pFilename) = 0;
 
 	virtual int RegisterPrintCallback(int OutputLevel, FPrintCallback pfnPrintCallback, void *pUserData) = 0;
@@ -87,6 +88,9 @@ public:
 	virtual void Print(int Level, const char *pFrom, const char *pStr, bool Highlighted=false) = 0;
 
 	virtual void SetAccessLevel(int AccessLevel) = 0;
+	
+	// mkRace
+	virtual void SetFlagMask(int FlagMask) = 0;
 };
 
 extern IConsole *CreateConsole(int FlagMask);

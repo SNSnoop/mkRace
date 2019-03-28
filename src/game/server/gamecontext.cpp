@@ -838,7 +838,11 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			if(pMsg->m_pMessage[0] == '/')
 			{
 				m_ChatConsoleClientID = ClientID;
-				m_pChatConsole->ExecuteLine(pMsg->m_pMessage + 1);
+				m_pChatConsole->SetFlagMask(CFGFLAG_SERVERCHAT);
+				//m_pChatConsole->ExecuteLine(pMsg->m_pMessage + 1);
+				m_pChatConsole->ExecuteLine(pMsg->m_pMessage + 1, ClientID, false);
+				//Console()->SetFlagMask(CFGFLAG_CHAT);
+				//Console()->ExecuteLine(pMsg->m_pMessage + 1, ClientID, false);
 				m_ChatConsoleClientID = -1;
 			}
 			else
@@ -1587,6 +1591,9 @@ void CGameContext::OnInit()
 	Console()->Chain("sv_scorelimit", ConchainGameinfoUpdate, this);
 	Console()->Chain("sv_timelimit", ConchainGameinfoUpdate, this);
 	Console()->Chain("sv_matches_per_map", ConchainGameinfoUpdate, this);
+	
+	//#define CHAT_COMMAND(name, params, flags, callback, userdata, help) m_pConsole->Register(name, params, flags, callback, userdata, help);
+	//#include "mkrace.h"
 
 	// clamp sv_player_slots to 0..MaxClients
 	if(Server()->MaxClients() < g_Config.m_SvPlayerSlots)
