@@ -154,12 +154,12 @@ void CPlayer::PostTick()
 	}
 	
 	// update view pos for spectators and dead players
-	if((m_Team == TEAM_SPECTATORS || m_DeadSpecMode/* || m_Paused*/) && m_SpecMode != SPEC_FREEVIEW)
+	if((m_Team == TEAM_SPECTATORS || m_DeadSpecMode || m_Paused) && m_SpecMode != SPEC_FREEVIEW)
 	{
 		if(m_pSpecFlag)
 			m_ViewPos = m_pSpecFlag->GetPos();
 		else if (GameServer()->m_apPlayers[m_SpectatorID])
-			m_ViewPos = GameServer()->m_apPlayers[m_SpectatorID]->m_ViewPos;
+			m_ViewPos = GameServer()->m_apPlayers[m_SpectatorID]->GetCharacter()->m_Pos;
 	}
 }
 
@@ -179,7 +179,7 @@ void CPlayer::Snap(int SnappingClient)
 		pPlayerInfo->m_PlayerFlags |= PLAYERFLAG_READY;
 	if(m_RespawnDisabled && (!GetCharacter() || !GetCharacter()->IsAlive()))
 		pPlayerInfo->m_PlayerFlags |= PLAYERFLAG_DEAD;
-	if(SnappingClient != -1 && (m_Team == TEAM_SPECTATORS || m_DeadSpecMode/* || m_Paused*/) && (SnappingClient == m_SpectatorID))
+	if(SnappingClient != -1 && (m_Team == TEAM_SPECTATORS || m_DeadSpecMode || m_Paused) && (SnappingClient == m_SpectatorID))
 		pPlayerInfo->m_PlayerFlags |= PLAYERFLAG_WATCHING;
 
 	pPlayerInfo->m_Latency = SnappingClient == -1 ? m_Latency.m_Min : GameServer()->m_apPlayers[SnappingClient]->m_aActLatency[m_ClientID];
@@ -298,7 +298,7 @@ void CPlayer::OnDirectInput(CNetObj_PlayerInput *NewInput)
 	if(!m_pCharacter && m_Team != TEAM_SPECTATORS && (NewInput->m_Fire&1))
 		Respawn();
 
-	if(!m_pCharacter && m_Team == TEAM_SPECTATORS && (NewInput->m_Fire&1))
+	if(((!m_pCharacter && m_Team == TEAM_SPECTATORS) || m_Paused) && (NewInput->m_Fire&1))
 	{
 		if(!m_ActiveSpecSwitch)
 		{
@@ -315,7 +315,7 @@ void CPlayer::OnDirectInput(CNetObj_PlayerInput *NewInput)
 						m_pSpecFlag = pFlag;
 						m_SpectatorID = -1;
 					}
-					else
+					else if(pChar->GetPlayer()->GetCID() != m_ClientID)
 					{
 						m_SpecMode = SPEC_PLAYER;
 						m_pSpecFlag = 0;
@@ -438,13 +438,15 @@ bool CPlayer::SetSpectatorID(int SpecMode, int SpectatorID)
 				m_SpecMode = SpecMode;
 				return true;
 			}
+			//if(SpectatorID == m_ClientID)
+			//	return false;
 			m_pSpecFlag = 0;
 			m_SpecMode = SpecMode;
 			m_SpectatorID = SpectatorID;
 			return true;
 		}
 	}
-	else if(m_DeadSpecMode)
+	else if(m_DeadSpecMode || m_Paused)
 	{
 		// check if wanted player can be followed
 		if(SpecMode == SPEC_PLAYER && GameServer()->m_apPlayers[SpectatorID] && DeadCanFollow(GameServer()->m_apPlayers[SpectatorID]))
