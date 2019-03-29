@@ -68,8 +68,13 @@ void CGameContext::ChatConInfo(IConsole::IResult *pResult, void *pUser)
 	CGameContext *pSelf = (CGameContext *)pUser;
 
 	char aBuf[128];
-	str_format(aBuf, sizeof(aBuf), "mkRace %s, based on Simple DDRace %s, modified from Race %s (C)Rajh, Redix and Sushi.", MKRACE_VERSION, DDRACE_VERSION, RACE_VERSION);
+	str_format(aBuf, sizeof(aBuf), "mkRace %s made by [SN] Snoop!", MKRACE_VERSION);
 	pSelf->m_pChatConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chat", aBuf);
+	str_format(aBuf, sizeof(aBuf), "Based on Simple DDRace %s by Dune", DDRACE_VERSION);
+	pSelf->m_pChatConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chat", aBuf);
+	str_format(aBuf, sizeof(aBuf), "Which is modified from Race %s (C)Rajh, Redix and Sushi", RACE_VERSION);
+	pSelf->m_pChatConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chat", aBuf);
+	pSelf->m_pChatConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chat", "https://github.com/SNSnoop/mkRace");
 }
 
 void CGameContext::ChatConTop5(IConsole::IResult *pResult, void *pUser)
