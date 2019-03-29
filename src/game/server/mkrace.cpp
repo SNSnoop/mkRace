@@ -150,3 +150,23 @@ void CGameContext::ConEyeEmote(IConsole::IResult *pResult, void *pUserData)
 			pPlayer->m_LastEyeEmote = pSelf->Server()->Tick();
 	}
 }
+
+void CGameContext::ConMe(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *) pUserData;
+	//if (!CheckClientID(pResult->m_ClientID))
+	//	return;
+
+	char aBuf[256 + 24];
+
+	str_format(aBuf, 256 + 24, "'%s' %s",
+			pSelf->Server()->ClientName(pResult->m_ClientID),
+			pResult->GetString(0));
+	if (g_Config.m_SvSlashMe)
+		pSelf->SendChat(-1, CHAT_ALL, -1, aBuf);
+	else
+		pSelf->m_pChatConsole->Print(
+				IConsole::OUTPUT_LEVEL_STANDARD,
+				"me",
+				"/me is disabled on this server");
+}

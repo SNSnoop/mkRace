@@ -86,6 +86,7 @@ class CGameContext : public IGameServer
 	static void ConToggleSpec(IConsole::IResult *pResult, void *pUserData);
 	static void ConSetEyeEmote(IConsole::IResult *pResult, void *pUserData);
 	static void ConEyeEmote(IConsole::IResult *pResult, void *pUserData);
+	static void ConMe(IConsole::IResult *pResult, void *pUserData);
 
 	int m_ChatConsoleClientID;
 
