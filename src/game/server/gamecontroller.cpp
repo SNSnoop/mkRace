@@ -746,14 +746,6 @@ void IGameController::Tick()
 				StartRound();
 				break;
 			case IGS_END_MATCH:
-				// start next match
-				if(m_MatchCount >= m_GameInfo.m_MatchNum-1)
-					CycleMap();
-
-				if(g_Config.m_SvMatchSwap)
-					GameServer()->SwapTeams();
-				m_MatchCount++;
-				StartMatch();
 				break;
 			case IGS_WARMUP_GAME:
 			case IGS_GAME_RUNNING:
@@ -888,87 +880,7 @@ static bool IsSeparator(char c) { return c == ';' || c == ' ' || c == ',' || c =
 
 void IGameController::ChangeMap(const char *pToMap)
 {
-	str_copy(m_aMapWish, pToMap, sizeof(m_aMapWish));
-
-	m_MatchCount = m_GameInfo.m_MatchNum-1;
-	if(m_GameState == IGS_WARMUP_GAME || m_GameState == IGS_WARMUP_USER)
-		SetGameState(IGS_GAME_RUNNING);
-	EndMatch();
-	
-	if(m_GameState != IGS_END_MATCH)
-	{
-		// game could not been ended, force cycle
-		CycleMap();
-	}
-}
-
-void IGameController::CycleMap()
-{
-	if(m_aMapWish[0] != 0)
-	{
-		char aBuf[256];
-		str_format(aBuf, sizeof(aBuf), "rotating map to %s", m_aMapWish);
-		GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "game", aBuf);
-		str_copy(g_Config.m_SvMap, m_aMapWish, sizeof(g_Config.m_SvMap));
-		m_aMapWish[0] = 0;
-		m_MatchCount = 0;
-		return;
-	}
-	if(!str_length(g_Config.m_SvMaprotation))
-		return;
-
-	// handle maprotation
-	const char *pMapRotation = g_Config.m_SvMaprotation;
-	const char *pCurrentMap = g_Config.m_SvMap;
-
-	int CurrentMapLen = str_length(pCurrentMap);
-	const char *pNextMap = pMapRotation;
-	while(*pNextMap)
-	{
-		int WordLen = 0;
-		while(pNextMap[WordLen] && !IsSeparator(pNextMap[WordLen]))
-			WordLen++;
-
-		if(WordLen == CurrentMapLen && str_comp_num(pNextMap, pCurrentMap, CurrentMapLen) == 0)
-		{
-			// map found
-			pNextMap += CurrentMapLen;
-			while(*pNextMap && IsSeparator(*pNextMap))
-				pNextMap++;
-
-			break;
-		}
-
-		pNextMap++;
-	}
-
-	// restart rotation
-	if(pNextMap[0] == 0)
-		pNextMap = pMapRotation;
-
-	// cut out the next map
-	char aBuf[512] = {0};
-	for(int i = 0; i < 511; i++)
-	{
-		aBuf[i] = pNextMap[i];
-		if(IsSeparator(pNextMap[i]) || pNextMap[i] == 0)
-		{
-			aBuf[i] = 0;
-			break;
-		}
-	}
-
-	// skip spaces
-	int i = 0;
-	while(IsSeparator(aBuf[i]))
-		i++;
-
-	m_MatchCount = 0;
-
-	char aBufMsg[256];
-	str_format(aBufMsg, sizeof(aBufMsg), "rotating map to %s", &aBuf[i]);
-	GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "game", aBuf);
-	str_copy(g_Config.m_SvMap, &aBuf[i], sizeof(g_Config.m_SvMap));
+	str_copy(g_Config.m_SvMap, pToMap, sizeof(g_Config.m_SvMap));
 }
 
 // spawn

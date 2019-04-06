@@ -64,8 +64,6 @@ class IGameController
 
 	// map
 	char m_aMapWish[128];
-	
-	void CycleMap();
 
 	// spawn
 	struct CSpawnEval
