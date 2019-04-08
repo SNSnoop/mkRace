@@ -12,21 +12,19 @@ CLayers::CLayers()
 	m_LayersStart = 0;
 	m_pGameGroup = 0;
 	m_pGameLayer = 0;
-	m_pGameExLayer = 0;
-	m_pSettingsLayer = 0;
 	m_pTeleLayer = 0;
-	m_pSpeedupForceLayer = 0;
-	m_pSpeedupAngleLayer = 0;
+	m_pSpeedupLayer = 0;
+	m_pFrontLayer = 0;
+	m_pTuneLayer = 0;
 	m_pMap = 0;
 }
 
 void CLayers::Init(class IKernel *pKernel, IMap *pMap)
 {
-	m_pGameExLayer = 0;
-	m_pSettingsLayer = 0;
 	m_pTeleLayer = 0;
-	m_pSpeedupForceLayer = 0;
-	m_pSpeedupAngleLayer = 0;
+	m_pSpeedupLayer = 0;
+	m_pFrontLayer = 0;
+	m_pTuneLayer = 0;
 
 	m_pMap = pMap ? pMap : pKernel->RequestInterface<IMap>();
 	m_pMap->GetType(MAPITEMTYPE_GROUP, &m_GroupsStart, &m_GroupsNum);
@@ -67,16 +65,38 @@ void CLayers::Init(class IKernel *pKernel, IMap *pMap)
 
 					//break;
 				}
-				else if(str_comp(aName, "#game") == 0)
-					m_pGameExLayer = pTilemap;
-				else if(str_comp(aName, "#settings") == 0)
-					m_pSettingsLayer = pTilemap;
-				else if(str_comp(aName, "#tele") == 0)
+				if(pTilemap->m_Flags&TILESLAYERFLAG_TELE)
+				{
+					if(pTilemap->m_Version <= 2)
+					{
+						pTilemap->m_Tele = *((int*)(pTilemap) + 15);
+					}
 					m_pTeleLayer = pTilemap;
-				else if(str_comp(aName, "#spu-force") == 0)
-					m_pSpeedupForceLayer = pTilemap;
-				else if(str_comp(aName, "#spu-angle") == 0)
-					m_pSpeedupAngleLayer = pTilemap;
+				}
+				if(pTilemap->m_Flags&TILESLAYERFLAG_SPEEDUP)
+				{
+					if(pTilemap->m_Version <= 2)
+					{
+						pTilemap->m_Speedup = *((int*)(pTilemap) + 16);
+					}
+					m_pSpeedupLayer = pTilemap;
+				}
+				if(pTilemap->m_Flags&TILESLAYERFLAG_FRONT)
+				{
+					if(pTilemap->m_Version <= 2)
+					{
+						pTilemap->m_Front = *((int*)(pTilemap) + 17);
+					}
+					m_pFrontLayer = pTilemap;
+				}
+				if(pTilemap->m_Flags&TILESLAYERFLAG_TUNE)
+				{
+					if(pTilemap->m_Version <= 2)
+					{
+						pTilemap->m_Tune = *((int*)(pTilemap) + 19);
+					}
+					m_pTuneLayer = pTilemap;
+				}
 			}
 		}
 	}

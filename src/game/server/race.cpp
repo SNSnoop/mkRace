@@ -174,7 +174,7 @@ void CGameContext::SendChatResponse(const char *pLine, void *pUser, bool Highlig
 
 void CGameContext::LoadMapSettings()
 {
-	if(m_Layers.SettingsLayer())
+	/*if(m_Layers.SettingsLayer())
 	{
 		CMapItemLayerTilemap *pLayer = m_Layers.SettingsLayer();
 		CTile *pTiles = static_cast<CTile *>(m_Layers.Map()->GetData(pLayer->m_Data));
@@ -190,7 +190,7 @@ void CGameContext::LoadMapSettings()
 
 		delete[] pCommand;
 		m_Layers.Map()->UnloadData(pLayer->m_Data);
-	}
+	}*/
 }
 
 int64 CmaskRace(CGameContext *pGameServer, int Owner)

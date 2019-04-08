@@ -28,10 +28,12 @@ struct CCollisionData
 class CCollision
 {
 	class CTile *m_pTiles;
-	class CTile *m_pTilesEx;
-	class CTile *m_pTele;
-	class CTile *m_pSpeedupForce;
-	class CTile *m_pSpeedupAngle;
+	class CTeleTile *m_pTele;
+	class CSpeedupTile *m_pSpeedup;
+	class CTile *m_pFront;
+	class CTuneTile *m_pTune;
+	class CDoorTile *m_pDoor;
+
 	int m_Width;
 	int m_Height;
 	class CLayers *m_pLayers;
@@ -63,6 +65,8 @@ public:
 	int GetWidth() const { return m_Width; };
 	int GetHeight() const { return m_Height; };
 	int IntersectLine(vec2 Pos0, vec2 Pos1, vec2 *pOutCollision, vec2 *pOutBeforeCollision) const;
+	int IntersectLineTeleWeapon(vec2 Pos0, vec2 Pos1, vec2 *pOutCollision, vec2 *pOutBeforeCollision, int *pTeleNr);
+	int IntersectLineTeleHook(vec2 Pos0, vec2 Pos1, vec2 *pOutCollision, vec2 *pOutBeforeCollision, int *pTeleNr);
 	void MovePoint(vec2 *pInoutPos, vec2 *pInoutVel, float Elasticity, int *pBounces) const;
 	void MoveBox(vec2 *pInoutPos, vec2 *pInoutVel, vec2 Size, float Elasticity, CCollisionData *pCollisionData = 0) const;
 	bool TestBox(vec2 Pos, vec2 Size) const;
@@ -75,10 +79,32 @@ public:
 	int CheckIndexExRange(vec2 Pos, int MinIndex, int MaxIndex) const;
 
 	int CheckCheckpoint(vec2 Pos) const;
-	int CheckSpeedup(vec2 Pos) const;
-	vec2 GetSpeedupForce(int Speedup) const;
-	int CheckTeleport(vec2 Pos, bool *pStop) const;
 	vec2 GetTeleportDestination(int Tele) const { return m_aTeleporter[Tele - 1]; };
+
+	class CTeleTile *TeleLayer() { return m_pTele; }
+	
+	int GetTileIndex(int Index);
+	int GetFTileIndex(int Index);
+	int GetTileFlags(int Index);
+	int GetFTileFlags(int Index);
+	
+	int GetPureMapIndex(float x, float y);
+	int GetPureMapIndex(vec2 Pos) { return GetPureMapIndex(Pos.x, Pos.y); }
+	int IsTeleport(int Index);
+	bool TileExists(int Index);
+	bool TileExistsNext(int Index);
+	int GetMapIndex(vec2 Pos);
+	int IsEvilTeleport(int Index);
+	int IsCheckTeleport(int Index);
+	int IsCheckEvilTeleport(int Index);
+	int IsTeleportHook(int Index);
+	bool IsThrough(int x, int y, int xoff, int yoff, vec2 pos0, vec2 pos1);
+	bool IsHookBlocker(int x, int y, vec2 pos0, vec2 pos1);
+	int GetFCollisionAt(float x, float y) { return GetFTile(round_to_int(x), round_to_int(y)); }
+	int GetFTile(int x, int y);
+	int IsSpeedup(int Index);
+	void GetSpeedup(int Index, vec2 *Dir, int *Force, int *MaxSpeed);
 };
 
+void ThroughOffset(vec2 Pos0, vec2 Pos1, int *Ox, int *Oy);
 #endif

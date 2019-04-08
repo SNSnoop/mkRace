@@ -94,17 +94,6 @@ void CProjectile::Tick()
 		
 		GameServer()->m_World.DestroyEntity(this);
 	}
-
-	if(m_Weapon == WEAPON_GRENADE && g_Config.m_SvTeleportGrenade)
-	{
-		bool Stop;
-		int Tele = GameServer()->Collision()->CheckTeleport(CurPos, &Stop);
-		if(Tele)
-		{
-			m_Pos = GameServer()->Collision()->GetTeleportDestination(Tele);
-			m_StartTick = Server()->Tick();
-		}
-	}
 }
 
 void CProjectile::TickPaused()

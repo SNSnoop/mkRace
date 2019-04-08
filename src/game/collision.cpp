@@ -19,40 +19,41 @@ CCollision::CCollision()
 	m_Height = 0;
 	m_pLayers = 0;
 
-	m_pTilesEx = 0;
 	m_pTele = 0;
-	m_pSpeedupForce = 0;
-	m_pSpeedupAngle = 0;
+	m_pSpeedup = 0;
+	m_pFront = 0;
+	m_pTune = 0;
 }
 
 void CCollision::Init(class CLayers *pLayers)
 {
-	m_pTilesEx = 0;
 	m_pTele = 0;
-	m_pSpeedupForce = 0;
-	m_pSpeedupAngle = 0;
 
 	m_pLayers = pLayers;
 	m_Width = m_pLayers->GameLayer()->m_Width;
 	m_Height = m_pLayers->GameLayer()->m_Height;
 	m_pTiles = static_cast<CTile *>(m_pLayers->Map()->GetData(m_pLayers->GameLayer()->m_Data));
 
-	if(m_pLayers->GameExLayer())
-		m_pTilesEx = static_cast<CTile *>(m_pLayers->Map()->GetData(m_pLayers->GameExLayer()->m_Data));
-
 	if(m_pLayers->TeleLayer())
 	{
-		m_pTele = static_cast<CTile *>(m_pLayers->Map()->GetData(m_pLayers->TeleLayer()->m_Data));
-		InitTeleporter();
+		m_pTele = static_cast<CTeleTile *>(m_pLayers->Map()->GetData(m_pLayers->TeleLayer()->m_Tele));
 	}
 
-	if(m_pLayers->SpeedupForceLayer() && m_pLayers->SpeedupAngleLayer() &&
-		m_pLayers->SpeedupForceLayer()->m_Width == m_pLayers->SpeedupAngleLayer()->m_Width &&
-		m_pLayers->SpeedupForceLayer()->m_Height == m_pLayers->SpeedupAngleLayer()->m_Height)
+	if(m_pLayers->SpeedupLayer())
 	{
-		m_pSpeedupForce = static_cast<CTile *>(m_pLayers->Map()->GetData(m_pLayers->SpeedupForceLayer()->m_Data));
-		m_pSpeedupAngle = static_cast<CTile *>(m_pLayers->Map()->GetData(m_pLayers->SpeedupAngleLayer()->m_Data));
+		m_pSpeedup = static_cast<CSpeedupTile *>(m_pLayers->Map()->GetData(m_pLayers->SpeedupLayer()->m_Speedup));
 	}
+	if(m_pLayers->TuneLayer())
+	{
+		m_pTune = static_cast<CTuneTile *>(m_pLayers->Map()->GetData(m_pLayers->TuneLayer()->m_Tune));
+	}
+
+	if(m_pLayers->FrontLayer())
+	{
+		m_pFront = static_cast<CTile *>(m_pLayers->Map()->GetData(m_pLayers->FrontLayer()->m_Front));
+	}
+
+	InitTeleporter();
 
 	for(int i = 0; i < m_Width*m_Height; i++)
 	{
@@ -83,13 +84,15 @@ void CCollision::Init(class CLayers *pLayers)
 		}
 
 		// race tiles
-		if(Index >= TILE_TELEIN_STOP && Index <= 59)
+		if(Index >= TILE_TELEIN_STOP && Index <= TILE_TELE_LASER_DISABLE)
 			m_pTiles[i].m_Index = Index;
 	}
 }
 
 void CCollision::InitTeleporter()
 {
+	if (!m_pLayers->TeleLayer())
+		return;
 	mem_zero(m_aTeleporter, sizeof(m_aTeleporter));
 
 	for(int Ny = 0; Ny < m_pLayers->TeleLayer()->m_Height; Ny++)
@@ -97,8 +100,8 @@ void CCollision::InitTeleporter()
 		{
 			vec2 Pos = vec2(Nx*32+16, Ny*32+16);
 			int TilePosTele = Ny*m_pLayers->TeleLayer()->m_Width+Nx;
-			if(m_pTele[TilePosTele].m_Index > 0 && CheckIndexEx(Pos, TILE_TELEOUT))
-				m_aTeleporter[m_pTele[TilePosTele].m_Index - 1] = Pos;
+			if(m_pTele[TilePosTele].m_Number > 0 && TeleLayer()[TilePosTele].m_Type == TILE_TELEOUT)
+				m_aTeleporter[m_pTele[TilePosTele].m_Number - 1] = Pos;
 		}
 }
 
@@ -113,6 +116,102 @@ int CCollision::GetTile(int x, int y) const
 		return Index;
 	else
 		return 0;
+}
+
+int CCollision::GetMapIndex(vec2 Pos)
+{
+	int Nx = clamp((int)Pos.x / 32, 0, m_Width - 1);
+	int Ny = clamp((int)Pos.y / 32, 0, m_Height - 1);
+	int Index = Ny*m_Width+Nx;
+
+	if(TileExists(Index))
+		return Index;
+	else
+		return -1;
+}
+
+bool CCollision::TileExists(int Index)
+{
+	if(Index < 0)
+		return false;
+
+	if(m_pTiles[Index].m_Index >= TILE_FREEZE && m_pTiles[Index].m_Index <= TILE_TELE_LASER_DISABLE)
+		return true;
+	if(m_pFront && m_pFront[Index].m_Index >= TILE_FREEZE && m_pFront[Index].m_Index  <= TILE_TELE_LASER_DISABLE)
+		return true;
+	if(m_pTele && (m_pTele[Index].m_Type == TILE_TELEIN || m_pTele[Index].m_Type == TILE_TELEINEVIL || m_pTele[Index].m_Type == TILE_TELECHECKINEVIL ||m_pTele[Index].m_Type == TILE_TELECHECK || m_pTele[Index].m_Type == TILE_TELECHECKIN))
+		return true;
+	if(m_pSpeedup && m_pSpeedup[Index].m_Force > 0)
+		return true;
+	if(m_pTune && m_pTune[Index].m_Type)
+			return true;
+	return TileExistsNext(Index);
+}
+
+int CCollision::GetFTile(int x, int y)
+{
+	if(!m_pFront)
+	return 0;
+	int Nx = clamp(x/32, 0, m_Width-1);
+	int Ny = clamp(y/32, 0, m_Height-1);
+	if(m_pFront[Ny*m_Width+Nx].m_Index == TILE_DEATH
+		|| m_pFront[Ny*m_Width+Nx].m_Index == TILE_NOLASER)
+		return m_pFront[Ny*m_Width+Nx].m_Index;
+	else
+		return 0;
+}
+
+int CCollision::IsSpeedup(int Index)
+{
+	if(Index < 0 || !m_pSpeedup)
+		return 0;
+
+	if(m_pSpeedup[Index].m_Force > 0)
+		return Index;
+
+	return 0;
+}
+
+void CCollision::GetSpeedup(int Index, vec2 *Dir, int *Force, int *MaxSpeed)
+{
+	if(Index < 0 || !m_pSpeedup)
+		return;
+	float Angle = m_pSpeedup[Index].m_Angle * (pi / 180.0f);
+	*Force = m_pSpeedup[Index].m_Force;
+	*Dir = vec2(cos(Angle), sin(Angle));
+	if(MaxSpeed)
+		*MaxSpeed = m_pSpeedup[Index].m_MaxSpeed;
+}
+
+bool CCollision::TileExistsNext(int Index)
+{
+	if(Index < 0)
+		return false;
+	int TileOnTheLeft = (Index - 1 > 0) ? Index - 1 : Index;
+	int TileOnTheRight = (Index + 1 < m_Width * m_Height) ? Index + 1 : Index;
+	int TileBelow = (Index + m_Width < m_Width * m_Height) ? Index + m_Width : Index;
+	int TileAbove = (Index - m_Width > 0) ? Index - m_Width : Index;
+
+	if((m_pTiles[TileOnTheRight].m_Index == TILE_STOP && m_pTiles[TileOnTheRight].m_Flags == ROTATION_270) || (m_pTiles[TileOnTheLeft].m_Index == TILE_STOP && m_pTiles[TileOnTheLeft].m_Flags == ROTATION_90))
+		return true;
+	if((m_pTiles[TileBelow].m_Index == TILE_STOP && m_pTiles[TileBelow].m_Flags == ROTATION_0) || (m_pTiles[TileAbove].m_Index == TILE_STOP && m_pTiles[TileAbove].m_Flags == ROTATION_180))
+		return true;
+	if(m_pTiles[TileOnTheRight].m_Index == TILE_STOPA || m_pTiles[TileOnTheLeft].m_Index == TILE_STOPA || ((m_pTiles[TileOnTheRight].m_Index == TILE_STOPS || m_pTiles[TileOnTheLeft].m_Index == TILE_STOPS) && m_pTiles[TileOnTheRight].m_Flags|ROTATION_270|ROTATION_90))
+		return true;
+	if(m_pTiles[TileBelow].m_Index == TILE_STOPA || m_pTiles[TileAbove].m_Index == TILE_STOPA || ((m_pTiles[TileBelow].m_Index == TILE_STOPS || m_pTiles[TileAbove].m_Index == TILE_STOPS) && m_pTiles[TileBelow].m_Flags|ROTATION_180|ROTATION_0))
+		return true;
+	if(m_pFront)
+	{
+		if(m_pFront[TileOnTheRight].m_Index == TILE_STOPA || m_pFront[TileOnTheLeft].m_Index == TILE_STOPA || ((m_pFront[TileOnTheRight].m_Index == TILE_STOPS || m_pFront[TileOnTheLeft].m_Index == TILE_STOPS) && m_pFront[TileOnTheRight].m_Flags|ROTATION_270|ROTATION_90))
+			return true;
+		if(m_pFront[TileBelow].m_Index == TILE_STOPA || m_pFront[TileAbove].m_Index == TILE_STOPA || ((m_pFront[TileBelow].m_Index == TILE_STOPS || m_pFront[TileAbove].m_Index == TILE_STOPS) && m_pFront[TileBelow].m_Flags|ROTATION_180|ROTATION_0))
+			return true;
+		if((m_pFront[TileOnTheRight].m_Index == TILE_STOP && m_pFront[TileOnTheRight].m_Flags == ROTATION_270) || (m_pFront[TileOnTheLeft].m_Index == TILE_STOP && m_pFront[TileOnTheLeft].m_Flags == ROTATION_90))
+			return true;
+		if((m_pFront[TileBelow].m_Index == TILE_STOP && m_pFront[TileBelow].m_Flags == ROTATION_0) || (m_pFront[TileAbove].m_Index == TILE_STOP && m_pFront[TileAbove].m_Flags == ROTATION_180))
+			return true;
+	}
+	return false;
 }
 
 bool CCollision::IsTileSolid(int x, int y) const
@@ -151,9 +250,6 @@ bool CCollision::CheckIndexEx(vec2 Pos, int Index) const
 	int TilePos = GetTilePosLayer(m_pLayers->GameLayer(), Pos);
 	if(TilePos >= 0 && m_pTiles[TilePos].m_Index == Index)
 		return true;
-	TilePos = GetTilePosLayer(m_pLayers->GameExLayer(), Pos);
-	if(TilePos >= 0 && m_pTilesEx[TilePos].m_Index == Index)
-		return true;
 	return false;
 }
 
@@ -162,9 +258,6 @@ int CCollision::CheckIndexExRange(vec2 Pos, int MinIndex, int MaxIndex) const
 	int TilePos = GetTilePosLayer(m_pLayers->GameLayer(), Pos);
 	if(TilePos >= 0 && m_pTiles[TilePos].m_Index >= MinIndex && m_pTiles[TilePos].m_Index <= MaxIndex)
 		return m_pTiles[TilePos].m_Index;
-	TilePos = GetTilePosLayer(m_pLayers->GameExLayer(), Pos);
-	if(TilePos >= 0 && m_pTilesEx[TilePos].m_Index >= MinIndex && m_pTilesEx[TilePos].m_Index <= MaxIndex)
-		return m_pTilesEx[TilePos].m_Index;
 	return -1;
 }
 
@@ -174,43 +267,6 @@ int CCollision::CheckCheckpoint(vec2 Pos) const
 	if(Cp >= 0)
 		return Cp-35;
 	return -1;
-}
-
-int CCollision::CheckSpeedup(vec2 Pos) const
-{
-	int TilePosSpeedup = GetTilePosLayer(m_pLayers->SpeedupForceLayer(), Pos);
-	if(TilePosSpeedup < 0 || !m_pSpeedupAngle || !CheckIndexEx(Pos, TILE_BOOST) || m_pSpeedupForce[TilePosSpeedup].m_Index == 0)
-		return -1;
-	return TilePosSpeedup;
-}
-
-vec2 CCollision::GetSpeedupForce(int Speedup) const
-{
-	int SpeedupAngle = m_pSpeedupAngle[Speedup].m_Index % 90;
-	unsigned char Flags = m_pSpeedupAngle[Speedup].m_Flags;
-	// TODO: handle all cases
-	if(Flags == ROTATION_90)
-		SpeedupAngle += 90;
-	else if(Flags == ROTATION_180)
-		SpeedupAngle += 180;
-	else if(Flags == ROTATION_270)
-		SpeedupAngle += 270;
-	float Angle = SpeedupAngle * pi / 180.0f;
-	float Force = m_pSpeedupForce[Speedup].m_Index;
-	return vec2(cos(Angle), sin(Angle)) * Force;
-}
-
-int CCollision::CheckTeleport(vec2 Pos, bool *pStop) const
-{
-	int TilePosTele = GetTilePosLayer(m_pLayers->TeleLayer(), Pos);
-	if(TilePosTele >= 0)
-	{
-		int Index = CheckIndexExRange(Pos, TILE_TELEIN_STOP, TILE_TELEIN);
-		*pStop = Index == TILE_TELEIN_STOP;
-		if(Index != -1)
-			return m_pTele[TilePosTele].m_Index;
-	}
-	return 0;
 }
 
 // TODO: rewrite this smarter!
@@ -232,6 +288,60 @@ int CCollision::IntersectLine(vec2 Pos0, vec2 Pos1, vec2 *pOutCollision, vec2 *p
 				*pOutBeforeCollision = Last;
 			return GetCollisionAt(Pos.x, Pos.y);
 		}
+		Last = Pos;
+	}
+	if(pOutCollision)
+		*pOutCollision = Pos1;
+	if(pOutBeforeCollision)
+		*pOutBeforeCollision = Pos1;
+	return 0;
+}
+
+int CCollision::IntersectLineTeleHook(vec2 Pos0, vec2 Pos1, vec2 *pOutCollision, vec2 *pOutBeforeCollision, int *pTeleNr)
+{
+	float Distance = distance(Pos0, Pos1);
+	int End(Distance+1);
+	vec2 Last = Pos0;
+	int ix = 0, iy = 0; // Temporary position for checking collision
+	int dx = 0, dy = 0; // Offset for checking the "through" tile
+	ThroughOffset(Pos0, Pos1, &dx, &dy);
+	for(int i = 0; i <= End; i++)
+	{
+		float a = i/(float)End;
+		vec2 Pos = mix(Pos0, Pos1, a);
+		ix = round_to_int(Pos.x);
+		iy = round_to_int(Pos.y);
+
+		int Index = GetPureMapIndex(Pos);
+		*pTeleNr = IsTeleportHook(Index);
+		if(*pTeleNr)
+		{
+			if(pOutCollision)
+				*pOutCollision = Pos;
+			if(pOutBeforeCollision)
+				*pOutBeforeCollision = Last;
+			return TILE_TELEINHOOK;
+		}
+
+		int hit = 0;
+		if(CheckPoint(ix, iy))
+		{
+			if(!IsThrough(ix, iy, dx, dy, Pos0, Pos1))
+				hit = GetCollisionAt(ix, iy);
+		}
+		else if(IsHookBlocker(ix, iy, Pos0, Pos1))
+		{
+			hit = TILE_NOHOOK;
+		}
+		if(hit)
+		{
+			if(pOutCollision)
+				*pOutCollision = Pos;
+			if(pOutBeforeCollision)
+				*pOutBeforeCollision = Last;
+			return hit;
+		}
+
 		Last = Pos;
 	}
 	if(pOutCollision)
@@ -346,45 +456,6 @@ void CCollision::MoveBox(vec2 *pInoutPos, vec2 *pInoutVel, vec2 Size, float Elas
 
 			if(pCollisionData)
 			{
-				if(pCollisionData->m_PhysicsFlags&PHYSICSFLAG_STOPPER)
-				{
-					int Index =  CheckIndexExRange(NewPos, TILE_STOPL, TILE_STOPT);
-					if((Index == TILE_STOPL && Vel.x > 0) || (Index == TILE_STOPR && Vel.x < 0))
-					{
-						NewPos.x = Pos.x;
-						Vel.x = 0;
-					}
-					if((Index == TILE_STOPB && Vel.y < 0) || (Index == TILE_STOPT && Vel.y > 0))
-					{
-						NewPos.y = Pos.y;
-						Vel.y = 0;
-					}
-				}
-
-				if(pCollisionData->m_PhysicsFlags&PHYSICSFLAG_TELEPORT)
-				{
-					bool Stop;
-					int Tele = CheckTeleport(NewPos, &Stop);
-					if(Tele)
-					{
-						pCollisionData->m_Teleported = true;
-						NewPos = GetTeleportDestination(Tele);
-						if(Stop)
-							Vel = vec2(0,0);
-					}
-				}
-
-				if(pCollisionData->m_PhysicsFlags&PHYSICSFLAG_SPEEDUP)
-				{
-					ivec2 SpeedupTilePos = ivec2(round_to_int(Pos.x)/32, round_to_int(Pos.y)/32);
-					int Speedup = CheckSpeedup(NewPos);
-					if(pCollisionData->m_LastSpeedupTilePos != SpeedupTilePos && Speedup > -1)
-					{
-						Vel += GetSpeedupForce(Speedup);
-						pCollisionData->m_LastSpeedupTilePos = SpeedupTilePos;
-					}
-				}
-
 				if(pCollisionData->m_pfnPhysicsStepCallback)
 					pCollisionData->m_pfnPhysicsStepCallback(NewPos, (i+1)*Fraction, pCollisionData->m_pPhysicsStepUserData);
 			}
@@ -395,4 +466,169 @@ void CCollision::MoveBox(vec2 *pInoutPos, vec2 *pInoutVel, vec2 Size, float Elas
 
 	*pInoutPos = Pos;
 	*pInoutVel = Vel;
+}
+
+int CCollision::GetTileIndex(int Index)
+{
+	if(Index < 0)
+		return 0;
+	return m_pTiles[Index].m_Index;
+}
+
+int CCollision::GetFTileIndex(int Index)
+{
+	if(Index < 0 || !m_pFront)
+		return 0;
+	return m_pFront[Index].m_Index;
+}
+
+int CCollision::GetTileFlags(int Index)
+{
+	if(Index < 0)
+		return 0;
+	return m_pTiles[Index].m_Flags;
+}
+
+int CCollision::GetFTileFlags(int Index)
+{
+	if(Index < 0 || !m_pFront)
+		return 0;
+	return m_pFront[Index].m_Flags;
+}
+
+int CCollision::GetPureMapIndex(float x, float y)
+{
+	int Nx = clamp(round_to_int(x)/32, 0, m_Width-1);
+	int Ny = clamp(round_to_int(y)/32, 0, m_Height-1);
+	return Ny*m_Width+Nx;
+}
+
+bool CCollision::IsThrough(int x, int y, int xoff, int yoff, vec2 pos0, vec2 pos1)
+{
+	int pos = GetPureMapIndex(x, y);
+	if(m_pFront && (m_pFront[pos].m_Index == TILE_THROUGH_ALL || m_pFront[pos].m_Index == TILE_THROUGH_CUT))
+		return true;
+	if(m_pFront && m_pFront[pos].m_Index == TILE_THROUGH_DIR && (
+		(m_pFront[pos].m_Flags == ROTATION_0   && pos0.y > pos1.y) ||
+		(m_pFront[pos].m_Flags == ROTATION_90  && pos0.x < pos1.x) ||
+		(m_pFront[pos].m_Flags == ROTATION_180 && pos0.y < pos1.y) ||
+		(m_pFront[pos].m_Flags == ROTATION_270 && pos0.x > pos1.x) ))
+		return true;
+	int offpos = GetPureMapIndex(x+xoff, y+yoff);
+	if(m_pTiles[offpos].m_Index == TILE_THROUGH || (m_pFront && m_pFront[offpos].m_Index == TILE_THROUGH))
+		return true;
+	return false;
+}
+
+int CCollision::IsTeleport(int Index)
+{
+	if(Index < 0 || !m_pTele)
+		return 0;
+
+	if(m_pTele[Index].m_Type == TILE_TELEIN)
+		return m_pTele[Index].m_Number;
+
+	return 0;
+}
+
+int CCollision::IsEvilTeleport(int Index)
+{
+	if(Index < 0)
+		return 0;
+	if(!m_pTele)
+		return 0;
+
+	if(m_pTele[Index].m_Type == TILE_TELEINEVIL)
+		return m_pTele[Index].m_Number;
+
+	return 0;
+}
+
+int CCollision::IsCheckTeleport(int Index)
+{
+	if(Index < 0)
+		return 0;
+	if(!m_pTele)
+		return 0;
+
+	if(m_pTele[Index].m_Type == TILE_TELECHECKIN)
+		return m_pTele[Index].m_Number;
+
+	return 0;
+}
+
+int CCollision::IsCheckEvilTeleport(int Index)
+{
+	if(Index < 0)
+		return 0;
+	if(!m_pTele)
+		return 0;
+
+	if(m_pTele[Index].m_Type == TILE_TELECHECKINEVIL)
+		return m_pTele[Index].m_Number;
+
+	return 0;
+}
+
+int CCollision::IsTeleportHook(int Index)
+{
+	if(Index < 0 || !m_pTele)
+		return 0;
+
+	if(m_pTele[Index].m_Type == TILE_TELEINHOOK)
+		return m_pTele[Index].m_Number;
+
+	return 0;
+}
+
+bool CCollision::IsHookBlocker(int x, int y, vec2 pos0, vec2 pos1)
+{
+	int pos = GetPureMapIndex(x, y);
+	if(m_pTiles[pos].m_Index == TILE_THROUGH_ALL || (m_pFront && m_pFront[pos].m_Index == TILE_THROUGH_ALL))
+		return true;
+	if(m_pTiles[pos].m_Index == TILE_THROUGH_DIR && (
+		(m_pTiles[pos].m_Flags == ROTATION_0   && pos0.y < pos1.y) ||
+		(m_pTiles[pos].m_Flags == ROTATION_90  && pos0.x > pos1.x) ||
+		(m_pTiles[pos].m_Flags == ROTATION_180 && pos0.y > pos1.y) ||
+		(m_pTiles[pos].m_Flags == ROTATION_270 && pos0.x < pos1.x) ))
+		return true;
+	if(m_pFront && m_pFront[pos].m_Index == TILE_THROUGH_DIR && (
+		(m_pFront[pos].m_Flags == ROTATION_0   && pos0.y < pos1.y) ||
+		(m_pFront[pos].m_Flags == ROTATION_90  && pos0.x > pos1.x) ||
+		(m_pFront[pos].m_Flags == ROTATION_180 && pos0.y > pos1.y) ||
+		(m_pFront[pos].m_Flags == ROTATION_270 && pos0.x < pos1.x) ))
+		return true;
+	return false;
+}
+
+void ThroughOffset(vec2 Pos0, vec2 Pos1, int *Ox, int *Oy)
+{
+	float x = Pos0.x - Pos1.x;
+	float y = Pos0.y - Pos1.y;
+	if (fabs(x) > fabs(y))
+	{
+		if (x < 0)
+		{
+			*Ox = -32;
+			*Oy = 0;
+		}
+		else
+		{
+			*Ox = 32;
+			*Oy = 0;
+		}
+	}
+	else
+	{
+		if (y < 0)
+		{
+			*Ox = 0;
+			*Oy = -32;
+		}
+		else
+		{
+			*Ox = 0;
+			*Oy = 32;
+		}
+	}
 }

@@ -47,18 +47,33 @@ enum
 	TILE_SOLID,
 	TILE_DEATH,
 	TILE_NOHOOK,
+	TILE_NOLASER,
+	TILE_THROUGH_CUT,
+	TILE_THROUGH,
+	TILE_TELEINWEAPON=14,
+	TILE_TELEINHOOK,
 	TILE_TELEIN_STOP=25,
 	TILE_TELEIN,
 	TILE_TELEOUT,
 	TILE_BOOST,
-	TILE_STOPL,
-	TILE_STOPR,
-	TILE_STOPB,
-	TILE_STOPT,
-	TILE_BEGIN,
+
+	TILE_BEGIN=33,
 	TILE_END,
 	TILE_FREEZE=9,
+	TILE_TELEINEVIL,
 	TILE_UNFREEZE=11,
+	TILE_TELECHECK=29,
+	TILE_TELECHECKOUT,
+	TILE_TELECHECKIN=31,
+	TILE_TELECHECKINEVIL=63,
+	TILE_STOP = 60,
+	TILE_STOPS,
+	TILE_STOPA,
+	TILE_TELE_LASER_ENABLE = 128,
+	TILE_TELE_LASER_DISABLE = 129,
+
+	TILE_THROUGH_ALL=66,
+	TILE_THROUGH_DIR,
 
 	TILEFLAG_VFLIP=1,
 	TILEFLAG_HFLIP=2,
@@ -72,6 +87,10 @@ enum
 
 	LAYERFLAG_DETAIL=1,
 	TILESLAYERFLAG_GAME=1,
+	TILESLAYERFLAG_TELE=2,
+	TILESLAYERFLAG_SPEEDUP=4,
+	TILESLAYERFLAG_FRONT=8,
+	TILESLAYERFLAG_TUNE=32,
 
 	ENTITY_OFFSET=255-16*4,
 };
@@ -106,6 +125,29 @@ public:
 	unsigned char m_Flags;
 	unsigned char m_Skip;
 	unsigned char m_Reserved;
+};
+
+class CTeleTile
+{
+public:
+	unsigned char m_Number;
+	unsigned char m_Type;
+};
+
+class CSpeedupTile
+{
+public:
+	unsigned char m_Force;
+	unsigned char m_MaxSpeed;
+	unsigned char m_Type;
+	short m_Angle;
+};
+
+class CTuneTile
+{
+public:
+	unsigned char m_Number;
+	unsigned char m_Type;
 };
 
 struct CMapItemInfo
@@ -186,6 +228,13 @@ struct CMapItemLayerTilemap
 	int m_Data;
 
 	int m_aName[3];
+	
+	// mkRace
+	int m_Tele;
+	int m_Speedup;
+	int m_Front;
+	int m_Switch;
+	int m_Tune;
 } ;
 
 struct CMapItemLayerQuads

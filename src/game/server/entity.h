@@ -29,12 +29,6 @@ private:
 	int m_ID;
 	int m_ObjType;
 
-	/*
-		Variable: m_ProximityRadius
-			Contains the physical size of the entity.
-	*/
-	float m_ProximityRadius;
-
 	/* State */
 	bool m_MarkedForDestroy;
 
@@ -50,6 +44,12 @@ public:
 			Contains the current posititon of the entity.
 	*/
 	vec2 m_Pos;
+
+	/*
+		Variable: m_ProximityRadius
+			Contains the physical size of the entity.
+	*/
+	float m_ProximityRadius;
 
 	/* Constructor */
 	CEntity(CGameWorld *pGameWorld, int Objtype, vec2 Pos, int ProximityRadius=0);

@@ -14,11 +14,6 @@ class CLayers
 	int m_LayersStart;
 	CMapItemGroup *m_pGameGroup;
 	CMapItemLayerTilemap *m_pGameLayer;
-	CMapItemLayerTilemap *m_pGameExLayer;
-	CMapItemLayerTilemap *m_pSettingsLayer;
-	CMapItemLayerTilemap *m_pTeleLayer;
-	CMapItemLayerTilemap *m_pSpeedupForceLayer;
-	CMapItemLayerTilemap *m_pSpeedupAngleLayer;
 	class IMap *m_pMap;
 
 public:
@@ -29,13 +24,19 @@ public:
 	class IMap *Map() const { return m_pMap; };
 	CMapItemGroup *GameGroup() const { return m_pGameGroup; };
 	CMapItemLayerTilemap *GameLayer() const { return m_pGameLayer; };
-	CMapItemLayerTilemap *GameExLayer() const { return m_pGameExLayer; }
-	CMapItemLayerTilemap *SettingsLayer() const { return m_pSettingsLayer; }
-	CMapItemLayerTilemap *TeleLayer() const { return m_pTeleLayer; }
-	CMapItemLayerTilemap *SpeedupForceLayer() const { return m_pSpeedupForceLayer; }
-	CMapItemLayerTilemap *SpeedupAngleLayer() const { return m_pSpeedupAngleLayer; }
+	CMapItemLayerTilemap *TeleLayer() const { return m_pTeleLayer; };
+	CMapItemLayerTilemap *SpeedupLayer() const { return m_pSpeedupLayer; };
+	CMapItemLayerTilemap *FrontLayer() const { return m_pFrontLayer; };
+	CMapItemLayerTilemap *TuneLayer() const { return m_pTuneLayer; };
 	CMapItemGroup *GetGroup(int Index) const;
 	CMapItemLayer *GetLayer(int Index) const;
+
+private:
+
+	CMapItemLayerTilemap *m_pTeleLayer;
+	CMapItemLayerTilemap *m_pSpeedupLayer;
+	CMapItemLayerTilemap *m_pFrontLayer;
+	CMapItemLayerTilemap *m_pTuneLayer;
 };
 
 #endif
