@@ -989,9 +989,6 @@ void CCharacter::HandleTiles(int Index)
 		m_Core.m_Vel.y = 0;
 		m_Core.m_Jumped = 0;
 	}
-	char aBroadcast[128];
-	str_format(aBroadcast, sizeof(aBroadcast), "m_TileIndex = %d, m_TileFIndex = %d", m_TileIndex, m_TileFIndex);
-		GameServer()->SendBroadcast(aBroadcast, m_pPlayer->GetCID());
 	
 	int z = GameServer()->Collision()->IsTeleport(MapIndex);
 	if(z)
