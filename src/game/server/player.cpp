@@ -152,9 +152,9 @@ void CPlayer::PostTick()
 				m_aActLatency[i] = GameServer()->m_apPlayers[i]->m_Latency.m_Min;
 		}
 	}
-	
+
 	// update view pos for spectators and dead players
-	if((m_Team == TEAM_SPECTATORS || m_DeadSpecMode || m_Paused) && m_SpecMode != SPEC_FREEVIEW)
+	if((m_Team == TEAM_SPECTATORS || m_DeadSpecMode || m_Paused) && m_SpecMode != SPEC_FREEVIEW && GameServer()->m_apPlayers[m_SpectatorID] && GameServer()->m_apPlayers[m_SpectatorID]->GetCharacter())
 	{
 		if(m_pSpecFlag)
 			m_ViewPos = m_pSpecFlag->GetPos();
