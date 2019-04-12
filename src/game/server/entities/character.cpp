@@ -999,6 +999,17 @@ void CCharacter::HandleTiles(int Index)
 		m_Core.m_HookPos = m_Core.m_Pos;
 		return;
 	}
+	int evilz = GameServer()->Collision()->IsEvilTeleport(MapIndex);
+	if(evilz)
+	{
+		m_Core.m_Pos = GameServer()->Collision()->GetTeleportDestination(GameServer()->Collision()->TeleLayer()[MapIndex].m_Number);
+		m_Core.m_Vel = vec2(0,0);
+		m_Core.m_HookedPlayer = -1;
+		m_Core.m_HookState = HOOK_RETRACTED;
+		m_Core.m_HookPos = m_Core.m_Pos;
+		return;
+	}
+	
 }
 
 void CCharacter::HandleSkippableTiles(int Index)
