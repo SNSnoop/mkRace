@@ -44,4 +44,6 @@ MACRO_TUNING_PARAM(LaserBounceCost, laser_bounce_cost, 0)
 
 MACRO_TUNING_PARAM(PlayerCollision, player_collision, 1)
 MACRO_TUNING_PARAM(PlayerHooking, player_hooking, 1)
+
+MACRO_TUNING_PARAM(ShotgunStrength, shotgun_strength, 10.0f)
 #endif
