@@ -544,6 +544,8 @@ void CCharacter::Tick()
 	
 	m_Core.m_Input = m_Input;
 	m_Core.Tick(true);
+	
+	DDRacePostCoreTick();
 
 	// race
 	if(g_Config.m_SvRegen > 0 && (Server()->Tick()%g_Config.m_SvRegen) == 0)
@@ -879,10 +881,6 @@ void CCharacter::DDRaceTick()
 		if (m_FreezeTime == 1)
 			Unfreeze();
 	}
-
-	int CurrentIndex = GameServer()->Collision()->GetMapIndex(m_Pos);
-	HandleSkippableTiles(CurrentIndex);
-	HandleTiles(CurrentIndex);
 }
 
 void CCharacter::Pause(bool Pause)
@@ -916,6 +914,10 @@ void CCharacter::DDRacePostCoreTick()
 		m_EmoteType = m_pPlayer->m_DefEmote = EMOTE_NORMAL;
 		m_EmoteStop = -1;
 	}
+
+	int CurrentIndex = GameServer()->Collision()->GetMapIndex(m_Pos);
+	HandleSkippableTiles(CurrentIndex);
+	HandleTiles(CurrentIndex);
 }
 
 void CCharacter::HandleBroadcast()
