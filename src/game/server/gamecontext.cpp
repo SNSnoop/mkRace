@@ -22,7 +22,6 @@
 #include "gamemodes/mod.h"
 #include "gamemodes/tdm.h"
 */
-#include "gamemodes/fastcap.h"
 #include "gamemodes/race.h"
 #include "gamecontext.h"
 #include "player.h"
@@ -1546,10 +1545,7 @@ void CGameContext::OnInit()
 	if(str_find_nocase(g_Config.m_SvMap, "no-weapons") || str_find_nocase(g_Config.m_SvGametype, "no-weapons"))
 		g_Config.m_SvNoItems = true;
 
-	if(str_find_nocase(g_Config.m_SvGametype, "fastcap"))
-		m_pController = new CGameControllerFC(this);
-	else
-		m_pController = new CGameControllerRACE(this);
+	m_pController = new CGameControllerRACE(this);
 
 	// create score object
 	if(!m_pScore)
@@ -1566,6 +1562,10 @@ void CGameContext::OnInit()
 	// create all entities from the game layer
 	CMapItemLayerTilemap *pTileMap = m_Layers.GameLayer();
 	CTile *pTiles = (CTile *)Kernel()->RequestInterface<IMap>()->GetData(pTileMap->m_Data);
+
+	CTile *pFront = 0;
+	if(m_Layers.FrontLayer())
+		pFront = (CTile *)Kernel()->RequestInterface<IMap>()->GetData(m_Layers.FrontLayer()->m_Front);
 	for(int y = 0; y < pTileMap->m_Height; y++)
 	{
 		for(int x = 0; x < pTileMap->m_Width; x++)
@@ -1575,7 +1575,16 @@ void CGameContext::OnInit()
 			if(Index >= ENTITY_OFFSET)
 			{
 				vec2 Pos(x*32.0f+16.0f, y*32.0f+16.0f);
-				m_pController->OnEntity(Index-ENTITY_OFFSET, Pos);
+				m_pController->OnEntity(Index - ENTITY_OFFSET, Pos, LAYER_GAME, pTiles[y * pTileMap->m_Width + x].m_Flags);
+			}
+			if(pFront)
+			{
+				Index = pFront[y * pTileMap->m_Width + x].m_Index;
+				if(Index >= ENTITY_OFFSET)
+				{
+					vec2 Pos(x*32.0f+16.0f, y*32.0f+16.0f);
+					m_pController->OnEntity(Index-ENTITY_OFFSET, Pos, LAYER_FRONT, pFront[y*pTileMap->m_Width+x].m_Flags);
+				}
 			}
 		}
 	}
