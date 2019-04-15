@@ -8,7 +8,7 @@
 #define GAME_NETVERSION "0.7 802f1be60a05665f"
 #define RACE_VERSION "4.0-dev"
 #define DDRACE_VERSION "1.1"
-#define MKRACE_VERSION "1.0.5"
+#define MKRACE_VERSION "1.0.6"
 #define CLIENT_VERSION 0x0702
 static const char GAME_RELEASE_VERSION[8] = "0.7.2";
 #endif
