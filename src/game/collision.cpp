@@ -418,7 +418,7 @@ int CCollision::IntersectNoLaser(vec2 Pos0, vec2 Pos1, vec2 *pOutCollision, vec2
 		int Nx = clamp(round_to_int(Pos.x)/32, 0, m_Width-1);
 		int Ny = clamp(round_to_int(Pos.y)/32, 0, m_Height-1);
 		if(GetIndex(Nx, Ny) == TILE_SOLID
-			|| GetIndex(Nx, Ny) == TILE_NOHOOK
+			|| GetIndex(Nx, Ny) == (COLFLAG_SOLID|COLFLAG_NOHOOK)
 			|| GetIndex(Nx, Ny) == TILE_NOLASER
 			|| GetFIndex(Nx, Ny) == TILE_NOLASER)
 		{
