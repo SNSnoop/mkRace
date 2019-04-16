@@ -141,6 +141,9 @@ public:
 	bool CheckShowOthers(int SnappingClient, int Owner);
 
 	bool GameLayerClipped(vec2 CheckPos);
+
+	int m_Number;
+	int m_Layer;
 };
 
 #endif

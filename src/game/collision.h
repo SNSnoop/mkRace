@@ -82,12 +82,18 @@ public:
 	vec2 GetTeleportDestination(int Tele) const { return m_aTeleporter[Tele - 1]; };
 
 	class CTeleTile *TeleLayer() { return m_pTele; }
-	
+
+	int GetIndex(int x, int y);
+	int GetIndex(vec2 PrevPos, vec2 Pos);
+	int GetFIndex(int x, int y);
+	int IsNoLaser(int x, int y);
+	int IsFNoLaser(int x, int y);
 	int GetTileIndex(int Index);
 	int GetFTileIndex(int Index);
 	int GetTileFlags(int Index);
 	int GetFTileFlags(int Index);
-	
+	int IntersectNoLaser(vec2 Pos0, vec2 Pos1, vec2 *pOutCollision, vec2 *pOutBeforeCollision);
+	int IntersectNoLaserNW(vec2 Pos0, vec2 Pos1, vec2 *pOutCollision, vec2 *pOutBeforeCollision);
 	int GetPureMapIndex(float x, float y);
 	int GetPureMapIndex(vec2 Pos) { return GetPureMapIndex(Pos.x, Pos.y); }
 	int IsTeleport(int Index);

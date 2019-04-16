@@ -73,6 +73,9 @@ void CCollision::Init(class CLayers *pLayers)
 		case TILE_NOHOOK:
 			m_pTiles[i].m_Index = COLFLAG_SOLID|COLFLAG_NOHOOK;
 			break;
+		case TILE_NOLASER:
+			m_pTiles[i].m_Index = Index;
+			break;
 		case TILE_FREEZE:
 			m_pTiles[i].m_Index = COLFLAG_FREEZE;
 			break;
@@ -107,11 +110,15 @@ void CCollision::InitTeleporter()
 
 int CCollision::GetTile(int x, int y) const
 {
+	if(!m_pTiles)
+		return 0;
+
 	int Nx = clamp(x/32, 0, m_Width-1);
 	int Ny = clamp(y/32, 0, m_Height-1);
+	int pos = Ny * m_Width + Nx;
 
-	int Index = m_pTiles[Ny*m_Width+Nx].m_Index;
-	if(Index == COLFLAG_SOLID || Index == (COLFLAG_SOLID|COLFLAG_NOHOOK) || Index == COLFLAG_DEATH 
+	int Index = m_pTiles[pos].m_Index;
+	if(Index == COLFLAG_SOLID || Index == (COLFLAG_SOLID|COLFLAG_NOHOOK) || Index == COLFLAG_DEATH || Index == TILE_NOLASER
 		|| Index == COLFLAG_FREEZE  || Index == COLFLAG_UNFREEZE)
 		return Index;
 	else
@@ -349,6 +356,124 @@ int CCollision::IntersectLineTeleHook(vec2 Pos0, vec2 Pos1, vec2 *pOutCollision,
 	if(pOutBeforeCollision)
 		*pOutBeforeCollision = Pos1;
 	return 0;
+}
+
+int CCollision::GetIndex(int Nx, int Ny)
+{
+	return m_pTiles[Ny*m_Width+Nx].m_Index;
+}
+
+int CCollision::GetIndex(vec2 PrevPos, vec2 Pos)
+{
+	float Distance = distance(PrevPos, Pos);
+
+	if(!Distance)
+	{
+		int Nx = clamp((int)Pos.x/32, 0, m_Width-1);
+		int Ny = clamp((int)Pos.y/32, 0, m_Height-1);
+
+		if ((m_pTele) ||
+			(m_pSpeedup && m_pSpeedup[Ny*m_Width+Nx].m_Force > 0))
+		{
+			return Ny*m_Width+Nx;
+		}
+	}
+
+	float a = 0.0f;
+	vec2 Tmp = vec2(0, 0);
+	int Nx = 0;
+	int Ny = 0;
+
+	for(float f = 0; f < Distance; f++)
+	{
+		a = f/Distance;
+		Tmp = mix(PrevPos, Pos, a);
+		Nx = clamp((int)Tmp.x/32, 0, m_Width-1);
+		Ny = clamp((int)Tmp.y/32, 0, m_Height-1);
+		if ((m_pTele) ||
+			(m_pSpeedup && m_pSpeedup[Ny*m_Width+Nx].m_Force > 0))
+		{
+			return Ny*m_Width+Nx;
+		}
+	}
+
+	return -1;
+}
+
+int CCollision::GetFIndex(int Nx, int Ny)
+{
+	if(!m_pFront) return 0;
+	return m_pFront[Ny*m_Width+Nx].m_Index;
+}
+
+int CCollision::IntersectNoLaser(vec2 Pos0, vec2 Pos1, vec2 *pOutCollision, vec2 *pOutBeforeCollision)
+{
+	float d = distance(Pos0, Pos1);
+	vec2 Last = Pos0;
+
+	for(float f = 0; f < d; f++)
+	{
+		float a = f/d;
+		vec2 Pos = mix(Pos0, Pos1, a);
+		int Nx = clamp(round_to_int(Pos.x)/32, 0, m_Width-1);
+		int Ny = clamp(round_to_int(Pos.y)/32, 0, m_Height-1);
+		if(GetIndex(Nx, Ny) == TILE_SOLID
+			|| GetIndex(Nx, Ny) == TILE_NOHOOK
+			|| GetIndex(Nx, Ny) == TILE_NOLASER
+			|| GetFIndex(Nx, Ny) == TILE_NOLASER)
+		{
+			if(pOutCollision)
+				*pOutCollision = Pos;
+			if(pOutBeforeCollision)
+				*pOutBeforeCollision = Last;
+			if (GetFIndex(Nx, Ny) == TILE_NOLASER)	return GetFCollisionAt(Pos.x, Pos.y);
+			else return GetCollisionAt(Pos.x, Pos.y);
+
+		}
+		Last = Pos;
+	}
+	if(pOutCollision)
+		*pOutCollision = Pos1;
+	if(pOutBeforeCollision)
+		*pOutBeforeCollision = Pos1;
+	return 0;
+}
+
+int CCollision::IntersectNoLaserNW(vec2 Pos0, vec2 Pos1, vec2 *pOutCollision, vec2 *pOutBeforeCollision)
+{
+	float d = distance(Pos0, Pos1);
+	vec2 Last = Pos0;
+
+	for(float f = 0; f < d; f++)
+	{
+		float a = f/d;
+		vec2 Pos = mix(Pos0, Pos1, a);
+		if(IsNoLaser(round_to_int(Pos.x), round_to_int(Pos.y)) || IsFNoLaser(round_to_int(Pos.x), round_to_int(Pos.y)))
+		{
+			if(pOutCollision)
+				*pOutCollision = Pos;
+			if(pOutBeforeCollision)
+				*pOutBeforeCollision = Last;
+			if(IsNoLaser(round_to_int(Pos.x), round_to_int(Pos.y))) return GetCollisionAt(Pos.x, Pos.y);
+			else return  GetFCollisionAt(Pos.x, Pos.y);
+		}
+		Last = Pos;
+	}
+	if(pOutCollision)
+		*pOutCollision = Pos1;
+	if(pOutBeforeCollision)
+		*pOutBeforeCollision = Pos1;
+	return 0;
+}
+
+int CCollision::IsNoLaser(int x, int y)
+{
+	return (CCollision::GetTile(x,y) == TILE_NOLASER);
+}
+
+int CCollision::IsFNoLaser(int x, int y)
+{
+	return (CCollision::GetFTile(x,y) == TILE_NOLASER);
 }
 
 // TODO: OPT: rewrite this smarter!

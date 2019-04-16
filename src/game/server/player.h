@@ -137,7 +137,7 @@ public:
 	int m_DefEmote;
 	int m_DefEmoteReset;
 	void SpectatePlayerName(const char *pName);
-	
+	bool m_ShowOthers;
 
 private:
 	CCharacter *m_pCharacter;
@@ -157,8 +157,6 @@ private:
 	class CFlag *m_pSpecFlag;
 	bool m_ActiveSpecSwitch;
 
-	bool m_ShowOthers;
-	
 	// mkRace
 	int m_Paused;
 };
