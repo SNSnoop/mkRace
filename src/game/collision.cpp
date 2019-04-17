@@ -74,6 +74,7 @@ void CCollision::Init(class CLayers *pLayers)
 			m_pTiles[i].m_Index = COLFLAG_SOLID|COLFLAG_NOHOOK;
 			break;
 		case TILE_NOLASER:
+		case TILE_THROUGH:
 			m_pTiles[i].m_Index = Index;
 			break;
 		case TILE_FREEZE:
