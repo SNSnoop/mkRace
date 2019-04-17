@@ -73,22 +73,12 @@ void CCollision::Init(class CLayers *pLayers)
 		case TILE_NOHOOK:
 			m_pTiles[i].m_Index = COLFLAG_SOLID|COLFLAG_NOHOOK;
 			break;
-		case TILE_NOLASER:
-		case TILE_THROUGH:
-			m_pTiles[i].m_Index = Index;
-			break;
-		case TILE_FREEZE:
-			m_pTiles[i].m_Index = COLFLAG_FREEZE;
-			break;
-		case TILE_UNFREEZE:
-			m_pTiles[i].m_Index = COLFLAG_UNFREEZE;
-			break;
 		default:
 			m_pTiles[i].m_Index = 0;
 		}
 
 		// race tiles
-		if(Index >= TILE_TELEIN_STOP && Index <= TILE_TELE_LASER_DISABLE)
+		if(Index >= TILE_NOLASER && Index <= TILE_TELE_LASER_DISABLE)
 			m_pTiles[i].m_Index = Index;
 	}
 }
@@ -119,8 +109,7 @@ int CCollision::GetTile(int x, int y) const
 	int pos = Ny * m_Width + Nx;
 
 	int Index = m_pTiles[pos].m_Index;
-	if(Index == COLFLAG_SOLID || Index == (COLFLAG_SOLID|COLFLAG_NOHOOK) || Index == COLFLAG_DEATH || Index == TILE_NOLASER
-		|| Index == COLFLAG_FREEZE  || Index == COLFLAG_UNFREEZE)
+	if(Index == COLFLAG_SOLID || Index == (COLFLAG_SOLID|COLFLAG_NOHOOK) || Index == COLFLAG_DEATH || Index == TILE_NOLASER)
 		return Index;
 	else
 		return 0;

@@ -565,15 +565,6 @@ void CCharacter::Tick()
 	{
 		Die(m_pPlayer->GetCID(), WEAPON_WORLD);
 	}
-	// handle freeze tiles
-	if(GameServer()->Collision()->GetCollisionAt(m_Pos.x, m_Pos.y)&CCollision::COLFLAG_FREEZE)
-	{
-		Freeze();
-	}
-	if(GameServer()->Collision()->GetCollisionAt(m_Pos.x, m_Pos.y)&CCollision::COLFLAG_UNFREEZE)
-	{
-		Unfreeze();
-	}
 
 	// handle Weapons
 	HandleWeapons();
@@ -985,6 +976,12 @@ void CCharacter::HandleTiles(int Index)
 		m_Core.m_Vel.y = 0;
 		m_Core.m_Jumped = 0;
 	}
+	
+	// freeze
+	if((m_TileIndex == TILE_FREEZE) || (m_TileFIndex == TILE_FREEZE))
+		Freeze();
+	else if((m_TileIndex == TILE_UNFREEZE) || (m_TileFIndex == TILE_UNFREEZE))
+		Unfreeze();
 	
 	int z = GameServer()->Collision()->IsTeleport(MapIndex);
 	if(z)
