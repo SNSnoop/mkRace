@@ -104,6 +104,7 @@ bool CCharacter::Unfreeze()
 			m_ActiveWeapon = WEAPON_GUN;
 		m_FreezeTime = 0;
 		m_FreezeTick = 0;
+		m_Input = m_FreezedInput;
 		if (m_ActiveWeapon==WEAPON_HAMMER) m_ReloadTimer = 0;
 		return true;
 	}
@@ -140,7 +141,8 @@ void CCharacter::SetWeapon(int W)
 	m_LastWeapon = m_ActiveWeapon;
 	m_QueuedWeapon = -1;
 	m_ActiveWeapon = W;
-	GameServer()->CreateSound(m_Pos, SOUND_WEAPON_SWITCH, CmaskRace(GameServer(), m_pPlayer->GetCID()));
+	if(!m_FreezeTime)
+		GameServer()->CreateSound(m_Pos, SOUND_WEAPON_SWITCH, CmaskRace(GameServer(), m_pPlayer->GetCID()));
 
 	if(m_ActiveWeapon < 0 || m_ActiveWeapon >= NUM_WEAPONS)
 		m_ActiveWeapon = 0;
@@ -480,15 +482,16 @@ void CCharacter::SetEmote(int Emote, int Tick)
 
 void CCharacter::OnPredictedInput(CNetObj_PlayerInput *pNewInput)
 {
-	if(m_Frozen)
-		return;
-
 	// check for changes
-	if(mem_comp(&m_Input, pNewInput, sizeof(CNetObj_PlayerInput)) != 0)
+	if(mem_comp(&m_LatestInput, pNewInput, sizeof(CNetObj_PlayerInput)) != 0)
 		m_LastAction = Server()->Tick();
 
 	// copy new input
+	//mem_copy(&m_SavedInput, pNewInput, sizeof(m_SavedInput));
 	mem_copy(&m_Input, pNewInput, sizeof(m_Input));
+	if(m_FreezeTime > 0 || m_FreezeTime == -1)
+		mem_copy(&m_FreezedInput, pNewInput, sizeof(m_Input)); 
+
 	m_NumInputs++;
 
 	// it is not allowed to aim in the center
@@ -498,16 +501,6 @@ void CCharacter::OnPredictedInput(CNetObj_PlayerInput *pNewInput)
 
 void CCharacter::OnDirectInput(CNetObj_PlayerInput *pNewInput)
 {
-	if(m_Frozen)
-	{
-		// do target for ddrace
-		m_Input.m_TargetX = pNewInput->m_TargetX;
-		m_Input.m_TargetY = pNewInput->m_TargetY;
-		if(m_Input.m_TargetX == 0 && m_Input.m_TargetY == 0)
-			m_Input.m_TargetY = -1;
-		return;
-	}
-
 	mem_copy(&m_LatestPrevInput, &m_LatestInput, sizeof(m_LatestInput));
 	mem_copy(&m_LatestInput, pNewInput, sizeof(m_LatestInput));
 
