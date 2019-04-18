@@ -77,6 +77,7 @@ public:
 	static void OnPhysicsStep(vec2 Pos, float IntraTick, void *pUserData);
 	
 	// mkRace
+	bool m_EndlessHook;
 	int m_TileIndex;
 	int m_TileFlags;
 	int m_TileFIndex;

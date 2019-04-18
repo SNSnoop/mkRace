@@ -252,7 +252,8 @@ void CGameContext::SendChat(int ChatterClientID, int Mode, int To, const char *p
 	{
 		// send to the clients
 		Msg.m_TargetID = To;
-		Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, ChatterClientID);
+		if(ChatterClientID >= 0 && ChatterClientID < MAX_CLIENTS)
+			Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, ChatterClientID);
 		Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, To);
 	}
 }

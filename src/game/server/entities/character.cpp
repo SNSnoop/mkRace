@@ -83,6 +83,7 @@ bool CCharacter::Spawn(CPlayer *pPlayer, vec2 Pos)
 	GameServer()->m_World.InsertEntity(this);
 	m_Alive = true;
 	m_Frozen = false;
+	m_EndlessHook = g_Config.m_SvEndlessHook;
 
 	GameServer()->m_pController->OnCharacterSpawn(this);
 
@@ -906,6 +907,9 @@ void CCharacter::DDRacePostCoreTick()
 		m_EmoteStop = -1;
 	}
 
+	if (m_EndlessHook)
+		m_Core.m_HookTick = 0;
+
 	int CurrentIndex = GameServer()->Collision()->GetMapIndex(m_Pos);
 	HandleSkippableTiles(CurrentIndex);
 	HandleTiles(CurrentIndex);
@@ -982,7 +986,19 @@ void CCharacter::HandleTiles(int Index)
 		Freeze();
 	else if((m_TileIndex == TILE_UNFREEZE) || (m_TileFIndex == TILE_UNFREEZE))
 		Unfreeze();
-	
+
+	// endless hook
+	if(((m_TileIndex == TILE_EHOOK_START) || (m_TileFIndex == TILE_EHOOK_START)) && !m_EndlessHook)
+	{
+		GameServer()->SendChat(-1, CHAT_WHISPER, m_pPlayer->GetCID(), "Endless hook has been activated");
+		m_EndlessHook = true;
+	}
+	else if(((m_TileIndex == TILE_EHOOK_END) || (m_TileFIndex == TILE_EHOOK_END)) && m_EndlessHook)
+	{
+		GameServer()->SendChat(-1, CHAT_WHISPER, m_pPlayer->GetCID(), "Endless hook has been deactivated");
+		m_EndlessHook = false;
+	}
+
 	int z = GameServer()->Collision()->IsTeleport(MapIndex);
 	if(z)
 	{
