@@ -20,29 +20,10 @@ CPickup::CPickup(CGameWorld *pGameWorld, int Type, vec2 Pos)
 
 void CPickup::Reset()
 {
-	for(int i = 0; i < MAX_CLIENTS; i++)
-	{
-		if (g_pData->m_aPickups[m_Type].m_Spawndelay > 0)
-			m_SpawnTick[i] = Server()->Tick() + Server()->TickSpeed() * g_pData->m_aPickups[m_Type].m_Spawndelay;
-		else
-			m_SpawnTick[i] = -1;
-	}
 }
 
 void CPickup::Tick()
 {
-	// wait for respawn
-	for(int i = 0; i < MAX_CLIENTS; i++)
-	{
-		if(m_SpawnTick[i] > 0 && Server()->Tick() > m_SpawnTick[i] && g_Config.m_SvPickupRespawn > -1)
-		{
-			// respawn
-			m_SpawnTick[i] = -1;
-
-			if(m_Type == PICKUP_GRENADE || m_Type == PICKUP_SHOTGUN || m_Type == PICKUP_LASER)
-				GameServer()->CreateSound(m_Pos, SOUND_WEAPON_SPAWN, CmaskOne(i));
-		}
-	}
 	// Check if a player intersected us
 	CCharacter *apChrs[MAX_CLIENTS];
 	int Num = GameServer()->m_World.FindEntities(m_Pos, 20.0f, (CEntity**)apChrs, MAX_CLIENTS, CGameWorld::ENTTYPE_CHARACTER);
@@ -83,44 +64,37 @@ void CPickup::Tick()
 				break;
 
 			case PICKUP_GRENADE:
-				if(pChr->GiveWeapon(WEAPON_GRENADE, g_pData->m_Weapons.m_aId[WEAPON_GRENADE].m_Maxammo))
-				{
-					GameServer()->CreateSound(m_Pos, SOUND_PICKUP_GRENADE, CmaskOne(ClientID));
-					if(pChr->GetPlayer())
-						GameServer()->SendWeaponPickup(pChr->GetPlayer()->GetCID(), WEAPON_GRENADE);
-				}
+				if(!pChr->GetWeaponGot(WEAPON_GRENADE) || (pChr->GetWeaponAmmo(WEAPON_GRENADE) != -1 && !pChr->m_FreezeTime))
+					if(pChr->GiveWeapon(WEAPON_GRENADE, -1))
+					{
+						GameServer()->CreateSound(m_Pos, SOUND_PICKUP_GRENADE, CmaskOne(ClientID));
+						if(pChr->GetPlayer())
+							GameServer()->SendWeaponPickup(pChr->GetPlayer()->GetCID(), WEAPON_GRENADE);
+					}
 				break;
 			case PICKUP_SHOTGUN:
-				if(pChr->GiveWeapon(WEAPON_SHOTGUN, g_pData->m_Weapons.m_aId[WEAPON_SHOTGUN].m_Maxammo))
-				{
-					GameServer()->CreateSound(m_Pos, SOUND_PICKUP_SHOTGUN, CmaskOne(ClientID));
-					if(pChr->GetPlayer())
-						GameServer()->SendWeaponPickup(pChr->GetPlayer()->GetCID(), WEAPON_SHOTGUN);
-				}
+				if(!pChr->GetWeaponGot(WEAPON_SHOTGUN) || (pChr->GetWeaponAmmo(WEAPON_SHOTGUN) != -1 && !pChr->m_FreezeTime))
+					if(pChr->GiveWeapon(WEAPON_SHOTGUN, -1))
+					{
+						GameServer()->CreateSound(m_Pos, SOUND_PICKUP_SHOTGUN, CmaskOne(ClientID));
+						if(pChr->GetPlayer())
+							GameServer()->SendWeaponPickup(pChr->GetPlayer()->GetCID(), WEAPON_SHOTGUN);
+					}
 				break;
 			case PICKUP_LASER:
-				if(pChr->GiveWeapon(WEAPON_LASER, g_pData->m_Weapons.m_aId[WEAPON_LASER].m_Maxammo))
-				{
-					GameServer()->CreateSound(m_Pos, SOUND_PICKUP_SHOTGUN, CmaskOne(ClientID));
-					if(pChr->GetPlayer())
-						GameServer()->SendWeaponPickup(pChr->GetPlayer()->GetCID(), WEAPON_LASER);
-				}
+				if(!pChr->GetWeaponGot(WEAPON_LASER) || (pChr->GetWeaponAmmo(WEAPON_LASER) != -1 && !pChr->m_FreezeTime))
+					if(pChr->GiveWeapon(WEAPON_LASER, -1))
+					{
+						GameServer()->CreateSound(m_Pos, SOUND_PICKUP_SHOTGUN, CmaskOne(ClientID));
+						if(pChr->GetPlayer())
+							GameServer()->SendWeaponPickup(pChr->GetPlayer()->GetCID(), WEAPON_LASER);
+					}
 				break;
 
 			case PICKUP_NINJA:
 				{
 					// activate ninja on target player
 					pChr->GiveNinja();
-
-					// loop through all players, setting their emotes
-					/*
-					CCharacter *pC = static_cast<CCharacter *>(GameServer()->m_World.FindFirst(CGameWorld::ENTTYPE_CHARACTER));
-					for(; pC; pC = (CCharacter *)pC->TypeNext())
-					{
-						if (pC != pChr)
-							pC->SetEmote(EMOTE_SURPRISE, Server()->Tick() + Server()->TickSpeed());
-					}
-					*/
 
 					pChr->SetEmote(EMOTE_ANGRY, Server()->Tick() + 1200 * Server()->TickSpeed() / 1000);
 					break;
@@ -136,9 +110,6 @@ void CPickup::Tick()
 			str_format(aBuf, sizeof(aBuf), "pickup player='%d:%s' item=%d",
 				pChr->GetPlayer()->GetCID(), Server()->ClientName(pChr->GetPlayer()->GetCID()), m_Type);
 			GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "game", aBuf);
-			/*int RespawnTime = g_pData->m_aPickups[m_Type].m_Respawntime;
-			if(RespawnTime >= 0)
-				m_SpawnTick = Server()->Tick() + Server()->TickSpeed() * RespawnTime;*/
 
 			if(g_Config.m_SvPickupRespawn > -1)
 				m_SpawnTick[ClientID] = Server()->Tick() + Server()->TickSpeed() * g_Config.m_SvPickupRespawn;

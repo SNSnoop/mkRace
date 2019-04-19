@@ -174,6 +174,20 @@ void CCharacter::HandleNinja()
 {
 	if(m_ActiveWeapon != WEAPON_NINJA)
 		return;
+	
+	if ((Server()->Tick() - m_Ninja.m_ActivationTick) > (g_pData->m_Weapons.m_Ninja.m_Duration * Server()->TickSpeed() / 1000))
+	{
+		// time's up, return
+		m_aWeapons[WEAPON_NINJA].m_Got = false;
+		m_ActiveWeapon = m_LastWeapon;
+		
+		// reset velocity
+		if(m_Ninja.m_CurrentMoveTime > 0)
+			m_Core.m_Vel = m_Ninja.m_ActivationDir*m_Ninja.m_OldVelAmount;
+
+		SetWeapon(m_ActiveWeapon);
+		return;
+	}
 
 	// force ninja Weapon
 	SetWeapon(WEAPON_NINJA);
@@ -423,7 +437,7 @@ void CCharacter::HandleWeapons()
 	FireWeapon();
 
 	// ammo regen
-	int AmmoRegenTime = g_pData->m_Weapons.m_aId[m_ActiveWeapon].m_Ammoregentime;
+	/*int AmmoRegenTime = g_pData->m_Weapons.m_aId[m_ActiveWeapon].m_Ammoregentime;
 	if(AmmoRegenTime && m_aWeapons[m_ActiveWeapon].m_Ammo >= 0)
 	{
 		// If equipped and not active, regen ammo?
@@ -444,17 +458,18 @@ void CCharacter::HandleWeapons()
 		{
 			m_aWeapons[m_ActiveWeapon].m_AmmoRegenStart = -1;
 		}
-	}
+	}*/
 
 	return;
 }
 
 bool CCharacter::GiveWeapon(int Weapon, int Ammo)
 {
-	if(m_aWeapons[Weapon].m_Ammo < g_pData->m_Weapons.m_aId[Weapon].m_Maxammo || !m_aWeapons[Weapon].m_Got)
+	if(m_aWeapons[Weapon].m_Ammo != g_pData->m_Weapons.m_aId[Weapon].m_Maxammo || !m_aWeapons[Weapon].m_Got)
 	{
 		m_aWeapons[Weapon].m_Got = true;
-		m_aWeapons[Weapon].m_Ammo = min(g_pData->m_Weapons.m_aId[Weapon].m_Maxammo, Ammo);
+		if(!m_FreezeTime)
+			m_aWeapons[Weapon].m_Ammo = min(g_pData->m_Weapons.m_aId[Weapon].m_Maxammo, Ammo);
 		return true;
 	}
 	return false;
@@ -465,13 +480,13 @@ void CCharacter::GiveNinja()
 	m_Ninja.m_ActivationTick = Server()->Tick();
 	m_Ninja.m_IndicatorTick = Server()->Tick();
 	m_Ninja.m_CurrentMoveTime = -1;
+	if(!m_aWeapons[WEAPON_NINJA].m_Got)
+		GameServer()->CreateSound(m_Pos, SOUND_PICKUP_NINJA, CmaskRace(GameServer(), m_pPlayer->GetCID()));
 	m_aWeapons[WEAPON_NINJA].m_Got = true;
 	m_aWeapons[WEAPON_NINJA].m_Ammo = -1;
 	if (m_ActiveWeapon != WEAPON_NINJA)
 		m_LastWeapon = m_ActiveWeapon;
 	m_ActiveWeapon = WEAPON_NINJA;
-
-	GameServer()->CreateSound(m_Pos, SOUND_PICKUP_NINJA, CmaskRace(GameServer(), m_pPlayer->GetCID()));
 }
 
 void CCharacter::SetEmote(int Emote, int Tick)
@@ -723,7 +738,7 @@ bool CCharacter::Freeze(int Seconds)
 		m_Armor = 0;
 		m_FreezeTime = Seconds == -1 ? Seconds : Seconds * Server()->TickSpeed();
 		m_FreezeTick = Server()->Tick();
-		m_Ninja.m_ActivationTick = m_FreezeTick;
+		//m_Ninja.m_ActivationTick = m_FreezeTick;
 		return true;
 	}
 	
@@ -829,7 +844,10 @@ void CCharacter::Snap(int SnappingClient)
 	{
 		pCharacter->m_Health = m_Health;
 		pCharacter->m_Armor = m_Armor;
-		pCharacter->m_AmmoCount =  m_Ninja.m_ActivationTick + g_Config.m_SvFreezeDelay * Server()->TickSpeed();
+		if(m_ActiveWeapon == WEAPON_NINJA)
+			pCharacter->m_AmmoCount = m_Ninja.m_ActivationTick + g_pData->m_Weapons.m_Ninja.m_Duration * Server()->TickSpeed() / 1000;
+		else
+			pCharacter->m_AmmoCount =  m_FreezeTick + g_Config.m_SvFreezeDelay * Server()->TickSpeed();
 	}
 
 	if(pCharacter->m_Emote == EMOTE_NORMAL)
