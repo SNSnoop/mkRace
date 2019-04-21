@@ -4,6 +4,8 @@
 
 #include <game/mapitems.h>
 
+#include "entities/gun.h"
+#include "entities/plasma.h"
 #include "entities/dragger.h"
 #include "entities/character.h"
 #include "entities/pickup.h"
@@ -329,6 +331,22 @@ bool IGameController::OnEntity(int Index, vec2 Pos, int Layer, int Flags, int Nu
 	else if(Index >= ENTITY_DRAGGER_WEAK_NW && Index <= ENTITY_DRAGGER_STRONG_NW)
 	{
 		CDraggerTeam(&GameServer()->m_World, Pos, Index - ENTITY_DRAGGER_WEAK_NW + 1, true, Layer, Number);
+	}
+	else if(Index == ENTITY_PLASMAE)
+	{
+		new CGun(&GameServer()->m_World, Pos, false, true, Layer, Number);
+	}
+	else if(Index == ENTITY_PLASMAF)
+	{
+		new CGun(&GameServer()->m_World, Pos, true, false, Layer, Number);
+	}
+	else if(Index == ENTITY_PLASMA)
+	{
+		new CGun(&GameServer()->m_World, Pos, true, true, Layer, Number);
+	}
+	else if(Index == ENTITY_PLASMAU)
+	{
+		new CGun(&GameServer()->m_World, Pos, false, false, Layer, Number);
 	}
 
 	return false;

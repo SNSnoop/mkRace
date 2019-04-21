@@ -101,6 +101,8 @@ MACRO_CONFIG_INT(DbgResizable, dbg_resizable, 0, 0, 0, CFGFLAG_CLIENT, "Enables 
 
 // mkRace
 MACRO_CONFIG_INT(SvEndlessHook, sv_endless_hook, 0, 0, 1, CFGFLAG_SERVER, "Turns endless hooking on/off")
+MACRO_CONFIG_INT(SvPlasmaRange, sv_plasma_range, 700, 1, 99999, CFGFLAG_SERVER, "How far will the plasma gun track tees")
+MACRO_CONFIG_INT(SvPlasmaPerSec, sv_plasma_per_sec, 3, 0, 50, CFGFLAG_SERVER, "How many shots does the plasma gun fire per seconds")
 MACRO_CONFIG_INT(SvDraggers, sv_draggers, 1, 0, 1, CFGFLAG_SERVER, "Toggle draggers")
 MACRO_CONFIG_INT(SvDraggerRange, sv_dragger_range, 700, 1, 99999, CFGFLAG_SERVER, "How far will the dragger track tees")
 MACRO_CONFIG_INT(SvFreezeDelay, sv_freeze_delay, 3, 1, 30, CFGFLAG_SERVER, "How many seconds the players will remain frozen")
