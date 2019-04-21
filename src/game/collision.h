@@ -81,6 +81,7 @@ public:
 
 	class CTeleTile *TeleLayer() { return m_pTele; }
 
+	int Entity(int x, int y, int Layer);
 	int GetIndex(int x, int y);
 	int GetIndex(vec2 PrevPos, vec2 Pos);
 	int GetFIndex(int x, int y);

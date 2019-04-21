@@ -618,6 +618,54 @@ int CCollision::GetPureMapIndex(float x, float y)
 	return Ny*m_Width+Nx;
 }
 
+int CCollision::Entity(int x, int y, int Layer)
+{
+	if((0 > x || x >= m_Width) || (0 > y || y >= m_Height))
+	{
+		char aBuf[12];
+		switch (Layer)
+		{
+			case LAYER_GAME:
+				str_format(aBuf,sizeof(aBuf), "Game");
+				break;
+			case LAYER_FRONT:
+				str_format(aBuf,sizeof(aBuf), "Front");
+				break;
+			case LAYER_SWITCH:
+				str_format(aBuf,sizeof(aBuf), "Switch");
+				break;
+			case LAYER_TELE:
+				str_format(aBuf,sizeof(aBuf), "Tele");
+				break;
+			case LAYER_SPEEDUP:
+				str_format(aBuf,sizeof(aBuf), "Speedup");
+				break;
+			case LAYER_TUNE:
+				str_format(aBuf,sizeof(aBuf), "Tune");
+				break;
+			default:
+				str_format(aBuf,sizeof(aBuf), "Unknown");
+		}
+		return 0;
+	}
+	switch (Layer)
+	{
+		case LAYER_GAME:
+			return m_pTiles[y*m_Width+x].m_Index - ENTITY_OFFSET;
+		case LAYER_FRONT:
+			return m_pFront[y*m_Width+x].m_Index - ENTITY_OFFSET;
+		case LAYER_TELE:
+			return m_pTele[y*m_Width+x].m_Type - ENTITY_OFFSET;
+		case LAYER_SPEEDUP:
+			return m_pSpeedup[y*m_Width+x].m_Type - ENTITY_OFFSET;
+		case LAYER_TUNE:
+			return m_pTune[y*m_Width+x].m_Type - ENTITY_OFFSET;
+		default:
+			return 0;
+			break;
+	}
+}
+
 vec2 CCollision::CpSpeed(int Index, int Flags)
 {
 	if(Index < 0)

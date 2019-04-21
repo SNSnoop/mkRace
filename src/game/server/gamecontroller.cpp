@@ -4,6 +4,7 @@
 
 #include <game/mapitems.h>
 
+#include "entities/light.h"
 #include "entities/gun.h"
 #include "entities/plasma.h"
 #include "entities/dragger.h"
@@ -323,8 +324,77 @@ bool IGameController::OnEntity(int Index, vec2 Pos, int Layer, int Flags, int Nu
 		new CPickup(&GameServer()->m_World, Type, Pos);
 		return true;
 	}
-	
-	if(Index >= ENTITY_DRAGGER_WEAK && Index <= ENTITY_DRAGGER_STRONG)
+	if(Index >= ENTITY_LASER_FAST_CW && Index <= ENTITY_LASER_FAST_CCW)
+	{
+		int x,y;
+		x=(Pos.x-16.0f)/32.0f;
+		y=(Pos.y-16.0f)/32.0f;
+		int sides[8];
+		sides[0]=GameServer()->Collision()->Entity(x,y+1, Layer);
+		sides[1]=GameServer()->Collision()->Entity(x+1,y+1, Layer);
+		sides[2]=GameServer()->Collision()->Entity(x+1,y, Layer);
+		sides[3]=GameServer()->Collision()->Entity(x+1,y-1, Layer);
+		sides[4]=GameServer()->Collision()->Entity(x,y-1, Layer);
+		sides[5]=GameServer()->Collision()->Entity(x-1,y-1, Layer);
+		sides[6]=GameServer()->Collision()->Entity(x-1,y, Layer);
+		sides[7]=GameServer()->Collision()->Entity(x-1,y+1, Layer);
+		int sides2[8];
+		sides2[0]=GameServer()->Collision()->Entity(x, y + 2, Layer);
+		sides2[1]=GameServer()->Collision()->Entity(x + 2, y + 2, Layer);
+		sides2[2]=GameServer()->Collision()->Entity(x + 2, y, Layer);
+		sides2[3]=GameServer()->Collision()->Entity(x + 2, y - 2, Layer);
+		sides2[4]=GameServer()->Collision()->Entity(x,y - 2, Layer);
+		sides2[5]=GameServer()->Collision()->Entity(x - 2, y - 2, Layer);
+		sides2[6]=GameServer()->Collision()->Entity(x - 2, y, Layer);
+		sides2[7]=GameServer()->Collision()->Entity(x - 2, y + 2, Layer);
+
+		float AngularSpeed = 0.0;
+		int Ind=Index-ENTITY_LASER_STOP;
+		int M;
+		if( Ind < 0)
+		{
+			Ind = -Ind;
+			M = 1;
+		}
+		else if(Ind == 0)
+			M = 0;
+		else
+			M = -1;
+
+
+		if(Ind == 0)
+			AngularSpeed = 0.0f;
+		else if(Ind == 1)
+			AngularSpeed = pi / 360;
+		else if(Ind == 2)
+			AngularSpeed = pi / 180;
+		else if(Ind == 3)
+			AngularSpeed = pi / 90;
+		AngularSpeed *= M;
+
+		for(int i=0; i<8;i++)
+		{
+			if(sides[i] >= ENTITY_LASER_SHORT && sides[i] <= ENTITY_LASER_LONG)
+			{
+				CLight *Lgt = new CLight(&GameServer()->m_World, Pos, pi / 4 * i, 32 * 3 + 32 * (sides[i] - ENTITY_LASER_SHORT) * 3, Layer, Number);
+				Lgt->m_AngularSpeed = AngularSpeed;
+				if(sides2[i] >= ENTITY_LASER_C_SLOW && sides2[i] <= ENTITY_LASER_C_FAST)
+				{
+					Lgt->m_Speed = 1 + (sides2[i] - ENTITY_LASER_C_SLOW) * 2;
+					Lgt->m_CurveLength = Lgt->m_Length;
+				}
+				else if(sides2[i] >= ENTITY_LASER_O_SLOW && sides2[i] <= ENTITY_LASER_O_FAST)
+				{
+					Lgt->m_Speed = 1 + (sides2[i] - ENTITY_LASER_O_SLOW) * 2;
+					Lgt->m_CurveLength = 0;
+				}
+				else
+					Lgt->m_CurveLength = Lgt->m_Length;
+			}
+		}
+
+	}
+	else if(Index >= ENTITY_DRAGGER_WEAK && Index <= ENTITY_DRAGGER_STRONG)
 	{
 		CDraggerTeam(&GameServer()->m_World, Pos, Index - ENTITY_DRAGGER_WEAK + 1, false, Layer, Number);
 	}
