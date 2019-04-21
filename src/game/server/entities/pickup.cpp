@@ -24,6 +24,7 @@ void CPickup::Reset()
 
 void CPickup::Tick()
 {
+	Move();
 	// Check if a player intersected us
 	CCharacter *apChrs[MAX_CLIENTS];
 	int Num = GameServer()->m_World.FindEntities(m_Pos, 20.0f, (CEntity**)apChrs, MAX_CLIENTS, CGameWorld::ENTTYPE_CHARACTER);
@@ -140,4 +141,18 @@ void CPickup::Snap(int SnappingClient)
 	pP->m_X = (int)m_Pos.x;
 	pP->m_Y = (int)m_Pos.y;
 	pP->m_Type = m_Type;
+}
+
+void CPickup::Move()
+{
+	if (Server()->Tick()%int(Server()->TickSpeed() * 0.15f) == 0)
+	{
+		int Flags;
+		int index = GameServer()->Collision()->IsMover(m_Pos.x,m_Pos.y, &Flags);
+		if (index)
+		{
+			m_Core=GameServer()->Collision()->CpSpeed(index, Flags);
+		}
+		m_Pos += m_Core;
+	}
 }

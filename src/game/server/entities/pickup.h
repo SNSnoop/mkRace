@@ -22,6 +22,8 @@ public:
 private:
 	int m_Type;
 	int m_SpawnTick[MAX_CLIENTS];
+	void Move();
+	vec2 m_Core;
 };
 
 #endif

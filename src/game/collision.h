@@ -97,11 +97,13 @@ public:
 	int IsTeleport(int Index);
 	bool TileExists(int Index);
 	bool TileExistsNext(int Index);
+	vec2 CpSpeed(int index, int Flags = 0);
 	int GetMapIndex(vec2 Pos);
 	int IsEvilTeleport(int Index);
 	int IsCheckTeleport(int Index);
 	int IsCheckEvilTeleport(int Index);
 	int IsTeleportHook(int Index);
+	int IsMover(int x, int y, int *pFlags);
 	bool IsThrough(int x, int y, int xoff, int yoff, vec2 pos0, vec2 pos1);
 	bool IsHookBlocker(int x, int y, vec2 pos0, vec2 pos1);
 	int GetFCollisionAt(float x, float y) { return GetFTile(round_to_int(x), round_to_int(y)); }

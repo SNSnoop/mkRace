@@ -618,6 +618,53 @@ int CCollision::GetPureMapIndex(float x, float y)
 	return Ny*m_Width+Nx;
 }
 
+vec2 CCollision::CpSpeed(int Index, int Flags)
+{
+	if(Index < 0)
+		return vec2(0,0);
+	vec2 target;
+	if(Index == TILE_CP || Index == TILE_CP_F)
+		switch(Flags)
+		{
+		case ROTATION_0:
+			target.x=0;
+			target.y=-4;
+			break;
+		case ROTATION_90:
+			target.x=4;
+			target.y=0;
+			break;
+		case ROTATION_180:
+			target.x=0;
+			target.y=4;
+			break;
+		case ROTATION_270:
+			target.x=-4;
+			target.y=0;
+			break;
+		default:
+			target=vec2(0,0);
+			break;
+		}
+	if(Index == TILE_CP_F)
+		target*=4;
+	return target;
+}
+
+int CCollision::IsMover(int x, int y, int *pFlags)
+{
+	int Nx = clamp(x/32, 0, m_Width-1);
+	int Ny = clamp(y/32, 0, m_Height-1);
+	int Index = m_pTiles[Ny*m_Width+Nx].m_Index;
+	*pFlags = m_pTiles[Ny*m_Width+Nx].m_Flags;
+	if(Index < 0)
+		return 0;
+	if (Index == TILE_CP || Index == TILE_CP_F)
+		return Index;
+	else
+		return 0;
+}
+
 bool CCollision::IsThrough(int x, int y, int xoff, int yoff, vec2 pos0, vec2 pos1)
 {
 	int pos = GetPureMapIndex(x, y);
