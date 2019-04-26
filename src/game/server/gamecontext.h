@@ -154,6 +154,8 @@ public:
 
 		VOTE_TIME=25,
 		VOTE_CANCEL_TIME = 10,
+
+		MIN_SKINCHANGE_CLIENTVERSION = 0x0703,
 	};
 	class CHeap *m_pVoteOptionHeap;
 	CVoteOptionServer *m_pVoteOptionFirst;
@@ -174,6 +176,7 @@ public:
 	void SendWeaponPickup(int ClientID, int Weapon);
 	void SendMotd(int ClientID);
 	void SendSettings(int ClientID);
+	void SendSkinChange(int ClientID, int TargetID);
 
 	void SendGameMsg(int GameMsgID, int ClientID);
 	void SendGameMsg(int GameMsgID, int ParaI1, int ClientID);
@@ -199,8 +202,8 @@ public:
 
 	virtual void OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID);
 
-	virtual void OnClientConnected(int ClientID) { OnClientConnected(ClientID, false); }
-	void OnClientConnected(int ClientID, bool Dummy);
+	virtual void OnClientConnected(int ClientID, bool AsSpec) { OnClientConnected(ClientID, false, AsSpec); }
+	void OnClientConnected(int ClientID, bool Dummy, bool AsSpec);
 	void OnClientTeamChange(int ClientID);
 	virtual void OnClientEnter(int ClientID);
 	virtual void OnClientDrop(int ClientID, const char *pReason);
@@ -209,6 +212,7 @@ public:
 
 	virtual bool IsClientReady(int ClientID) const;
 	virtual bool IsClientPlayer(int ClientID) const;
+	virtual bool IsClientSpectator(int ClientID) const;
 
 	virtual const char *GameType() const;
 	virtual const char *Version() const;
@@ -216,7 +220,7 @@ public:
 };
 
 inline int64 CmaskAll() { return -1; }
-inline int64 CmaskOne(int ClientID) { return 1<<ClientID; }
+inline int64 CmaskOne(int ClientID) { return (int64)1<<ClientID; }
 inline int64 CmaskAllExceptOne(int ClientID) { return CmaskAll()^CmaskOne(ClientID); }
 inline bool CmaskIsSet(int64 Mask, int ClientID) { return (Mask&CmaskOne(ClientID)) != 0; }
 int64 CmaskRace(CGameContext *pGameServer, int Owner);
