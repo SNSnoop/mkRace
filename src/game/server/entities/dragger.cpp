@@ -115,7 +115,7 @@ void CDragger::Drag()
 			else if (length(m_Pos - Target->m_Pos) > 28)
 			{
 				vec2 Temp = Target->Core()->m_Vel
-						+ (normalize(m_Pos - Target->m_Pos) * m_Strength/100);
+						+ (normalize(m_Pos - Target->m_Pos) * m_Strength);
 				if (Temp.x > 0
 						&& ((Target->m_TileIndex == TILE_STOP
 								&& Target->m_TileFlags == ROTATION_270)
@@ -356,11 +356,7 @@ void CDragger::Snap(int SnappingClient)
 CDraggerTeam::CDraggerTeam(CGameWorld *pGameWorld, vec2 Pos, float Strength,
 		bool NW, int Layer, int Number)
 {
-	for (int i = 0; i < MAX_CLIENTS; ++i)
-	{
-		m_Draggers[i] = new CDragger(pGameWorld, Pos, Strength, NW, i, Layer,
-				Number);
-	}
+		m_Draggers[0] = new CDragger(pGameWorld, Pos, Strength, NW, 0, Layer, Number);
 }
 
 //CDraggerTeam::~CDraggerTeam() {
