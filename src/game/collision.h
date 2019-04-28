@@ -5,6 +5,9 @@
 
 #include <base/vmath.h>
 
+#include <vector>
+#include <map>
+
 enum
 {
 	PHYSICSFLAG_STOPPER=1,
@@ -37,8 +40,6 @@ class CCollision
 	int m_Width;
 	int m_Height;
 	class CLayers *m_pLayers;
-
-	vec2 m_aTeleporter[1<<8];
 
 	void InitTeleporter();
 
@@ -77,9 +78,11 @@ public:
 	int CheckIndexExRange(vec2 Pos, int MinIndex, int MaxIndex) const;
 
 	int CheckCheckpoint(vec2 Pos) const;
-	vec2 GetTeleportDestination(int Tele) const { return m_aTeleporter[Tele - 1]; };
 
 	class CTeleTile *TeleLayer() { return m_pTele; }
+
+	std::map<int, std::vector<vec2> > m_TeleOuts;
+	std::map<int, std::vector<vec2> > m_TeleCheckOuts;
 
 	int Entity(int x, int y, int Layer);
 	int GetIndex(int x, int y);

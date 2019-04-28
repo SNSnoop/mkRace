@@ -87,16 +87,28 @@ void CCollision::InitTeleporter()
 {
 	if (!m_pLayers->TeleLayer())
 		return;
-	mem_zero(m_aTeleporter, sizeof(m_aTeleporter));
 
-	for(int Ny = 0; Ny < m_pLayers->TeleLayer()->m_Height; Ny++)
-		for(int Nx = 0; Nx < m_pLayers->TeleLayer()->m_Width; Nx++)
+	int Width = m_pLayers->TeleLayer()->m_Width;
+	int Height = m_pLayers->TeleLayer()->m_Height;
+	
+	for (int i = 0; i < Width * Height; i++)
+	{
+		int Number = TeleLayer()[i].m_Number;
+		int Type = TeleLayer()[i].m_Type;
+		if (Number > 0)
 		{
-			vec2 Pos = vec2(Nx*32+16, Ny*32+16);
-			int TilePosTele = Ny*m_pLayers->TeleLayer()->m_Width+Nx;
-			if(m_pTele[TilePosTele].m_Number > 0 && TeleLayer()[TilePosTele].m_Type == TILE_TELEOUT)
-				m_aTeleporter[m_pTele[TilePosTele].m_Number - 1] = Pos;
+			if (Type == TILE_TELEOUT)
+			{
+				m_TeleOuts[Number - 1].push_back(
+						vec2(i % Width * 32 + 16, i / Width * 32 + 16));
+			}
+			else if (Type == TILE_TELECHECKOUT)
+			{
+				m_TeleCheckOuts[Number - 1].push_back(
+						vec2(i % Width * 32 + 16, i / Width * 32 + 16));
+			}
 		}
+	}
 }
 
 int CCollision::GetTile(int x, int y) const
