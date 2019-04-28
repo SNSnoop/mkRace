@@ -1547,6 +1547,9 @@ void CGameContext::OnConsoleInit()
 	Console()->Register("teleport", "ii", CFGFLAG_SERVER, ConTeleport, this, "Teleport ID 1 to ID 2");
 	Console()->Register("teleport_to", "iii", CFGFLAG_SERVER, ConTeleportTo, this, "Teleport ID to (Pos X ; Pos Y)");
 	Console()->Register("get_pos", "i", CFGFLAG_SERVER, ConGetPos, this, "Retrun the position of a player");
+	
+	#define CONSOLE_COMMAND(name, params, flags, callback, userdata, help) Console()->Register(name, params, flags, callback, userdata, help);
+	#include "mkracecommands.h"
 }
 
 void CGameContext::OnInit()
@@ -1645,9 +1648,6 @@ void CGameContext::OnInit()
 	Console()->Chain("sv_scorelimit", ConchainGameinfoUpdate, this);
 	Console()->Chain("sv_timelimit", ConchainGameinfoUpdate, this);
 	Console()->Chain("sv_matches_per_map", ConchainGameinfoUpdate, this);
-	
-	//#define CHAT_COMMAND(name, params, flags, callback, userdata, help) m_pConsole->Register(name, params, flags, callback, userdata, help);
-	//#include "mkrace.h"
 
 	// clamp sv_player_slots to 0..MaxClients
 	if(Server()->MaxClients() < g_Config.m_SvPlayerSlots)

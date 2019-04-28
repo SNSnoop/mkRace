@@ -82,6 +82,12 @@ class CGameContext : public IGameServer
 	static void ChatConHelp(IConsole::IResult *pResult, void *pUser);
 	
 	// mkRace
+	void MoveCharacter(int ClientID, int X, int Y, bool Raw = false);
+	static void ConGoLeft(IConsole::IResult *pResult, void *pUserData);
+	static void ConGoRight(IConsole::IResult *pResult, void *pUserData);
+	static void ConGoUp(IConsole::IResult *pResult, void *pUserData);
+	static void ConGoDown(IConsole::IResult *pResult, void *pUserData);
+	
 	static void ConTogglePause(IConsole::IResult *pResult, void *pUserData);
 	static void ConToggleSpec(IConsole::IResult *pResult, void *pUserData);
 	static void ConSetEyeEmote(IConsole::IResult *pResult, void *pUserData);
