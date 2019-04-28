@@ -553,8 +553,6 @@ void CCharacter::Tick()
 	
 	m_Core.m_Input = m_Input;
 	m_Core.Tick(true);
-	
-	DDRacePostCoreTick();
 
 	// race
 	if(g_Config.m_SvRegen > 0 && (Server()->Tick()%g_Config.m_SvRegen) == 0)
@@ -577,6 +575,8 @@ void CCharacter::Tick()
 
 	// handle Weapons
 	HandleWeapons();
+	
+	DDRacePostCoreTick();
 }
 
 void CCharacter::TickDefered()
