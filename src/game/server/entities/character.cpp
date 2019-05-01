@@ -1021,9 +1021,10 @@ void CCharacter::HandleTiles(int Index)
 		return;
 	}
 	int evilz = GameServer()->Collision()->IsEvilTeleport(MapIndex);
+	Num = GameServer()->Collision()->m_TeleOuts[evilz-1].size();
 	if(evilz && Num)
 	{
-		m_Core.m_Pos = GameServer()->Collision()->m_TeleOuts[z-1][(!Num)?Num:rand() % Num];
+		m_Core.m_Pos = GameServer()->Collision()->m_TeleOuts[evilz-1][(!Num)?Num:rand() % Num];
 		m_Core.m_Vel = vec2(0,0);
 		m_Core.m_HookedPlayer = -1;
 		m_Core.m_HookState = HOOK_RETRACTED;
