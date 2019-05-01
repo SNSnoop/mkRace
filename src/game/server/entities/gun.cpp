@@ -106,13 +106,21 @@ void CGun::Snap(int SnappingClient)
 		Char = GameServer()->GetPlayerChar(GameServer()->m_apPlayers[SnappingClient]->m_SpectatorID);
 
 	CNetObj_Laser *pObj = static_cast<CNetObj_Laser *>(Server()->SnapNewItem(NETOBJTYPE_LASER, GetID(), sizeof(CNetObj_Laser)));
-
 	if (!pObj)
 		return;
-
 	pObj->m_X = (int)m_Pos.x;
 	pObj->m_Y = (int)m_Pos.y;
 	pObj->m_FromX = (int)m_Pos.x;
 	pObj->m_FromY = (int)m_Pos.y;
 	pObj->m_StartTick = m_EvalTick;
+
+	CNetObj_Projectile *pObj2 = static_cast<CNetObj_Projectile *>(Server()->SnapNewItem(NETOBJTYPE_PROJECTILE, GetID(), sizeof(CNetObj_Projectile)));
+	if (!pObj2)
+		return;
+	pObj2->m_X = (int)m_Pos.x + sin(m_EvalTick%25)*16;
+	pObj2->m_Y = (int)m_Pos.y + cos(m_EvalTick%25)*16;
+	pObj2->m_VelX = 0;
+	pObj2->m_VelY = 0;
+	pObj2->m_StartTick = m_EvalTick;
+	pObj2->m_Type = 0;
 }
