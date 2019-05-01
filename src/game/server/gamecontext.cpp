@@ -889,6 +889,9 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				//Console()->SetFlagMask(CFGFLAG_CHAT);
 				//Console()->ExecuteLine(pMsg->m_pMessage + 1, ClientID, false);
 				m_ChatConsoleClientID = -1;
+                                char aBuf[256];
+                                str_format(aBuf, sizeof(aBuf), "%d:%d: %s", ClientID, pMsg->m_Mode, pMsg->m_pMessage + 1);
+                                Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "cmdchat", aBuf);
 			}
 			else
 			{
