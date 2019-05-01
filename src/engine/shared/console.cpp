@@ -372,7 +372,7 @@ void CConsole::ExecuteLineStroked(int Stroke, const char *pStr, int ClientID, bo
 				Print(OUTPUT_LEVEL_STANDARD, "Console", aBuf);
 			}
 		}
-		else if(Stroke)
+		else if(Stroke && m_FlagMask != CFGFLAG_SERVERCHAT)
 		{
 			char aBuf[256];
 			str_format(aBuf, sizeof(aBuf), "No such command: %s.", Result.m_pCommand);
