@@ -90,7 +90,7 @@ void CGameContext::ConSetEyeEmote(IConsole::IResult *pResult,
 					"You don't have any eye emotes, remember to bind some. (until you die)");
 }
 
-void CGameContext::ConEyeEmote(IConsole::IResult *pResult, void *pUserData)
+void CGameContext::ConEyeEmote(IConsole::IResult *pResult, void *pUserData, int Emote, int Duration)
 {
 	CGameContext *pSelf = (CGameContext *) pUserData;
 	if (g_Config.m_SvEmotionalTees == -1)
@@ -100,12 +100,25 @@ void CGameContext::ConEyeEmote(IConsole::IResult *pResult, void *pUserData)
 		return;
 	}
 
-	//if (!CheckClientID(pResult->m_ClientID))
-	//	return;
-
 	CPlayer *pPlayer = pSelf->m_apPlayers[pResult->m_ClientID];
 	if (!pPlayer)
 		return;
+
+	if(pPlayer->m_LastEyeEmote + g_Config.m_SvEyeEmoteChangeDelay * pSelf->Server()->TickSpeed() >= pSelf->Server()->Tick())
+			return;
+
+	pPlayer->m_DefEmote = Emote;
+	
+	pPlayer->m_DefEmoteReset = pSelf->Server()->Tick() + Duration * pSelf->Server()->TickSpeed();
+	pPlayer->m_LastEyeEmote = pSelf->Server()->Tick();
+}
+
+void CGameContext::ConEmote(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *) pUserData;
+
+	//if (!CheckClientID(pResult->m_ClientID))
+	//	return;
 
 	if (pResult->NumArguments() == 0)
 	{
@@ -120,35 +133,62 @@ void CGameContext::ConEyeEmote(IConsole::IResult *pResult, void *pUserData)
 	}
 	else
 	{
-			if(pPlayer->m_LastEyeEmote + g_Config.m_SvEyeEmoteChangeDelay * pSelf->Server()->TickSpeed() >= pSelf->Server()->Tick())
-				return;
+		int Emote = -1;
+		if (!str_comp(pResult->GetString(0), "angry"))
+			Emote = EMOTE_ANGRY;
+		else if (!str_comp(pResult->GetString(0), "blink"))
+			Emote = EMOTE_BLINK;
+		else if (!str_comp(pResult->GetString(0), "close"))
+			Emote = EMOTE_BLINK;
+		else if (!str_comp(pResult->GetString(0), "happy"))
+			Emote = EMOTE_HAPPY;
+		else if (!str_comp(pResult->GetString(0), "pain"))
+			Emote = EMOTE_PAIN;
+		else if (!str_comp(pResult->GetString(0), "surprise"))
+			Emote = EMOTE_SURPRISE;
+		else if (!str_comp(pResult->GetString(0), "normal"))
+			Emote = EMOTE_NORMAL;
+		else
+			pSelf->m_pChatConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD,
+					"emote", "Unknown emote... Say /emote");
 
-			if (!str_comp(pResult->GetString(0), "angry"))
-				pPlayer->m_DefEmote = EMOTE_ANGRY;
-			else if (!str_comp(pResult->GetString(0), "blink"))
-				pPlayer->m_DefEmote = EMOTE_BLINK;
-			else if (!str_comp(pResult->GetString(0), "close"))
-				pPlayer->m_DefEmote = EMOTE_BLINK;
-			else if (!str_comp(pResult->GetString(0), "happy"))
-				pPlayer->m_DefEmote = EMOTE_HAPPY;
-			else if (!str_comp(pResult->GetString(0), "pain"))
-				pPlayer->m_DefEmote = EMOTE_PAIN;
-			else if (!str_comp(pResult->GetString(0), "surprise"))
-				pPlayer->m_DefEmote = EMOTE_SURPRISE;
-			else if (!str_comp(pResult->GetString(0), "normal"))
-				pPlayer->m_DefEmote = EMOTE_NORMAL;
-			else
-				pSelf->m_pChatConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD,
-						"emote", "Unknown emote... Say /emote");
+		int Duration = 5;
+		if (pResult->NumArguments() > 1)
+			Duration = pResult->GetInteger(1);
 
-			int Duration = 5;
-			if (pResult->NumArguments() > 1)
-				Duration = pResult->GetInteger(1);
-
-			pPlayer->m_DefEmoteReset = pSelf->Server()->Tick()
-							+ Duration * pSelf->Server()->TickSpeed();
-			pPlayer->m_LastEyeEmote = pSelf->Server()->Tick();
+		if(Emote != -1)
+			ConEyeEmote(pResult, pUserData, Emote, Duration);
 	}
+}
+
+void CGameContext::ConEmoteLove(IConsole::IResult *pResult, void *pUserData)
+{
+	ConEyeEmote(pResult, pUserData, EMOTE_HAPPY, 3600);	
+}
+
+void CGameContext::ConEmoteHate(IConsole::IResult *pResult, void *pUserData)
+{
+	ConEyeEmote(pResult, pUserData, EMOTE_ANGRY, 3600);	
+}
+
+void CGameContext::ConEmotePain(IConsole::IResult *pResult, void *pUserData)
+{
+	ConEyeEmote(pResult, pUserData, EMOTE_PAIN, 3600);	
+}
+
+void CGameContext::ConEmoteBlink(IConsole::IResult *pResult, void *pUserData)
+{
+	ConEyeEmote(pResult, pUserData, EMOTE_BLINK, 3600);	
+}
+
+void CGameContext::ConEmoteSurprise(IConsole::IResult *pResult, void *pUserData)
+{
+	ConEyeEmote(pResult, pUserData, EMOTE_SURPRISE, 3600);	
+}
+
+void CGameContext::ConEmoteReset(IConsole::IResult *pResult, void *pUserData)
+{
+	ConEyeEmote(pResult, pUserData, EMOTE_NORMAL, 0);	
 }
 
 void CGameContext::ConMe(IConsole::IResult *pResult, void *pUserData)
