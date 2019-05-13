@@ -839,6 +839,14 @@ void CCharacter::Snap(int SnappingClient)
 		pCharacter->m_Weapon = WEAPON_NINJA;
 	}
 
+	if(GetPlayer()->IsPaused())
+	{
+		if(m_FreezeTime > 0 || m_FreezeTime == -1 || m_DeepFreeze)
+			pCharacter->m_Emote = EMOTE_NORMAL;
+		else
+			pCharacter->m_Emote = EMOTE_BLINK;
+	}
+
 	if(m_pPlayer->GetCID() == SnappingClient || SnappingClient == -1 ||
 		(!g_Config.m_SvStrictSpectateMode && m_pPlayer->GetCID() == GameServer()->m_apPlayers[SnappingClient]->GetSpectatorID()))
 	{
@@ -871,7 +879,7 @@ void CCharacter::DDRaceTick()
 
 	if(m_FreezeTime > 0 || m_FreezeTime == -1)
 	{
-		if (m_FreezeTime % Server()->TickSpeed() == Server()->TickSpeed() - 1 || m_FreezeTime == -1)
+		if ((m_FreezeTime % Server()->TickSpeed() == Server()->TickSpeed() - 1 || m_FreezeTime == -1) && !m_DeepFreeze)
 		{
 			GameServer()->CreateDamage(m_Pos, m_pPlayer->GetCID(), vec2(1,0), (m_FreezeTime + 1) / Server()->TickSpeed(), 0, 1);
 			m_Ninja.m_IndicatorTick = Server()->Tick();
@@ -920,6 +928,9 @@ void CCharacter::DDRacePostCoreTick()
 
 	if (m_EndlessHook)
 		m_Core.m_HookTick = 0;
+
+	if (m_DeepFreeze)
+		Freeze();
 
 	int CurrentIndex = GameServer()->Collision()->GetMapIndex(m_Pos);
 	HandleSkippableTiles(CurrentIndex);
@@ -993,10 +1004,16 @@ void CCharacter::HandleTiles(int Index)
 	}
 	
 	// freeze
-	if((m_TileIndex == TILE_FREEZE) || (m_TileFIndex == TILE_FREEZE))
+	if(((m_TileIndex == TILE_FREEZE) || (m_TileFIndex == TILE_FREEZE)) && !m_DeepFreeze)
 		Freeze();
-	else if((m_TileIndex == TILE_UNFREEZE) || (m_TileFIndex == TILE_UNFREEZE))
+	else if(((m_TileIndex == TILE_UNFREEZE) || (m_TileFIndex == TILE_UNFREEZE)) && !m_DeepFreeze)
 		Unfreeze();
+
+	// deep freeze
+	if(((m_TileIndex == TILE_DFREEZE) || (m_TileFIndex == TILE_DFREEZE)) && !m_DeepFreeze)
+		m_DeepFreeze = true;
+	else if(((m_TileIndex == TILE_DUNFREEZE) || (m_TileFIndex == TILE_DUNFREEZE)) && m_DeepFreeze)
+		m_DeepFreeze = false;
 
 	// endless hook
 	if(((m_TileIndex == TILE_EHOOK_START) || (m_TileFIndex == TILE_EHOOK_START)) && !m_EndlessHook)
