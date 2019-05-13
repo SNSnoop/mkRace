@@ -116,7 +116,7 @@ void CGameContext::ConEyeEmote(IConsole::IResult *pResult, void *pUserData)
 		pSelf->m_pChatConsole->Print(
 				IConsole::OUTPUT_LEVEL_STANDARD,
 				"emote",
-				"Example: /emote surprise 10 for 10 seconds or /emote surprise (default 1 second)");
+				"Example: /emote surprise 10 for 10 seconds or /emote surprise (default 5 seconds)");
 	}
 	else
 	{
@@ -141,7 +141,7 @@ void CGameContext::ConEyeEmote(IConsole::IResult *pResult, void *pUserData)
 				pSelf->m_pChatConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD,
 						"emote", "Unknown emote... Say /emote");
 
-			int Duration = 1;
+			int Duration = 5;
 			if (pResult->NumArguments() > 1)
 				Duration = pResult->GetInteger(1);
 
