@@ -108,19 +108,50 @@ void CGun::Snap(int SnappingClient)
 	CNetObj_Laser *pObj = static_cast<CNetObj_Laser *>(Server()->SnapNewItem(NETOBJTYPE_LASER, GetID(), sizeof(CNetObj_Laser)));
 	if (!pObj)
 		return;
-	pObj->m_X = (int)m_Pos.x;
-	pObj->m_Y = (int)m_Pos.y;
-	pObj->m_FromX = (int)m_Pos.x;
-	pObj->m_FromY = (int)m_Pos.y;
+	if(g_Config.m_SvPlasmaStyle)
+	{
+		if (m_Freeze && m_Explosive)
+		{
+			pObj->m_X = (int)m_Pos.x + cos(2*m_EvalTick%125*0.05f)*16/2+cos(m_EvalTick%125*0.05f)*16/3;
+			pObj->m_Y = (int)m_Pos.y + sin(2*m_EvalTick%125*0.05f)*16/2+sin(m_EvalTick%125*0.05f)*16/3;
+		}
+		else if (m_Freeze)
+		{
+			pObj->m_X = (int)m_Pos.x + sin(m_EvalTick%125*0.05f)*12;
+			pObj->m_Y = (int)m_Pos.y + cos(m_EvalTick%125*0.05f)*12;
+		}
+		else if (m_Explosive)
+		{
+			pObj->m_X = (int)m_Pos.x + cos(2*m_EvalTick%125*0.05f)*16/2+cos(m_EvalTick%125*0.05f)*16/3;
+			pObj->m_Y = (int)m_Pos.y + sin(2*m_EvalTick%125*0.05f)*16/2+sin(m_EvalTick%125*0.05f)*16/3;
+		}
+		else
+		{
+			pObj->m_X = (int)m_Pos.x + sin(m_EvalTick%125*0.05f)*12;
+			pObj->m_Y = (int)m_Pos.y + cos(m_EvalTick%125*0.05f)*12;
+		}
+		pObj->m_FromX = pObj->m_X;
+		pObj->m_FromY = pObj->m_Y;
+	}
+	else
+	{
+		pObj->m_X = (int)m_Pos.x;
+		pObj->m_Y = (int)m_Pos.y;
+		pObj->m_FromX = (int)m_Pos.x;
+		pObj->m_FromY = (int)m_Pos.y;
+	}
 	pObj->m_StartTick = m_EvalTick;
 
-	CNetObj_Projectile *pObj2 = static_cast<CNetObj_Projectile *>(Server()->SnapNewItem(NETOBJTYPE_PROJECTILE, GetID(), sizeof(CNetObj_Projectile)));
-	if (!pObj2)
-		return;
-	pObj2->m_X = (int)m_Pos.x + sin(m_EvalTick%25)*16;
-	pObj2->m_Y = (int)m_Pos.y + cos(m_EvalTick%25)*16;
-	pObj2->m_VelX = 0;
-	pObj2->m_VelY = 0;
-	pObj2->m_StartTick = m_EvalTick;
-	pObj2->m_Type = 0;
+	if(g_Config.m_SvPlasmaStyle)
+	{
+		CNetObj_Projectile *pObj2 = static_cast<CNetObj_Projectile *>(Server()->SnapNewItem(NETOBJTYPE_PROJECTILE, GetID(), sizeof(CNetObj_Projectile)));
+		if (!pObj2)
+			return;
+		pObj2->m_X = (int)m_Pos.x;
+		pObj2->m_Y = (int)m_Pos.y;
+		pObj2->m_VelX = 0;
+		pObj2->m_VelY = 0;
+		pObj2->m_StartTick = m_EvalTick-25;
+		pObj2->m_Type = m_Freeze ? 4 : 0;
+	}
 }
