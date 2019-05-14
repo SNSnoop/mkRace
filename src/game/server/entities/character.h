@@ -77,6 +77,7 @@ public:
 	static void OnPhysicsStep(vec2 Pos, float IntraTick, void *pUserData);
 	
 	// mkRace
+	vec2 m_Intersection;
 	bool m_EndlessHook;
 	int m_TileIndex;
 	int m_TileFlags;
@@ -115,7 +116,7 @@ public:
 	int m_FreezeTime;
 	int m_FreezeTick;
 	vec2 m_PrevPos;
-	//int Team();
+	int Team();
 	CCharacterCore* Core() { return &m_Core; };
 	void Pause(bool Pause);
 	bool IsPaused() const { return m_Paused; }

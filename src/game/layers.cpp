@@ -16,6 +16,7 @@ CLayers::CLayers()
 	m_pSpeedupLayer = 0;
 	m_pFrontLayer = 0;
 	m_pTuneLayer = 0;
+	m_pSwitchLayer = 0;
 	m_pMap = 0;
 }
 
@@ -25,6 +26,7 @@ void CLayers::Init(class IKernel *pKernel, IMap *pMap)
 	m_pSpeedupLayer = 0;
 	m_pFrontLayer = 0;
 	m_pTuneLayer = 0;
+	m_pSwitchLayer = 0;
 
 	m_pMap = pMap ? pMap : pKernel->RequestInterface<IMap>();
 	m_pMap->GetType(MAPITEMTYPE_GROUP, &m_GroupsStart, &m_GroupsNum);
@@ -96,6 +98,14 @@ void CLayers::Init(class IKernel *pKernel, IMap *pMap)
 						pTilemap->m_Tune = *((int*)(pTilemap) + 19);
 					}
 					m_pTuneLayer = pTilemap;
+				}
+				if(pTilemap->m_Flags&TILESLAYERFLAG_SWITCH)
+				{
+					if(pTilemap->m_Version <= 2)
+					{
+						pTilemap->m_Switch = *((int*)(pTilemap) + 18);
+					}
+					m_pSwitchLayer = pTilemap;
 				}
 			}
 		}

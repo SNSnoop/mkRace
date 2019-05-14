@@ -43,6 +43,8 @@ void CGun::Fire()
 	for (int i = 0; i < Num; i++)
 	{
 		CCharacter *Target = Ents[i];
+		if(m_Layer == LAYER_SWITCH && !GameServer()->Collision()->m_pSwitchers[m_Number].m_Status[Target->Team()])
+			continue;
 		int res = GameServer()->Collision()->IntersectLine(m_Pos, Target->m_Pos,0,0);
 	}
 	for (int i = 0; i < MAX_CLIENTS; i++)
@@ -104,6 +106,9 @@ void CGun::Snap(int SnappingClient)
 				|| GameServer()->m_apPlayers[SnappingClient]->IsPaused())
 			&& GameServer()->m_apPlayers[SnappingClient]->m_SpectatorID != SPEC_FREEVIEW)
 		Char = GameServer()->GetPlayerChar(GameServer()->m_apPlayers[SnappingClient]->m_SpectatorID);
+
+	int Tick = (Server()->Tick()%Server()->TickSpeed())%11;
+	if (Char && Char->IsAlive() && (m_Layer == LAYER_SWITCH && !GameServer()->Collision()->m_pSwitchers[m_Number].m_Status[Char->Team()]) && (!Tick)) return;
 
 	CNetObj_Laser *pObj = static_cast<CNetObj_Laser *>(Server()->SnapNewItem(NETOBJTYPE_LASER, GetID(), sizeof(CNetObj_Laser)));
 	if (!pObj)

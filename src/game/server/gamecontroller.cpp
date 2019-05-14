@@ -4,6 +4,7 @@
 
 #include <game/mapitems.h>
 
+#include "entities/door.h"
 #include "entities/light.h"
 #include "entities/gun.h"
 #include "entities/plasma.h"
@@ -321,6 +322,19 @@ bool IGameController::OnEntity(int Index, vec2 Pos, int Layer, int Flags, int Nu
 			Type = PICKUP_NINJA;
 	}
 
+	int x,y;
+	x=(Pos.x-16.0f)/32.0f;
+	y=(Pos.y-16.0f)/32.0f;
+	int sides[8];
+	sides[0]=GameServer()->Collision()->Entity(x,y+1, Layer);
+	sides[1]=GameServer()->Collision()->Entity(x+1,y+1, Layer);
+	sides[2]=GameServer()->Collision()->Entity(x+1,y, Layer);
+	sides[3]=GameServer()->Collision()->Entity(x+1,y-1, Layer);
+	sides[4]=GameServer()->Collision()->Entity(x,y-1, Layer);
+	sides[5]=GameServer()->Collision()->Entity(x-1,y-1, Layer);
+	sides[6]=GameServer()->Collision()->Entity(x-1,y, Layer);
+	sides[7]=GameServer()->Collision()->Entity(x-1,y+1, Layer);
+
 	if(Type != -1 && !g_Config.m_SvNoItems)
 	{
 		new CPickup(&GameServer()->m_World, Type, Pos);
@@ -328,18 +342,6 @@ bool IGameController::OnEntity(int Index, vec2 Pos, int Layer, int Flags, int Nu
 	}
 	if(Index >= ENTITY_LASER_FAST_CW && Index <= ENTITY_LASER_FAST_CCW)
 	{
-		int x,y;
-		x=(Pos.x-16.0f)/32.0f;
-		y=(Pos.y-16.0f)/32.0f;
-		int sides[8];
-		sides[0]=GameServer()->Collision()->Entity(x,y+1, Layer);
-		sides[1]=GameServer()->Collision()->Entity(x+1,y+1, Layer);
-		sides[2]=GameServer()->Collision()->Entity(x+1,y, Layer);
-		sides[3]=GameServer()->Collision()->Entity(x+1,y-1, Layer);
-		sides[4]=GameServer()->Collision()->Entity(x,y-1, Layer);
-		sides[5]=GameServer()->Collision()->Entity(x-1,y-1, Layer);
-		sides[6]=GameServer()->Collision()->Entity(x-1,y, Layer);
-		sides[7]=GameServer()->Collision()->Entity(x-1,y+1, Layer);
 		int sides2[8];
 		sides2[0]=GameServer()->Collision()->Entity(x, y + 2, Layer);
 		sides2[1]=GameServer()->Collision()->Entity(x + 2, y + 2, Layer);
@@ -419,6 +421,23 @@ bool IGameController::OnEntity(int Index, vec2 Pos, int Layer, int Flags, int Nu
 	else if(Index == ENTITY_PLASMAU)
 	{
 		new CGun(&GameServer()->m_World, Pos, false, false, Layer, Number);
+	}
+	else if(Index == ENTITY_DOOR)
+	{
+		for(int i = 0; i < 8;i++)
+		{
+			if (sides[i] >= ENTITY_LASER_SHORT && sides[i] <= ENTITY_LASER_LONG)
+			{
+				new CDoor
+				(
+					&GameServer()->m_World, //GameWorld
+					Pos, //Pos
+					pi / 4 * i, //Rotation
+					32 * 3 + 32 *(sides[i] - ENTITY_LASER_SHORT) * 3, //Length
+					Number //Number
+				);
+			}
+		}
 	}
 
 	return false;

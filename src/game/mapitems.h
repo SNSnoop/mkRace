@@ -72,6 +72,8 @@ enum
 	ENTITY_DRAGGER_WEAK_NW,
 	ENTITY_DRAGGER_NORMAL_NW,
 	ENTITY_DRAGGER_STRONG_NW,
+	//Doors
+	ENTITY_DOOR=49,
 	NUM_ENTITIES,
 
 	TILE_AIR=0,
@@ -81,10 +83,16 @@ enum
 	TILE_NOLASER,
 	TILE_THROUGH_CUT,
 	TILE_THROUGH,
+	TILE_JUMP,
 	TILE_TELEINWEAPON=14,
 	TILE_TELEINHOOK,
 	TILE_EHOOK_START=17,
 	TILE_EHOOK_END,
+	//Switches
+	TILE_SWITCHTIMEDOPEN = 22,
+	TILE_SWITCHTIMEDCLOSE,
+	TILE_SWITCHOPEN,
+	TILE_SWITCHCLOSE,
 	TILE_TELEIN_STOP=25,
 	TILE_TELEIN,
 	TILE_TELEOUT,
@@ -108,6 +116,10 @@ enum
 	TILE_CP = 64,
 	TILE_CP_F,
 
+	TILE_BONUS = 95,
+	TILE_ALLOW_TELE_GUN = 98,
+	TILE_ALLOW_BLUE_TELE_GUN = 99,
+	TILE_NPH_START = 107,
 	TILE_TELE_LASER_ENABLE = 128,
 	TILE_TELE_LASER_DISABLE = 129,
 
@@ -137,6 +149,7 @@ enum
 	TILESLAYERFLAG_TELE=2,
 	TILESLAYERFLAG_SPEEDUP=4,
 	TILESLAYERFLAG_FRONT=8,
+	TILESLAYERFLAG_SWITCH=16,
 	TILESLAYERFLAG_TUNE=32,
 
 	ENTITY_OFFSET=255-16*4,
@@ -195,6 +208,23 @@ class CTuneTile
 public:
 	unsigned char m_Number;
 	unsigned char m_Type;
+};
+
+class CSwitchTile
+{
+public:
+	unsigned char m_Number;
+	unsigned char m_Type;
+	unsigned char m_Flags;
+	unsigned char m_Delay;
+};
+
+class CDoorTile
+{
+public:
+	unsigned char m_Index;
+	unsigned char m_Flags;
+	int m_Number;
 };
 
 struct CMapItemInfo

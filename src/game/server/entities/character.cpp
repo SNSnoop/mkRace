@@ -1003,6 +1003,47 @@ void CCharacter::HandleTiles(int Index)
 		m_Core.m_Jumped = 0;
 	}
 	
+	// handle switch tiles
+	if(GameServer()->Collision()->IsSwitch(MapIndex) == TILE_SWITCHOPEN && GameServer()->Collision()->GetSwitchNumber(MapIndex) > 0)
+	{
+		GameServer()->Collision()->m_pSwitchers[GameServer()->Collision()->GetSwitchNumber(MapIndex)].m_Status[Team()] = true;
+		GameServer()->Collision()->m_pSwitchers[GameServer()->Collision()->GetSwitchNumber(MapIndex)].m_EndTick[Team()] = 0;
+		GameServer()->Collision()->m_pSwitchers[GameServer()->Collision()->GetSwitchNumber(MapIndex)].m_Type[Team()] = TILE_SWITCHOPEN;
+	}
+	else if(GameServer()->Collision()->IsSwitch(MapIndex) == TILE_SWITCHTIMEDOPEN  && GameServer()->Collision()->GetSwitchNumber(MapIndex) > 0)
+	{
+		GameServer()->Collision()->m_pSwitchers[GameServer()->Collision()->GetSwitchNumber(MapIndex)].m_Status[Team()] = true;
+		GameServer()->Collision()->m_pSwitchers[GameServer()->Collision()->GetSwitchNumber(MapIndex)].m_EndTick[Team()] = Server()->Tick() + 1 + GameServer()->Collision()->GetSwitchDelay(MapIndex)*Server()->TickSpeed() ;
+		GameServer()->Collision()->m_pSwitchers[GameServer()->Collision()->GetSwitchNumber(MapIndex)].m_Type[Team()] = TILE_SWITCHTIMEDOPEN;
+	}
+	else if(GameServer()->Collision()->IsSwitch(MapIndex) == TILE_SWITCHTIMEDCLOSE && GameServer()->Collision()->GetSwitchNumber(MapIndex) > 0)
+	{
+		GameServer()->Collision()->m_pSwitchers[GameServer()->Collision()->GetSwitchNumber(MapIndex)].m_Status[Team()] = false;
+		GameServer()->Collision()->m_pSwitchers[GameServer()->Collision()->GetSwitchNumber(MapIndex)].m_EndTick[Team()] = Server()->Tick() + 1 + GameServer()->Collision()->GetSwitchDelay(MapIndex)*Server()->TickSpeed();
+		GameServer()->Collision()->m_pSwitchers[GameServer()->Collision()->GetSwitchNumber(MapIndex)].m_Type[Team()] = TILE_SWITCHTIMEDCLOSE;
+	}
+	else if(GameServer()->Collision()->IsSwitch(MapIndex) == TILE_SWITCHCLOSE && GameServer()->Collision()->GetSwitchNumber(MapIndex) > 0)
+	{
+		GameServer()->Collision()->m_pSwitchers[GameServer()->Collision()->GetSwitchNumber(MapIndex)].m_Status[Team()] = false;
+		GameServer()->Collision()->m_pSwitchers[GameServer()->Collision()->GetSwitchNumber(MapIndex)].m_EndTick[Team()] = 0;
+		GameServer()->Collision()->m_pSwitchers[GameServer()->Collision()->GetSwitchNumber(MapIndex)].m_Type[Team()] = TILE_SWITCHCLOSE;
+	}
+	else if(GameServer()->Collision()->IsSwitch(MapIndex) == TILE_FREEZE)
+	{
+		if(GameServer()->Collision()->GetSwitchNumber(MapIndex) == 0 || GameServer()->Collision()->m_pSwitchers[GameServer()->Collision()->GetSwitchNumber(MapIndex)].m_Status[Team()])
+			Freeze(GameServer()->Collision()->GetSwitchDelay(MapIndex));
+	}
+	else if(GameServer()->Collision()->IsSwitch(MapIndex) == TILE_DFREEZE)
+	{
+		if(GameServer()->Collision()->GetSwitchNumber(MapIndex) == 0 || GameServer()->Collision()->m_pSwitchers[GameServer()->Collision()->GetSwitchNumber(MapIndex)].m_Status[Team()])
+			m_DeepFreeze = true;
+	}
+	else if(GameServer()->Collision()->IsSwitch(MapIndex) == TILE_DUNFREEZE)
+	{
+		if(GameServer()->Collision()->GetSwitchNumber(MapIndex) == 0 || GameServer()->Collision()->m_pSwitchers[GameServer()->Collision()->GetSwitchNumber(MapIndex)].m_Status[Team()])
+			m_DeepFreeze = false;
+	}
+	
 	// freeze
 	if(((m_TileIndex == TILE_FREEZE) || (m_TileFIndex == TILE_FREEZE)) && !m_DeepFreeze)
 		Freeze();
@@ -1141,12 +1182,12 @@ void CCharacter::HandleSkippableTiles(int Index)
 		}
 	}
 }
-/*
+
 int CCharacter::Team()
 {
-	return Teams()->m_Core.Team(m_pPlayer->GetCID());
+	return 0;
 }
-
+/*
 CGameTeams* CCharacter::Teams()
 {
 	return &((CGameControllerDDRace*)GameServer()->m_pController)->m_Teams;

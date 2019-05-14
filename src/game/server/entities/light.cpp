@@ -6,6 +6,7 @@
 #include <game/server/player.h>
 #include "character.h"
 #include <game/mapitems.h>
+#include <list>
 
 CLight::CLight(CGameWorld *pGameWorld, vec2 Pos, float Rotation, int Length,
 		int Layer, int Number) :
@@ -24,11 +25,19 @@ CLight::CLight(CGameWorld *pGameWorld, vec2 Pos, float Rotation, int Length,
 
 bool CLight::HitCharacter()
 {
-	vec2 ColPos;
-	CCharacter * Char = GameServer()->m_World.IntersectCharacter(m_Pos, m_To, 0.0f, ColPos, 0);
-	if (!Char)
+	std::list<CCharacter *> HitCharacters =
+			GameServer()->m_World.IntersectedCharacters(m_Pos, m_To, 0.0f, 0);
+	if (HitCharacters.empty())
 		return false;
-	Char->Freeze();
+	for (std::list<CCharacter *>::iterator i = HitCharacters.begin();
+			i != HitCharacters.end(); i++)
+	{
+		CCharacter * Char = *i;
+		if (m_Layer == LAYER_SWITCH
+				&& !GameServer()->Collision()->m_pSwitchers[m_Number].m_Status[Char->Team()])
+			continue;
+		Char->Freeze();
+	}
 	return true;
 }
 
@@ -108,6 +117,14 @@ void CLight::Snap(int SnappingClient)
 			&& GameServer()->m_apPlayers[SnappingClient]->m_SpectatorID != SPEC_FREEVIEW)
 		Char = GameServer()->GetPlayerChar(GameServer()->m_apPlayers[SnappingClient]->m_SpectatorID);
 
+	int Tick = (Server()->Tick() % Server()->TickSpeed()) % 6;
+
+	if (Char && Char->IsAlive()
+			&& m_Layer == LAYER_SWITCH
+			&& !GameServer()->Collision()->m_pSwitchers[m_Number].m_Status[Char->Team()]
+			&& (Tick))
+		return;
+
 	CNetObj_Laser *pObj = static_cast<CNetObj_Laser *>(Server()->SnapNewItem(
 			NETOBJTYPE_LASER, GetID(), sizeof(CNetObj_Laser)));
 
@@ -117,7 +134,13 @@ void CLight::Snap(int SnappingClient)
 	pObj->m_X = (int)m_Pos.x;
 	pObj->m_Y = (int)m_Pos.y;
 	
-	if (m_Layer != LAYER_SWITCH)
+	if (Char && m_Layer == LAYER_SWITCH
+			&& GameServer()->Collision()->m_pSwitchers[m_Number].m_Status[Char->Team()])
+	{
+		pObj->m_FromX = (int)m_To.x;
+		pObj->m_FromY = (int)m_To.y;
+	}
+	else if (m_Layer != LAYER_SWITCH)
 	{
 		pObj->m_FromX = (int)m_To.x;
 		pObj->m_FromY = (int)m_To.y;

@@ -615,6 +615,25 @@ void CGameContext::OnTick()
 		}
 	}
 
+	if(Collision()->m_NumSwitchers > 0)
+		for (int i = 0; i < Collision()->m_NumSwitchers+1; ++i)
+		{
+			for (int j = 0; j < MAX_CLIENTS; ++j)
+			{
+				if(Collision()->m_pSwitchers[i].m_EndTick[j] <= Server()->Tick() && Collision()->m_pSwitchers[i].m_Type[j] == TILE_SWITCHTIMEDOPEN)
+				{
+					Collision()->m_pSwitchers[i].m_Status[j] = false;
+					Collision()->m_pSwitchers[i].m_EndTick[j] = 0;
+					Collision()->m_pSwitchers[i].m_Type[j] = TILE_SWITCHCLOSE;
+				}
+				else if(Collision()->m_pSwitchers[i].m_EndTick[j] <= Server()->Tick() && Collision()->m_pSwitchers[i].m_Type[j] == TILE_SWITCHTIMEDCLOSE)
+				{
+					Collision()->m_pSwitchers[i].m_Status[j] = true;
+					Collision()->m_pSwitchers[i].m_EndTick[j] = 0;
+					Collision()->m_pSwitchers[i].m_Type[j] = TILE_SWITCHOPEN;
+				}
+			}
+		}
 
 #ifdef CONF_DEBUG
 	for(int i = 0; i < MAX_CLIENTS; i++)
@@ -1646,8 +1665,11 @@ void CGameContext::OnInit()
 	CTile *pTiles = (CTile *)Kernel()->RequestInterface<IMap>()->GetData(pTileMap->m_Data);
 
 	CTile *pFront = 0;
+	CSwitchTile *pSwitch = 0;
 	if(m_Layers.FrontLayer())
 		pFront = (CTile *)Kernel()->RequestInterface<IMap>()->GetData(m_Layers.FrontLayer()->m_Front);
+	if(m_Layers.SwitchLayer())
+		pSwitch = (CSwitchTile *)Kernel()->RequestInterface<IMap>()->GetData(m_Layers.SwitchLayer()->m_Switch);
 	for(int y = 0; y < pTileMap->m_Height; y++)
 	{
 		for(int x = 0; x < pTileMap->m_Width; x++)
@@ -1666,6 +1688,15 @@ void CGameContext::OnInit()
 				{
 					vec2 Pos(x*32.0f+16.0f, y*32.0f+16.0f);
 					m_pController->OnEntity(Index-ENTITY_OFFSET, Pos, LAYER_FRONT, pFront[y*pTileMap->m_Width+x].m_Flags);
+				}
+			}
+			if(pSwitch)
+			{
+				Index = pSwitch[y*pTileMap->m_Width + x].m_Type;
+				if(Index >= ENTITY_OFFSET)
+				{
+					vec2 Pos(x*32.0f+16.0f, y*32.0f+16.0f);
+					m_pController->OnEntity(Index-ENTITY_OFFSET, Pos, LAYER_SWITCH, pSwitch[y*pTileMap->m_Width+x].m_Flags, pSwitch[y*pTileMap->m_Width+x].m_Number);
 				}
 			}
 		}

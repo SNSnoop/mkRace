@@ -23,6 +23,9 @@ CCollision::CCollision()
 	m_pSpeedup = 0;
 	m_pFront = 0;
 	m_pTune = 0;
+	m_pSwitch = 0;
+	m_pDoor = 0;
+	m_pSwitchers = 0;
 }
 
 void CCollision::Init(class CLayers *pLayers)
@@ -51,6 +54,61 @@ void CCollision::Init(class CLayers *pLayers)
 	if(m_pLayers->FrontLayer())
 	{
 		m_pFront = static_cast<CTile *>(m_pLayers->Map()->GetData(m_pLayers->FrontLayer()->m_Front));
+	}
+	
+	if(m_pLayers->SwitchLayer())
+	{
+		m_pSwitch = static_cast<CSwitchTile *>(m_pLayers->Map()->GetData(m_pLayers->SwitchLayer()->m_Switch));
+		m_pDoor = new CDoorTile[m_Width*m_Height];
+		mem_zero(m_pDoor, m_Width * m_Height * sizeof(CDoorTile));
+	}
+	else
+	{
+		m_pDoor = 0;
+		m_pSwitchers = 0;
+	}
+
+	for(int i = 0; i < m_Width*m_Height; i++)
+	{
+		int Index;
+		if(m_pSwitch)
+		{
+			if(m_pSwitch[i].m_Number > m_NumSwitchers)
+				m_NumSwitchers = m_pSwitch[i].m_Number;
+
+			if(m_pSwitch[i].m_Number)
+				m_pDoor[i].m_Number = m_pSwitch[i].m_Number;
+			else
+				m_pDoor[i].m_Number = 0;
+
+			Index = m_pSwitch[i].m_Type;
+
+			if(Index <= TILE_NPH_START)
+			{
+				if((Index >= TILE_JUMP && Index <= TILE_BONUS)
+						|| Index == TILE_ALLOW_TELE_GUN
+						|| Index == TILE_ALLOW_BLUE_TELE_GUN)
+					m_pSwitch[i].m_Type = Index;
+				else
+					m_pSwitch[i].m_Type = 0;
+			}
+		}
+	}
+
+	if(m_NumSwitchers)
+	{
+		m_pSwitchers = new SSwitchers[m_NumSwitchers+1];
+
+		for (int i = 0; i < m_NumSwitchers+1; ++i)
+		{
+			m_pSwitchers[i].m_Initial = true;
+			for (int j = 0; j < MAX_CLIENTS; ++j)
+			{
+				m_pSwitchers[i].m_Status[j] = true;
+				m_pSwitchers[i].m_EndTick[j] = 0;
+				m_pSwitchers[i].m_Type[j] = 0;
+			}
+		}
 	}
 
 	InitTeleporter();
@@ -111,7 +169,7 @@ void CCollision::InitTeleporter()
 	}
 }
 
-int CCollision::GetTile(int x, int y) const
+int CCollision::GetTile(int x, int y)
 {
 	if(!m_pTiles)
 		return 0;
@@ -154,6 +212,10 @@ bool CCollision::TileExists(int Index)
 		return true;
 	if(m_pTune && m_pTune[Index].m_Type)
 			return true;
+	if(m_pDoor && m_pDoor[Index].m_Index)
+		return true;
+	if(m_pSwitch && m_pSwitch[Index].m_Type)
+		return true;
 	return TileExistsNext(Index);
 }
 
@@ -220,10 +282,21 @@ bool CCollision::TileExistsNext(int Index)
 		if((m_pFront[TileBelow].m_Index == TILE_STOP && m_pFront[TileBelow].m_Flags == ROTATION_0) || (m_pFront[TileAbove].m_Index == TILE_STOP && m_pFront[TileAbove].m_Flags == ROTATION_180))
 			return true;
 	}
+	if(m_pDoor)
+	{
+		if(m_pDoor[TileOnTheRight].m_Index == TILE_STOPA || m_pDoor[TileOnTheLeft].m_Index == TILE_STOPA || ((m_pDoor[TileOnTheRight].m_Index == TILE_STOPS || m_pDoor[TileOnTheLeft].m_Index == TILE_STOPS) && m_pDoor[TileOnTheRight].m_Flags|ROTATION_270|ROTATION_90))
+			return true;
+		if(m_pDoor[TileBelow].m_Index == TILE_STOPA || m_pDoor[TileAbove].m_Index == TILE_STOPA || ((m_pDoor[TileBelow].m_Index == TILE_STOPS || m_pDoor[TileAbove].m_Index == TILE_STOPS) && m_pDoor[TileBelow].m_Flags|ROTATION_180|ROTATION_0))
+			return true;
+		if((m_pDoor[TileOnTheRight].m_Index == TILE_STOP && m_pDoor[TileOnTheRight].m_Flags == ROTATION_270) || (m_pDoor[TileOnTheLeft].m_Index == TILE_STOP && m_pDoor[TileOnTheLeft].m_Flags == ROTATION_90))
+			return true;
+		if((m_pDoor[TileBelow].m_Index == TILE_STOP && m_pDoor[TileBelow].m_Flags == ROTATION_0) || (m_pDoor[TileAbove].m_Index == TILE_STOP && m_pDoor[TileAbove].m_Flags == ROTATION_180))
+			return true;
+	}
 	return false;
 }
 
-bool CCollision::IsTileSolid(int x, int y) const
+bool CCollision::IsTileSolid(int x, int y)
 {
 	return GetTile(x, y)&COLFLAG_SOLID;
 }
@@ -270,7 +343,7 @@ int CCollision::CheckIndexExRange(vec2 Pos, int MinIndex, int MaxIndex) const
 	return -1;
 }
 
-int CCollision::CheckCheckpoint(vec2 Pos) const
+int CCollision::CheckCheckpoint(vec2 Pos)
 {
 	int Cp = CheckIndexExRange(Pos, 35, 59);
 	if(Cp >= 0)
@@ -279,7 +352,7 @@ int CCollision::CheckCheckpoint(vec2 Pos) const
 }
 
 // TODO: rewrite this smarter!
-int CCollision::IntersectLine(vec2 Pos0, vec2 Pos1, vec2 *pOutCollision, vec2 *pOutBeforeCollision) const
+int CCollision::IntersectLine(vec2 Pos0, vec2 Pos1, vec2 *pOutCollision, vec2 *pOutBeforeCollision)
 {
 	float Distance = distance(Pos0, Pos1);
 	int End(Distance+1);
@@ -479,7 +552,7 @@ int CCollision::IsFNoLaser(int x, int y)
 }
 
 // TODO: OPT: rewrite this smarter!
-void CCollision::MovePoint(vec2 *pInoutPos, vec2 *pInoutVel, float Elasticity, int *pBounces) const
+void CCollision::MovePoint(vec2 *pInoutPos, vec2 *pInoutVel, float Elasticity, int *pBounces)
 {
 	if(pBounces)
 		*pBounces = 0;
@@ -517,7 +590,7 @@ void CCollision::MovePoint(vec2 *pInoutPos, vec2 *pInoutVel, float Elasticity, i
 	}
 }
 
-bool CCollision::TestBox(vec2 Pos, vec2 Size) const
+bool CCollision::TestBox(vec2 Pos, vec2 Size)
 {
 	Size *= 0.5f;
 	if(CheckPoint(Pos.x-Size.x, Pos.y-Size.y))
@@ -531,7 +604,7 @@ bool CCollision::TestBox(vec2 Pos, vec2 Size) const
 	return false;
 }
 
-void CCollision::MoveBox(vec2 *pInoutPos, vec2 *pInoutVel, vec2 Size, float Elasticity, CCollisionData *pCollisionData) const
+void CCollision::MoveBox(vec2 *pInoutPos, vec2 *pInoutVel, vec2 Size, float Elasticity, CCollisionData *pCollisionData)
 {
 	// do the move
 	vec2 Pos = *pInoutPos;
@@ -666,6 +739,8 @@ int CCollision::Entity(int x, int y, int Layer)
 			return m_pTiles[y*m_Width+x].m_Index - ENTITY_OFFSET;
 		case LAYER_FRONT:
 			return m_pFront[y*m_Width+x].m_Index - ENTITY_OFFSET;
+		case LAYER_SWITCH:
+			return m_pSwitch[y*m_Width+x].m_Type - ENTITY_OFFSET;
 		case LAYER_TELE:
 			return m_pTele[y*m_Width+x].m_Type - ENTITY_OFFSET;
 		case LAYER_SPEEDUP:
@@ -821,6 +896,73 @@ bool CCollision::IsHookBlocker(int x, int y, vec2 pos0, vec2 pos1)
 		(m_pFront[pos].m_Flags == ROTATION_270 && pos0.x < pos1.x) ))
 		return true;
 	return false;
+}
+
+void CCollision::SetDCollisionAt(float x, float y, int Type, int Flags, int Number)
+{
+	if(!m_pDoor)
+		return;
+	int Nx = clamp(round_to_int(x)/32, 0, m_Width-1);
+	int Ny = clamp(round_to_int(y)/32, 0, m_Height-1);
+
+	m_pDoor[Ny * m_Width + Nx].m_Index = Type;
+	m_pDoor[Ny * m_Width + Nx].m_Flags = Flags;
+	m_pDoor[Ny * m_Width + Nx].m_Number = Number;
+}
+
+int CCollision::GetDTileIndex(int Index)
+{
+	if(!m_pDoor || Index < 0 || !m_pDoor[Index].m_Index)
+		return 0;
+	return m_pDoor[Index].m_Index;
+}
+
+int CCollision::GetDTileNumber(int Index)
+{
+	if(!m_pDoor || Index < 0 || !m_pDoor[Index].m_Index)
+		return 0;
+	if(m_pDoor[Index].m_Number) return m_pDoor[Index].m_Number;
+	return 0;
+}
+
+int CCollision::GetDTileFlags(int Index)
+{
+	if(!m_pDoor || Index < 0 || !m_pDoor[Index].m_Index)
+		return 0;
+	return m_pDoor[Index].m_Flags;
+}
+
+int CCollision::IsSwitch(int Index)
+{
+	if(Index < 0 || !m_pSwitch)
+		return 0;
+
+	if(m_pSwitch[Index].m_Type > 0)
+		return m_pSwitch[Index].m_Type;
+
+	return 0;
+}
+
+int CCollision::GetSwitchNumber(int Index)
+{
+	if(Index < 0 || !m_pSwitch)
+		return 0;
+
+	if(m_pSwitch[Index].m_Type > 0 && m_pSwitch[Index].m_Number > 0)
+		return m_pSwitch[Index].m_Number;
+
+	return 0;
+}
+
+int CCollision::GetSwitchDelay(int Index)
+{
+	if(Index < 0 || !m_pSwitch)
+		return 0;
+
+	if(m_pSwitch[Index].m_Type > 0)
+		return m_pSwitch[Index].m_Delay;
+
+	return 0;
 }
 
 void ThroughOffset(vec2 Pos0, vec2 Pos1, int *Ox, int *Oy)

@@ -33,7 +33,7 @@ CDragger::CDragger(CGameWorld *pGameWorld, vec2 Pos, float Strength, bool NW,
 
 void CDragger::Move()
 {
-	if (m_Target && (!m_Target->IsAlive() || (m_Target->IsAlive() && m_Target->IsPaused())))
+	if (m_Target && (!m_Target->IsAlive() || (m_Target->IsAlive() && (m_Target->IsPaused() || (m_Layer == LAYER_SWITCH && !GameServer()->Collision()->m_pSwitchers[m_Number].m_Status[m_Target->Team()])))))
 		m_Target = 0;
 
 	mem_zero(m_SoloEnts, sizeof(m_SoloEnts));
@@ -49,6 +49,17 @@ void CDragger::Move()
 	for (int i = 0; i < Num; i++)
 	{
 		Temp = m_SoloEnts[i];
+		if (Temp->Team() != m_CatchedTeam)
+		{
+			m_SoloEnts[i] = 0;
+			continue;
+		}
+		if (m_Layer == LAYER_SWITCH
+				&& !GameServer()->Collision()->m_pSwitchers[m_Number].m_Status[Temp->Team()])
+		{
+			m_SoloEnts[i] = 0;
+			continue;
+		}
 		int Res =
 				m_NW ? GameServer()->Collision()->IntersectNoLaserNW(m_Pos,
 								Temp->m_Pos, 0, 0) :
@@ -308,6 +319,13 @@ void CDragger::Snap(int SnappingClient)
 					|| GameServer()->m_apPlayers[SnappingClient]->IsPaused())
 				&& GameServer()->m_apPlayers[SnappingClient]->m_SpectatorID != SPEC_FREEVIEW)
 			Char = GameServer()->GetPlayerChar(GameServer()->m_apPlayers[SnappingClient]->m_SpectatorID);
+
+		int Tick = (Server()->Tick() % Server()->TickSpeed()) % 11;
+		if (Char && Char->IsAlive()
+				&& (m_Layer == LAYER_SWITCH
+						&& !GameServer()->Collision()->m_pSwitchers[m_Number].m_Status[Char->Team()]
+						&& (!Tick)))
+			continue;
 
 		if (Char && Char->IsAlive() && Target && Target->IsAlive() && Target->GetPlayer()->GetCID() != Char->GetPlayer()->GetCID() && !Char->GetPlayer()->m_ShowOthers)
 		{
