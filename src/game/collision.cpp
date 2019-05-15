@@ -330,7 +330,8 @@ int CCollision::GetTilePosLayer(const CMapItemLayerTilemap *pLayer, vec2 Pos) co
 bool CCollision::CheckIndexEx(vec2 Pos, int Index) const
 {
 	int TilePos = GetTilePosLayer(m_pLayers->GameLayer(), Pos);
-	if(TilePos >= 0 && m_pTiles[TilePos].m_Index == Index)
+	int FTilePos = GetTilePosLayer(m_pLayers->FrontLayer(), Pos);
+	if((TilePos >= 0 && m_pTiles[TilePos].m_Index == Index) || (FTilePos >= 0 && m_pFront[FTilePos].m_Index == Index))
 		return true;
 	return false;
 }
@@ -338,8 +339,11 @@ bool CCollision::CheckIndexEx(vec2 Pos, int Index) const
 int CCollision::CheckIndexExRange(vec2 Pos, int MinIndex, int MaxIndex) const
 {
 	int TilePos = GetTilePosLayer(m_pLayers->GameLayer(), Pos);
+	int FTilePos = GetTilePosLayer(m_pLayers->FrontLayer(), Pos);
 	if(TilePos >= 0 && m_pTiles[TilePos].m_Index >= MinIndex && m_pTiles[TilePos].m_Index <= MaxIndex)
 		return m_pTiles[TilePos].m_Index;
+	if(FTilePos >= 0 && m_pFront[FTilePos].m_Index >= MinIndex && m_pFront[FTilePos].m_Index <= MaxIndex)
+		return m_pFront[FTilePos].m_Index;
 	return -1;
 }
 
