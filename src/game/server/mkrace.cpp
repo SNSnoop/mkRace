@@ -210,3 +210,102 @@ void CGameContext::ConMe(IConsole::IResult *pResult, void *pUserData)
 				"me",
 				"/me is disabled on this server");
 }
+
+void CGameContext::ConSwap(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *) pUserData;
+	const int ClientID = pResult->m_ClientID;
+
+	//if(!CheckClientID(ClientID))
+	//	return;
+
+	if(!g_Config.m_SvSwap)
+	{
+		pSelf->m_pChatConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "swap", "Swap is not activated.");
+		return;
+	}
+
+	int TargetID = -1;
+
+	for(int Victim = 0; Victim < MAX_CLIENTS; Victim++)
+		if (str_comp_nocase(pResult->GetString(0), pSelf->Server()->ClientName(Victim)) == 0)
+			TargetID = Victim;
+
+	if(TargetID == ClientID || TargetID == -1)
+		return;
+
+	pSelf->m_aSwapRequest[ClientID] = TargetID;
+
+	char aBuf[256];
+	// check if TargetID agrees
+	if(pSelf->m_aSwapRequest[TargetID] != ClientID)
+	{
+		// send  notification to TargetID
+		str_format(aBuf, sizeof(aBuf), "%s wants to swap places with you. Type \'/swap %s\' to accept.",
+			   pSelf->Server()->ClientName(ClientID), pSelf->Server()->ClientName(ClientID));
+		pSelf->SendChat(-1, CHAT_WHISPER, TargetID, aBuf);
+
+		str_format(aBuf, sizeof(aBuf), "Requst sent to %s.",
+			   pSelf->Server()->ClientName(TargetID));
+		pSelf->SendChat(-1, CHAT_WHISPER, ClientID, aBuf);
+	}
+	else
+	{
+		// TargetID agreed
+		CCharacter * pChar1 = pSelf->GetPlayerChar(ClientID);
+		CCharacter * pChar2 = pSelf->GetPlayerChar(TargetID);
+		if(!pChar1 || !pChar2)
+		{
+			// one is not alive
+			const char * pStr = "Can\'t swap!";
+			pSelf->SendChat(-1, CHAT_ALL, TargetID, pStr);
+			pSelf->SendChat(-1, CHAT_ALL, ClientID, pStr);
+			return;
+		}
+
+		CPlayerRescueState State1 = GetPlayerState(pChar1, ClientID),
+			State2 = GetPlayerState(pChar2, TargetID);
+
+		// swap
+		SetPlayerState(State2, pChar1, ClientID);
+		SetPlayerState(State1, pChar2, TargetID);
+
+		str_format(aBuf, sizeof(aBuf), "%s swapped with %s.",
+			   pSelf->Server()->ClientName(TargetID),
+			   pSelf->Server()->ClientName(ClientID));
+		pSelf->SendChat(-1, CHAT_ALL, -1, aBuf);
+
+		// reset swap requests
+		pSelf->m_aSwapRequest[TargetID] = -1;
+		pSelf->m_aSwapRequest[ClientID] = -1;
+	}
+}
+
+void CGameContext::ConDisconnectRescue(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *) pUserData;
+
+	int TargetID = pResult->m_ClientID;
+	
+	if(!g_Config.m_SvDisconnectRescue)
+		return;
+
+	CCharacter * pChar = pSelf->GetPlayerChar(TargetID);
+
+	if(!pChar)
+		return;
+
+	std::map<const char*, CPlayerRescueState>::iterator iterator = pSelf->m_SavedPlayers.find(pSelf->Server()->ClientName(TargetID));
+	if(iterator == pSelf->m_SavedPlayers.end())
+		return;
+
+	CPlayerRescueState& State = iterator->second;
+	CCharacter * m_SoloEnts[MAX_CLIENTS];
+	if (pSelf->m_World.FindEntities(State.m_Pos, g_Config.m_SvDisconnectRescueRadius, (CEntity**) m_SoloEnts, MAX_CLIENTS, CGameWorld::ENTTYPE_CHARACTER))
+	{
+		pSelf->m_pChatConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "dr", "Someone is standing in your place, you have to wait until they move away.");
+		return;
+	}
+	SetPlayerState(State, pChar, TargetID);
+	pSelf->m_SavedPlayers.erase(iterator);
+}

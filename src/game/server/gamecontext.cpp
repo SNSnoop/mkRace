@@ -787,6 +787,14 @@ void CGameContext::OnClientTeamChange(int ClientID)
 void CGameContext::OnClientDrop(int ClientID, const char *pReason)
 {
 	AbortVoteOnDisconnect(ClientID);
+	// save position
+	 {
+		CCharacter * pChar = GetPlayerChar(ClientID);
+		if(pChar)
+		{
+		        m_SavedPlayers[Server()->ClientName(ClientID)] = GetPlayerState(pChar, ClientID);
+		}
+	}
 	m_pController->OnPlayerDisconnect(m_apPlayers[ClientID]);
 
 	// update clients on drop
@@ -1785,5 +1793,52 @@ bool CGameContext::IsClientSpectator(int ClientID) const
 const char *CGameContext::GameType() const { return m_pController && m_pController->GetGameType() ? m_pController->GetGameType() : ""; }
 const char *CGameContext::Version() const { return GAME_VERSION; }
 const char *CGameContext::NetVersion() const { return GAME_NETVERSION; }
+
+CGameContext::CPlayerRescueState CGameContext::GetPlayerState(CCharacter * pChar, int ClientID)
+{
+	CPlayerRescueState State;
+
+	State.m_DeepFreeze = pChar->m_DeepFreeze;
+	State.m_EndlessHook = pChar->m_EndlessHook;
+	State.m_FreezeTime = pChar->m_FreezeTime;
+	State.m_FreezeTick = pChar->m_FreezeTick;
+	State.m_Pos = pChar->Core()->m_Pos;
+
+	State.m_Race = pChar->GameServer()->RaceController()->m_aRace[ClientID];
+
+	for(int i = 0; i< NUM_WEAPONS; i++)
+	{
+		State.m_aWeapons[i].m_Ammo = pChar->GetWeaponAmmo(i);
+		State.m_aWeapons[i].m_Got = pChar->GetWeaponGot(i);
+	}
+
+	State.m_ActiveWeapon = pChar->GetActiveWeapon();
+	State.m_LastWeapon = pChar->GetLastWeapon();	
+
+	pChar->Core()->Write(&State.m_Core);
+
+	return State;
+}
+
+void CGameContext::SetPlayerState(const CPlayerRescueState& State, CCharacter * pChar, int ClientID)
+{
+	pChar->m_DeepFreeze = State.m_DeepFreeze;
+	pChar->m_EndlessHook = State.m_EndlessHook;
+	pChar->m_FreezeTime = State.m_FreezeTime;
+	pChar->m_FreezeTick = State.m_FreezeTick;
+
+	pChar->GameServer()->RaceController()->m_aRace[ClientID] = State.m_Race;
+
+	for(int i = 0; i< NUM_WEAPONS; i++)
+	{
+		pChar->SetWeaponAmmo(i, State.m_aWeapons[i].m_Ammo);
+		pChar->SetWeaponGot(i, State.m_aWeapons[i].m_Got);
+	}
+
+	pChar->SetActiveWeapon(State.m_ActiveWeapon);
+	pChar->SetLastWeapon(State.m_LastWeapon);	
+
+	pChar->Core()->Read(&State.m_Core);
+}
 
 IGameServer *CreateGameServer() { return new CGameContext; }

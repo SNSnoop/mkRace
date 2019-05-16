@@ -9,8 +9,12 @@
 #include <game/layers.h>
 #include <game/voting.h>
 
+#include <game/server/gamemodes/race.h>
+
 #include "eventhandler.h"
 #include "gameworld.h"
+
+#include <map>
 
 /*
 	Tick
@@ -94,6 +98,10 @@ class CGameContext : public IGameServer
 	static void ConEmoteSurprise(IConsole::IResult *pResult, void *pUserData);
 	static void ConEmoteReset(IConsole::IResult *pResult, void *pUserData);
 	static void ConMe(IConsole::IResult *pResult, void *pUserData);
+	static void ConSwap(IConsole::IResult *pResult, void *pUserData);
+	static void ConDisconnectRescue(IConsole::IResult *pResult, void *pUserData);
+
+	int m_aSwapRequest[MAX_CLIENTS];
 
 	int m_ChatConsoleClientID;
 
@@ -224,6 +232,34 @@ public:
 	virtual const char *GameType() const;
 	virtual const char *Version() const;
 	virtual const char *NetVersion() const;
+	
+	// mkRace
+	struct CPlayerRescueState
+	{
+		vec2 m_Pos;
+		bool m_DeepFreeze;
+		bool m_EndlessHook;
+		int m_FreezeTime;
+		int m_FreezeTick;
+
+		int m_ActiveWeapon;
+		int m_LastWeapon;
+
+		CGameControllerRACE::CRaceData m_Race;
+
+		struct WeaponStat
+		{
+			int m_Ammo;
+			bool m_Got;
+		} m_aWeapons[NUM_WEAPONS];
+
+		CNetObj_CharacterCore m_Core;
+	};
+	
+	std::map<const char*, CPlayerRescueState> m_SavedPlayers;
+
+	static CPlayerRescueState GetPlayerState(CCharacter * pChar, int ClientID);
+	static void SetPlayerState(const CPlayerRescueState& State, CCharacter * pChar, int ClientID);
 };
 
 inline int64 CmaskAll() { return -1; }

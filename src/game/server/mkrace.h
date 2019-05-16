@@ -15,4 +15,7 @@ CHAT_COMMAND("blink", "", CFGFLAG_SERVERCHAT|CFGFLAG_SERVER, ConEmoteBlink, this
 CHAT_COMMAND("surprise", "", CFGFLAG_SERVERCHAT|CFGFLAG_SERVER, ConEmoteSurprise, this, "Alias for Surprise emote")
 CHAT_COMMAND("reset_emote", "", CFGFLAG_SERVERCHAT|CFGFLAG_SERVER, ConEmoteReset, this, "Alias for Default emote")
 
+CHAT_COMMAND("dr", "", CFGFLAG_SERVERCHAT|CFGFLAG_SERVER, ConDisconnectRescue, this, "Rescue to location before disconnect")
+CHAT_COMMAND("swap", "?r[playername]", CFGFLAG_SERVERCHAT|CFGFLAG_SERVER, ConSwap, this, "Swap places with any player")
+
 #undef CHAT_COMMAND

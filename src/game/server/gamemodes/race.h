@@ -14,6 +14,16 @@ class CGameControllerRACE : public IGameController
 	int GetTimeExact(int ID) const;
 
 protected:
+	virtual bool IsStart(vec2 Pos, int Team) const;
+	virtual bool IsEnd(vec2 Pos, int Team) const;
+	virtual bool CanEndRace(int ID) const;
+
+	virtual void OnRaceStart(int ID);
+	virtual void OnRaceEnd(int ID, int FinishTime);
+
+	void ResetPickups(int ClientID);
+
+public:
 	struct CRaceData
 	{
 		int m_RaceState;
@@ -35,16 +45,6 @@ protected:
 		}
 	} m_aRace[MAX_CLIENTS];
 
-	virtual bool IsStart(vec2 Pos, int Team) const;
-	virtual bool IsEnd(vec2 Pos, int Team) const;
-	virtual bool CanEndRace(int ID) const;
-
-	virtual void OnRaceStart(int ID);
-	virtual void OnRaceEnd(int ID, int FinishTime);
-
-	void ResetPickups(int ClientID);
-
-public:
 	enum
 	{
 		RACE_NONE = 0,
@@ -55,6 +55,7 @@ public:
 	CGameControllerRACE(class CGameContext *pGameServer);
 	~CGameControllerRACE();
 
+	//CRaceData GetRaceData(int ID) {return m_aRace[ID]; };
 	virtual void DoWincheck();
 	virtual void Tick();
 	//virtual void Snap(int SnappingClient);

@@ -104,6 +104,9 @@ MACRO_CONFIG_STR(DbgStressServer, dbg_stress_server, 32, "localhost", CFGFLAG_CL
 MACRO_CONFIG_INT(DbgResizable, dbg_resizable, 0, 0, 0, CFGFLAG_CLIENT, "Enables window resizing")
 
 // mkRace
+MACRO_CONFIG_INT(SvSwap, sv_swap, 1, 0, 1, CFGFLAG_SERVER, "Turns player swapping on/off")
+MACRO_CONFIG_INT(SvDisconnectRescue, sv_disconnect_rescue, 1, 0, 1, CFGFLAG_SERVER, "Turns disconnect rescue on/off")
+MACRO_CONFIG_INT(SvDisconnectRescueRadius, sv_disconnect_rescue_radius, 32, 0, 1024, CFGFLAG_SERVER, "The radius where no one should stand while disconnect rescuing")
 MACRO_CONFIG_INT(SvEndlessHook, sv_endless_hook, 0, 0, 1, CFGFLAG_SERVER, "Turns endless hooking on/off")
 MACRO_CONFIG_INT(SvPlasmaStyle, sv_plasma_style, 1, 0, 1, CFGFLAG_SERVER, "Set how plasma looks like 0 - classic, 1 - new")
 MACRO_CONFIG_INT(SvPlasmaRange, sv_plasma_range, 700, 1, 99999, CFGFLAG_SERVER, "How far will the plasma gun track tees")
