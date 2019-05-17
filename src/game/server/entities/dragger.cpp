@@ -75,10 +75,7 @@ void CDragger::Move()
 				Id = i;
 			}
 		}
-		else
-		{
-			m_SoloEnts[i] = 0;
-		}
+		m_SoloEnts[i] = 0;
 	}
 
 	if (!m_Target)
@@ -326,7 +323,18 @@ void CDragger::Snap(int SnappingClient)
 						&& !GameServer()->Collision()->m_pSwitchers[m_Number].m_Status[Char->Team()]
 						&& (!Tick)))
 			continue;
-
+		if (Char && Char->IsAlive())
+		{
+			if (Char->Team() != m_CatchedTeam)
+				continue;
+		}
+		else
+		{
+			// send to spectators only active draggers and some inactive from team 0
+			if (!((Target && Target->IsAlive()) || m_CatchedTeam == 0))
+				continue;
+		}
+			
 		if (Char && Char->IsAlive() && Target && Target->IsAlive() && Target->GetPlayer()->GetCID() != Char->GetPlayer()->GetCID() && !Char->GetPlayer()->m_ShowOthers)
 		{
 			continue;
