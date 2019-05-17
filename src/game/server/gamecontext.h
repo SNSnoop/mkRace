@@ -254,7 +254,7 @@ public:
 		CNetObj_CharacterCore m_Core;
 	};
 	
-	std::map<const char*, CPlayerRescueState> m_SavedPlayers;
+	std::map<const char, CPlayerRescueState> m_SavedPlayers;
 
 	static CPlayerRescueState GetPlayerState(CCharacter * pChar, int ClientID);
 	static void SetPlayerState(const CPlayerRescueState& State, CCharacter * pChar, int ClientID);

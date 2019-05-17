@@ -792,7 +792,7 @@ void CGameContext::OnClientDrop(int ClientID, const char *pReason)
 		CCharacter * pChar = GetPlayerChar(ClientID);
 		if(pChar)
 		{
-		        m_SavedPlayers[Server()->ClientName(ClientID)] = GetPlayerState(pChar, ClientID);
+			m_SavedPlayers[*Server()->ClientName(ClientID)] = GetPlayerState(pChar, ClientID);
 		}
 	}
 	m_pController->OnPlayerDisconnect(m_apPlayers[ClientID]);

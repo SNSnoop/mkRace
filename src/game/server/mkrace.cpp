@@ -298,7 +298,7 @@ void CGameContext::ConDisconnectRescue(IConsole::IResult *pResult, void *pUserDa
 	if(!pChar)
 		return;
 
-	std::map<const char*, CPlayerRescueState>::iterator iterator = pSelf->m_SavedPlayers.find(pSelf->Server()->ClientName(TargetID));
+	std::map<const char, CPlayerRescueState>::iterator iterator = pSelf->m_SavedPlayers.find(*pSelf->Server()->ClientName(TargetID));
 	if(iterator == pSelf->m_SavedPlayers.end())
 		return;
 
