@@ -4,6 +4,7 @@
 #include <game/server/player.h>
 #include <game/server/gamemodes/race.h>
 #include <game/version.h>
+#include <game/server/entities/character.h>
 
 //bool CheckClientID(int ClientID);
 
@@ -234,11 +235,22 @@ void CGameContext::ConSwap(IConsole::IResult *pResult, void *pUserData)
 	if(TargetID == ClientID || TargetID == -1)
 		return;
 
-	pSelf->m_aSwapRequest[ClientID] = TargetID;
+	CCharacter * pChar1 = pSelf->GetPlayerChar(ClientID);
+	CCharacter * pChar2 = pSelf->GetPlayerChar(TargetID);
+	
+	if(!pChar1 || !pChar2)
+	{
+		// someone is not alive
+		pSelf->m_pChatConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "swap", "Can\'t swap!");
+		return;
+	}
+	
+	if(pChar1->m_SwapRequest == TargetID)
+		return;
 
 	char aBuf[256];
 	// check if TargetID agrees
-	if(pSelf->m_aSwapRequest[TargetID] != ClientID)
+	if(pChar2->m_SwapRequest != ClientID)
 	{
 		// send  notification to TargetID
 		str_format(aBuf, sizeof(aBuf), "%s wants to swap places with you. Type \'/swap %s\' to accept.",
@@ -248,21 +260,12 @@ void CGameContext::ConSwap(IConsole::IResult *pResult, void *pUserData)
 		str_format(aBuf, sizeof(aBuf), "Requst sent to %s.",
 			   pSelf->Server()->ClientName(TargetID));
 		pSelf->SendChat(-1, CHAT_WHISPER, ClientID, aBuf);
+
+		pChar1->m_SwapRequest = TargetID;
 	}
 	else
 	{
 		// TargetID agreed
-		CCharacter * pChar1 = pSelf->GetPlayerChar(ClientID);
-		CCharacter * pChar2 = pSelf->GetPlayerChar(TargetID);
-		if(!pChar1 || !pChar2)
-		{
-			// one is not alive
-			const char * pStr = "Can\'t swap!";
-			pSelf->SendChat(-1, CHAT_ALL, TargetID, pStr);
-			pSelf->SendChat(-1, CHAT_ALL, ClientID, pStr);
-			return;
-		}
-
 		CPlayerRescueState State1 = GetPlayerState(pChar1, ClientID),
 			State2 = GetPlayerState(pChar2, TargetID);
 
@@ -276,8 +279,8 @@ void CGameContext::ConSwap(IConsole::IResult *pResult, void *pUserData)
 		pSelf->SendChat(-1, CHAT_ALL, -1, aBuf);
 
 		// reset swap requests
-		pSelf->m_aSwapRequest[TargetID] = -1;
-		pSelf->m_aSwapRequest[ClientID] = -1;
+		pChar1->m_SwapRequest = -1;
+		pChar2->m_SwapRequest = -1;
 	}
 }
 

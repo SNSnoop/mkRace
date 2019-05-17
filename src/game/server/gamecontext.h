@@ -101,8 +101,6 @@ class CGameContext : public IGameServer
 	static void ConSwap(IConsole::IResult *pResult, void *pUserData);
 	static void ConDisconnectRescue(IConsole::IResult *pResult, void *pUserData);
 
-	int m_aSwapRequest[MAX_CLIENTS];
-
 	int m_ChatConsoleClientID;
 
 	CGameContext(int Resetting);

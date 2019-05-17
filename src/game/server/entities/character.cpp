@@ -84,6 +84,7 @@ bool CCharacter::Spawn(CPlayer *pPlayer, vec2 Pos)
 	m_Alive = true;
 	m_Frozen = false;
 	m_EndlessHook = g_Config.m_SvEndlessHook;
+	m_SwapRequest = -1;
 
 	GameServer()->m_pController->OnCharacterSpawn(this);
 

@@ -41,10 +41,7 @@ void CGameContext::Construct(int Resetting)
 	m_pServer = 0;
 
 	for(int i = 0; i < MAX_CLIENTS; i++)
-	{
 		m_apPlayers[i] = 0;
-		m_aSwapRequest[i] = -1;
-	}
 	
 	m_pController = 0;
 	m_VoteCloseTime = 0;

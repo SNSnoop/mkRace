@@ -112,6 +112,7 @@ public:
 	//CGameTeams* Teams();
 	int m_PainSoundTimer;
 	bool m_DeepFreeze;
+	int m_SwapRequest;
 	int m_LastMove;
 	int m_FreezeTime;
 	int m_FreezeTick;
