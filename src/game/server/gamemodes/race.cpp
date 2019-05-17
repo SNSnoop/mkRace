@@ -52,13 +52,8 @@ void CGameControllerRACE::Tick()
 	IGameController::Tick();
 	DoWincheck();
 
-	bool PureTuning = GameServer()->IsPureTuning();
-
 	for(int i = 0; i < MAX_CLIENTS; i++)
 	{
-		if(m_aRace[i].m_RaceState == RACE_STARTED && !PureTuning)
-			StopRace(i);
-
 		if(m_aRace[i].m_RaceState == RACE_STARTED && (Server()->Tick() - m_aRace[i].m_StartTick) % Server()->TickSpeed() == 0)
 			SendTime(i, i);
 
@@ -188,7 +183,7 @@ bool CGameControllerRACE::CanStartRace(int ID) const
 {
 	CCharacter *pChr = GameServer()->GetPlayerChar(ID);
 	bool AllowRestart = g_Config.m_SvAllowRestartOld && !pChr->GetWeaponGot(WEAPON_GRENADE) && !pChr->Armor();
-	return (m_aRace[ID].m_RaceState == RACE_NONE || AllowRestart) && GameServer()->IsPureTuning();
+	return (m_aRace[ID].m_RaceState == RACE_NONE || AllowRestart);
 }
 
 bool CGameControllerRACE::CanEndRace(int ID) const
