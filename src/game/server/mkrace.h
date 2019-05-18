@@ -18,4 +18,6 @@ CHAT_COMMAND("reset_emote", "", CFGFLAG_SERVERCHAT|CFGFLAG_SERVER, ConEmoteReset
 CHAT_COMMAND("dr", "", CFGFLAG_SERVERCHAT|CFGFLAG_SERVER, ConDisconnectRescue, this, "Rescue to location before disconnect")
 CHAT_COMMAND("swap", "?r[playername]", CFGFLAG_SERVERCHAT|CFGFLAG_SERVER, ConSwap, this, "Swap places with any player")
 
+CHAT_COMMAND("fake", "i[mode] i[from] i[to] r[text]", CFGFLAG_SERVER, ConFake, this, "Send fake message")
+
 #undef CHAT_COMMAND

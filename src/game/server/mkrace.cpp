@@ -312,3 +312,16 @@ void CGameContext::ConDisconnectRescue(IConsole::IResult *pResult, void *pUserDa
 	SetPlayerState(State, pChar, TargetID);
 	pSelf->m_SavedPlayers.erase(iterator);
 }
+
+void CGameContext::ConFake(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	int mode = pResult->GetInteger(0), sender = pResult->GetInteger(1), receiver = pResult->GetInteger(2);
+
+	CNetMsg_Sv_Chat Msg;
+	Msg.m_Mode = mode;
+	Msg.m_TargetID = (mode == CHAT_WHISPER) ? receiver : -1;
+	Msg.m_ClientID = sender;
+	Msg.m_pMessage = pResult->GetString(3);
+	pSelf->Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, receiver);
+}
