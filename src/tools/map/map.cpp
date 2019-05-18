@@ -253,7 +253,7 @@ int CLayerGroup::SwapLayers(int Index0, int Index1)
 	if(Index0 < 0 || Index0 >= m_lLayers.size()) return Index0;
 	if(Index1 < 0 || Index1 >= m_lLayers.size()) return Index0;
 	if(Index0 == Index1) return Index0;
-	swap(m_lLayers[Index0], m_lLayers[Index1]);
+	std::swap(m_lLayers[Index0], m_lLayers[Index1]);
 	return Index1;
 }
 
@@ -921,7 +921,7 @@ int CEditorMap::Load(class IStorage *pStorage, const char *pFileName, int Storag
 						{
 							CLayerTiles *pGameLayer = m_pGameLayer;
 							int GameIndex = m_pGameLayer->m_pTiles[i].m_Index;
-							if((GameIndex >= TILE_SOLID && GameIndex <= TILE_NOHOOK) || (GameIndex >= TILE_STOPL && GameIndex <= 59))
+							if((GameIndex >= TILE_SOLID && GameIndex <= TILE_NOHOOK) || (GameIndex >= TILE_STOPA && GameIndex <= 59))
 							{
 								if(!pGameExtended)
 									pGameExtended = CreateCustomLayer(this, m_pGameLayer->m_Width, m_pGameLayer->m_Height, "#game", "_entities_race");

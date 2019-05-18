@@ -19,6 +19,8 @@
 
 #include <engine/graphics.h>
 
+#include <algorithm>
+
 enum
 {
 	MOD_NONE=0,
@@ -321,7 +323,7 @@ public:
 		if(Index0 < 0 || Index0 >= m_lGroups.size()) return Index0;
 		if(Index1 < 0 || Index1 >= m_lGroups.size()) return Index0;
 		if(Index0 == Index1) return Index0;
-		swap(m_lGroups[Index0], m_lGroups[Index1]);
+		std::swap(m_lGroups[Index0], m_lGroups[Index1]);
 		return Index1;
 	}
 
