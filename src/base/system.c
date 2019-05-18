@@ -995,6 +995,16 @@ static int priv_net_create_socket(int domain, int type, struct sockaddr *addr, i
 				((struct sockaddr_in6 *)(addr))->sin6_port = port;
 		}
 
+#if defined(CONF_FAMILY_WINDOWS)
+		if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &(int){ 1 }, sizeof(int)) < 0) {
+			dbg_msg("net", "failed to setsockopt SO_REUSEADDR");
+		}
+#else
+		if (setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, &(int){ 1 }, sizeof(int)) < 0) {
+			dbg_msg("net", "failed to setsockopt SO_REUSEPORT");
+		}
+#endif
+
 		e = bind(sock, addr, sockaddrlen);
 		if(e == 0)
 			break;
@@ -2183,6 +2193,17 @@ char str_uppercase(char c)
 int str_toint(const char *str) { return atoi(str); }
 float str_tofloat(const char *str) { return atof(str); }
 
+int str_utf8_is_whitespace(int code)
+{
+	// check if unicode is not empty
+	if(code > 0x20 && code != 0xA0 && code != 0x034F && (code < 0x2000 || code > 0x200F) && (code < 0x2028 || code > 0x202F) &&
+		(code < 0x205F || code > 0x2064) && (code < 0x206A || code > 0x206F) && (code < 0xFE00 || code > 0xFE0F) &&
+		code != 0xFEFF && (code < 0xFFF9 || code > 0xFFFC))
+	{
+		return 0;
+	}
+	return 1;
+}
 
 char *str_utf8_skip_whitespaces(char *str)
 {
@@ -2194,10 +2215,7 @@ char *str_utf8_skip_whitespaces(char *str)
 		str_old = str;
 		code = str_utf8_decode((const char **)&str);
 
-		// check if unicode is not empty
-		if(code > 0x20 && code != 0xA0 && code != 0x034F && (code < 0x2000 || code > 0x200F) && (code < 0x2028 || code > 0x202F) &&
-			(code < 0x205F || code > 0x2064) && (code < 0x206A || code > 0x206F) && (code < 0xFE00 || code > 0xFE0F) &&
-			code != 0xFEFF && (code < 0xFFF9 || code > 0xFFFC))
+		if(!str_utf8_is_whitespace(code))
 		{
 			return str_old;
 		}

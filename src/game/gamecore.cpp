@@ -75,6 +75,7 @@ void CCharacterCore::Reset()
 	m_Jumped = 0;
 	m_TriggeredEvents = 0;
 	m_Race.m_LastSpeedupTilePos = ivec2(-1,-1);
+	m_Death = false;
 }
 
 void CCharacterCore::Tick(bool UseInput)
@@ -405,7 +406,7 @@ void CCharacterCore::Move()
 
 	vec2 NewPos = m_Pos;
 	m_Race.m_Teleported = 0;
-	m_pCollision->MoveBox(&NewPos, &m_Vel, vec2(28.0f, 28.0f), 0, &m_Race);
+	m_pCollision->MoveBox(&NewPos, &m_Vel, vec2(PhysSize, PhysSize), 0, &m_Race, &m_Death);
 
 	if(m_Race.m_Teleported)
 	{

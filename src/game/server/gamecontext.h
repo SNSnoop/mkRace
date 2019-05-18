@@ -230,7 +230,7 @@ public:
 	virtual const char *GameType() const;
 	virtual const char *Version() const;
 	virtual const char *NetVersion() const;
-	
+
 	// mkRace
 	struct CPlayerRescueState
 	{
@@ -258,6 +258,9 @@ public:
 
 	static CPlayerRescueState GetPlayerState(CCharacter * pChar, int ClientID);
 	static void SetPlayerState(const CPlayerRescueState& State, CCharacter * pChar, int ClientID);
+
+	virtual const char *NetVersionHashUsed() const;
+	virtual const char *NetVersionHashReal() const;
 };
 
 inline int64 CmaskAll() { return -1; }

@@ -295,6 +295,8 @@ private:
 	bool m_UseMouseButtons;
 	vec2 m_MousePos;
 	vec2 m_PrevMousePos;
+	bool m_CursorActive;
+	bool m_PrevCursorActive;
 	bool m_PopupActive;
 	int m_ActiveListBox;
 	bool m_SkinModified;
@@ -619,6 +621,7 @@ private:
 	// found in menus_demo.cpp
 	void RenderDemoPlayer(CUIRect MainView);
 	void RenderDemoList(CUIRect MainView);
+	static float RenderDemoDetails(CUIRect View, void *pUser);
 
 	// found in menus_start.cpp
 	void RenderStartMenu(CUIRect MainView);
@@ -697,6 +700,8 @@ private:
 	void ToggleMusic();
 
 	void SetMenuPage(int NewPage);
+
+	bool CheckHotKey(int Key);
 public:
 	struct CSwitchTeamInfo
 	{

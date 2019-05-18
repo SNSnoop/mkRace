@@ -125,15 +125,15 @@ void CStats::OnRender()
 	float tw;
 	int px = 325;
 
-	TextRender()->Text(0, x+10, y-5, 24.0f, Localize("Name"), -1);
-	const char *apHeaders[] = { Localize("Frags"), Localize("Deaths"), Localize("Suicides"), Localize("Ratio"), Localize("Net"), Localize("FPM"), Localize("Spree"), Localize("Best spree"), Localize("Grabs") };
+	TextRender()->Text(0, x+10, y-5, 24.0f, Localize("Name"), -1.0f);
+	const char *apHeaders[] = { Localize("Frags"), Localize("Deaths"), Localize("Suicides"), Localize("Ratio"), Localize("Net", "Net score"), Localize("FPM"), Localize("Spree"), Localize("Best spree"), Localize("Grabs", "Flag grabs") };
 	for(i=0; i<9; i++)
 		if(g_Config.m_ClStatboardInfos & (1<<i))
 		{
 			if(1<<i == TC_STATS_BESTSPREE)
 				px += 40.0f;
-			tw = TextRender()->TextWidth(0, 24.0f, apHeaders[i], -1);
-			TextRender()->Text(0, x+px-tw, y-5, 24.0f, apHeaders[i], -1);
+			tw = TextRender()->TextWidth(0, 24.0f, apHeaders[i], -1, -1.0f);
+			TextRender()->Text(0, x+px-tw, y-5, 24.0f, apHeaders[i], -1.0f);
 			px += 100;
 		}
 
@@ -189,17 +189,24 @@ void CStats::OnRender()
 		{
 			char aBuf[128];
 			str_format(aBuf, sizeof(aBuf), "... %d other players", NumPlayers-j);
-			tw = TextRender()->TextWidth(0, FontSize, aBuf, -1);
-			TextRender()->Text(0, x+64, y, FontSize, aBuf, -1);
+			tw = TextRender()->TextWidth(0, FontSize, aBuf, -1, -1.0f);
+			TextRender()->Text(0, x+64, y, FontSize, aBuf, -1.0f);
 			px += 100;
 			break;
 		}
 
-		const CGameClient::CClientStats Stats = m_pClient->m_aStats[apPlayers[j]];		
 
-		if(apPlayers[j] == m_pClient->m_LocalClientID)
+		// skip specs
+		if(m_pClient->m_aClients[apPlayers[j]].m_Active && m_pClient->m_aClients[apPlayers[j]].m_Team == TEAM_SPECTATORS)
+			break;
+
+		const CGameClient::CClientStats Stats = m_pClient->m_aStats[apPlayers[j]];		
+		const bool HighlightedLine = (!m_pClient->m_Snap.m_SpecInfo.m_Active && apPlayers[j] == m_pClient->m_LocalClientID)
+			|| (m_pClient->m_Snap.m_SpecInfo.m_Active && apPlayers[j] == m_pClient->m_Snap.m_SpecInfo.m_SpectatorID);
+
+		// background so it's easy to find the local player or the followed one in spectator mode
+		if(HighlightedLine)
 		{
-			// background so it's easy to find the local player
 			CUIRect Rect = {x, y, w-20, LineHeight*0.95f};
 			RenderTools()->DrawRoundRect(&Rect, vec4(1,1,1,0.25f), 17.0f);
 		}
@@ -210,7 +217,7 @@ void CStats::OnRender()
 
 		char aBuf[128];
 		CTextCursor Cursor;
-		tw = TextRender()->TextWidth(0, FontSize, m_pClient->m_aClients[apPlayers[j]].m_aName, -1);
+		tw = TextRender()->TextWidth(0, FontSize, m_pClient->m_aClients[apPlayers[j]].m_aName, -1, -1.0f);
 		TextRender()->SetCursor(&Cursor, x+64, y, FontSize, TEXTFLAG_RENDER|TEXTFLAG_STOP_AT_END);
 		Cursor.m_LineWidth = 220;
 		TextRender()->TextEx(&Cursor, m_pClient->m_aClients[apPlayers[j]].m_aName, -1);
@@ -219,22 +226,22 @@ void CStats::OnRender()
 		if(g_Config.m_ClStatboardInfos & TC_STATS_FRAGS)
 		{
 			str_format(aBuf, sizeof(aBuf), "%d", Stats.m_Frags);
-			tw = TextRender()->TextWidth(0, FontSize, aBuf, -1);
-			TextRender()->Text(0, x-tw+px, y, FontSize, aBuf, -1);
+			tw = TextRender()->TextWidth(0, FontSize, aBuf, -1, -1.0f);
+			TextRender()->Text(0, x-tw+px, y, FontSize, aBuf, -1.0f);
 			px += 100;
 		}
 		if(g_Config.m_ClStatboardInfos & TC_STATS_DEATHS)
 		{
 			str_format(aBuf, sizeof(aBuf), "%d", Stats.m_Deaths);
-			tw = TextRender()->TextWidth(0, FontSize, aBuf, -1);
-			TextRender()->Text(0, x-tw+px, y, FontSize, aBuf, -1);
+			tw = TextRender()->TextWidth(0, FontSize, aBuf, -1, -1.0f);
+			TextRender()->Text(0, x-tw+px, y, FontSize, aBuf, -1.0f);
 			px += 100;
 		}
 		if(g_Config.m_ClStatboardInfos & TC_STATS_SUICIDES)
 		{
 			str_format(aBuf, sizeof(aBuf), "%d", Stats.m_Suicides);
-			tw = TextRender()->TextWidth(0, FontSize, aBuf, -1);
-			TextRender()->Text(0, x-tw+px, y, FontSize, aBuf, -1);
+			tw = TextRender()->TextWidth(0, FontSize, aBuf, -1, -1.0f);
+			TextRender()->Text(0, x-tw+px, y, FontSize, aBuf, -1.0f);
 			px += 100;
 		}
 		if(g_Config.m_ClStatboardInfos & TC_STATS_RATIO)
@@ -243,45 +250,45 @@ void CStats::OnRender()
 				str_format(aBuf, sizeof(aBuf), "--");
 			else
 				str_format(aBuf, sizeof(aBuf), "%.2f", (float)(Stats.m_Frags)/Stats.m_Deaths);
-			tw = TextRender()->TextWidth(0, FontSize, aBuf, -1);
-			TextRender()->Text(0, x-tw+px, y, FontSize, aBuf, -1);
+			tw = TextRender()->TextWidth(0, FontSize, aBuf, -1, -1.0f);
+			TextRender()->Text(0, x-tw+px, y, FontSize, aBuf, -1.0f);
 			px += 100;
 		}
 		if(g_Config.m_ClStatboardInfos & TC_STATS_NET)
 		{
 			str_format(aBuf, sizeof(aBuf), "%+d", Stats.m_Frags-Stats.m_Deaths);
-			tw = TextRender()->TextWidth(0, FontSize, aBuf, -1);
-			TextRender()->Text(0, x-tw+px, y, FontSize, aBuf, -1);
+			tw = TextRender()->TextWidth(0, FontSize, aBuf, -1, -1.0f);
+			TextRender()->Text(0, x-tw+px, y, FontSize, aBuf, -1.0f);
 			px += 100;
 		}
 		if(g_Config.m_ClStatboardInfos & TC_STATS_FPM)
 		{
 			float Fpm = (float)(Stats.m_Frags*60)/((float)(Client()->GameTick()-Stats.m_JoinDate)/Client()->GameTickSpeed());
 			str_format(aBuf, sizeof(aBuf), "%.1f", Fpm);
-			tw = TextRender()->TextWidth(0, FontSize, aBuf, -1);
-			TextRender()->Text(0, x-tw+px, y, FontSize, aBuf, -1);
+			tw = TextRender()->TextWidth(0, FontSize, aBuf, -1, -1.0f);
+			TextRender()->Text(0, x-tw+px, y, FontSize, aBuf, -1.0f);
 			px += 100;
 		}
 		if(g_Config.m_ClStatboardInfos & TC_STATS_SPREE)
 		{
 			str_format(aBuf, sizeof(aBuf), "%d", Stats.m_CurrentSpree);
-			tw = TextRender()->TextWidth(0, FontSize, aBuf, -1);
-			TextRender()->Text(0, x-tw+px, y, FontSize, aBuf, -1);
+			tw = TextRender()->TextWidth(0, FontSize, aBuf, -1, -1.0f);
+			TextRender()->Text(0, x-tw+px, y, FontSize, aBuf, -1.0f);
 			px += 100;
 		}
 		if(g_Config.m_ClStatboardInfos & TC_STATS_BESTSPREE)
 		{
 			px += 40;
 			str_format(aBuf, sizeof(aBuf), "%d", Stats.m_BestSpree);
-			tw = TextRender()->TextWidth(0, FontSize, aBuf, -1);
-			TextRender()->Text(0, x-tw+px, y, FontSize, aBuf, -1);
+			tw = TextRender()->TextWidth(0, FontSize, aBuf, -1, -1.0f);
+			TextRender()->Text(0, x-tw+px, y, FontSize, aBuf, -1.0f);
 			px += 100;
 		}
 		if(m_pClient->m_Snap.m_pGameData && m_pClient->m_GameInfo.m_GameFlags&GAMEFLAG_FLAGS && g_Config.m_ClStatboardInfos&TC_STATS_FLAGGRABS)
 		{
 			str_format(aBuf, sizeof(aBuf), "%d", Stats.m_FlagGrabs);
-			tw = TextRender()->TextWidth(0, FontSize, aBuf, -1);
-			TextRender()->Text(0, x-tw+px, y, FontSize, aBuf, -1);
+			tw = TextRender()->TextWidth(0, FontSize, aBuf, -1, -1.0f);
+			TextRender()->Text(0, x-tw+px, y, FontSize, aBuf, -1.0f);
 			px += 100;
 		}
 		for(i=0, px=px-40; i<NUM_WEAPONS; i++)
@@ -290,15 +297,15 @@ void CStats::OnRender()
 				continue;
 
 			str_format(aBuf, sizeof(aBuf), "%d/%d", Stats.m_aFragsWith[i], Stats.m_aDeathsFrom[i]);
-			tw = TextRender()->TextWidth(0, FontSize, aBuf, -1);
-			TextRender()->Text(0, x+px-tw/2, y, FontSize, aBuf, -1);
+			tw = TextRender()->TextWidth(0, FontSize, aBuf, -1, -1.0f);
+			TextRender()->Text(0, x+px-tw/2, y, FontSize, aBuf, -1.0f);
 			px += 80;
 		}
 		if(m_pClient->m_Snap.m_pGameData && m_pClient->m_GameInfo.m_GameFlags&GAMEFLAG_FLAGS && g_Config.m_ClStatboardInfos&TC_STATS_FLAGCAPTURES)
 		{
 			str_format(aBuf, sizeof(aBuf), "%d", Stats.m_FlagCaptures);
-			tw = TextRender()->TextWidth(0, FontSize, aBuf, -1);
-			TextRender()->Text(0, x-tw+px, y, FontSize, aBuf, -1);
+			tw = TextRender()->TextWidth(0, FontSize, aBuf, -1, -1.0f);
+			TextRender()->Text(0, x-tw+px, y, FontSize, aBuf, -1.0f);
 			px += 100;
 		}
 		y += LineHeight;
