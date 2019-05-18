@@ -86,20 +86,12 @@ class CGameContext : public IGameServer
 	static void ChatConHelp(IConsole::IResult *pResult, void *pUser);
 	
 	// mkRace
-	static void ConTogglePause(IConsole::IResult *pResult, void *pUserData);
-	static void ConToggleSpec(IConsole::IResult *pResult, void *pUserData);
 	static void ConSetEyeEmote(IConsole::IResult *pResult, void *pUserData);
-	static void ConEmote(IConsole::IResult *pResult, void *pUserData);
-	static void ConEyeEmote(IConsole::IResult *pResult, void *pUserData, int Emote, int Duration);
-	static void ConEmoteLove(IConsole::IResult *pResult, void *pUserData);
-	static void ConEmoteHate(IConsole::IResult *pResult, void *pUserData);
-	static void ConEmotePain(IConsole::IResult *pResult, void *pUserData);
-	static void ConEmoteBlink(IConsole::IResult *pResult, void *pUserData);
-	static void ConEmoteSurprise(IConsole::IResult *pResult, void *pUserData);
-	static void ConEmoteReset(IConsole::IResult *pResult, void *pUserData);
-	static void ConMe(IConsole::IResult *pResult, void *pUserData);
-	static void ConSwap(IConsole::IResult *pResult, void *pUserData);
-	static void ConDisconnectRescue(IConsole::IResult *pResult, void *pUserData);
+        static void ConEyeEmote(IConsole::IResult *pResult, void *pUserData, int Emote, int Duration);
+#define CHAT_COMMAND(name, params, flags, callback, userdata, help)	\
+	static void callback (IConsole::IResult *pResult, void *pUserData);
+#include "mkrace.h"
+#undef CHAT_COMMAND
 
 	int m_ChatConsoleClientID;
 
