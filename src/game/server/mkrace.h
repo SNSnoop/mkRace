@@ -19,5 +19,6 @@ CHAT_COMMAND("dr", "", CFGFLAG_SERVERCHAT|CFGFLAG_SERVER, ConDisconnectRescue, t
 CHAT_COMMAND("swap", "?r[playername]", CFGFLAG_SERVERCHAT|CFGFLAG_SERVER, ConSwap, this, "Swap places with any player")
 
 CHAT_COMMAND("fake", "i[mode] i[from] i[to] r[text]", CFGFLAG_SERVER, ConFake, this, "Send fake message")
+CHAT_COMMAND("unicast", "i[to] r[text]", CFGFLAG_SERVER, ConUnicast, this, "Send broadcast message to single player")
 
 #undef CHAT_COMMAND

@@ -325,3 +325,9 @@ void CGameContext::ConFake(IConsole::IResult *pResult, void *pUserData)
 	Msg.m_pMessage = pResult->GetString(3);
 	pSelf->Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, receiver);
 }
+
+void CGameContext::ConUnicast(IConsole::IResult* pResult, void* pUserData)
+{
+        CGameContext *pSelf = (CGameContext *)pUserData;
+        pSelf->SendBroadcast(pResult->GetString(1), pResult->GetInteger(0));
+}
