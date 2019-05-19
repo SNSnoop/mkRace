@@ -185,6 +185,7 @@ public:
 
 	// general
 	virtual void Snap(int SnappingClient);
+        void DoSnap(int SnappingClient, int GameStartTick);
 	virtual void Tick();
 
 	// info
