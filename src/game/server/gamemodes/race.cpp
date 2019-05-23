@@ -47,42 +47,27 @@ void CGameControllerRACE::DoWincheck()
 	}*/
 }
 
+void CGameControllerRACE::Snap(int SnappingClient)
+{
+	const int i = SnappingClient;
+	if(i >= 0 && i < MAX_CLIENTS)
+	{
+		int SpecID = GameServer()->m_apPlayers[i] ? GameServer()->m_apPlayers[i]->GetSpectatorID() : -1;
+		if(SpecID != -1)
+			this->DoSnap(i, m_aRace[SpecID].m_StartTick);
+		else if(m_aRace[i].m_RaceState == RACE_STARTED)
+			this->DoSnap(i, m_aRace[i].m_StartTick);
+		else
+			this->DoSnap(i, m_GameStartTick);
+        }
+	else
+                this->DoSnap(i, m_GameStartTick);
+}
+
 void CGameControllerRACE::Tick()
 {
 	IGameController::Tick();
 	DoWincheck();
-
-	for(int i = 0; i < MAX_CLIENTS; i++)
-	{
-		if(m_aRace[i].m_RaceState == RACE_STARTED && (Server()->Tick() - m_aRace[i].m_StartTick) % Server()->TickSpeed() == 0)
-			SendTime(i, i);
-
-		int SpecID = GameServer()->m_apPlayers[i] ? GameServer()->m_apPlayers[i]->GetSpectatorID() : -1;
-		if(SpecID != -1 && g_Config.m_SvShowTimes && m_aRace[SpecID].m_RaceState == RACE_STARTED &&
-			(Server()->Tick() - m_aRace[SpecID].m_StartTick) % Server()->TickSpeed() == 0)
-			SendTime(SpecID, i);
-	}
-}
-
-void CGameControllerRACE::SendTime(int ClientID, int To)
-{
-	CRaceData *p = &m_aRace[ClientID];
-	char aBuf[128] = {0};
-	char aTimeBuf[64];
-
-	bool Checkpoint = p->m_CpTick != -1 && p->m_CpTick > Server()->Tick();
-	if(Checkpoint)
-	{
-		char aDiff[64];
-		IRace::FormatTimeDiff(aDiff, sizeof(aDiff), p->m_CpDiff, false);
-		const char *pColor = (p->m_CpDiff <= 0) ? "^090" : "^900";
-		str_format(aBuf, sizeof(aBuf), "%s%s\\n^999", pColor, aDiff);
-	}
-
-	int Time = GetTime(ClientID);
-	str_format(aTimeBuf, sizeof(aTimeBuf), "%02d:%02d", Time / (60 * 1000), (Time / 1000) % 60);
-	str_append(aBuf, aTimeBuf, sizeof(aBuf));
-	GameServer()->SendBroadcast(aBuf, To);
 }
 
 void CGameControllerRACE::OnCheckpoint(int ID, int z)

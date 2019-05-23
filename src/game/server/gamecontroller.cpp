@@ -805,11 +805,16 @@ void IGameController::SwapTeamscore()
 // general
 void IGameController::Snap(int SnappingClient)
 {
+	DoSnap(SnappingClient, m_GameStartTick);
+}
+
+void IGameController::DoSnap(int SnappingClient, int GameStartTick)
+{
 	CNetObj_GameData *pGameData = static_cast<CNetObj_GameData *>(Server()->SnapNewItem(NETOBJTYPE_GAMEDATA, 0, sizeof(CNetObj_GameData)));
 	if(!pGameData)
 		return;
 
-	pGameData->m_GameStartTick = m_GameStartTick;
+	pGameData->m_GameStartTick = GameStartTick;
 	pGameData->m_GameStateFlags = 0;
 	pGameData->m_GameStateEndTick = 0; // no timer/infinite = 0, on end = GameEndTick, otherwise = GameStateEndTick
 	switch(m_GameState)

@@ -7,7 +7,6 @@
 
 class CGameControllerRACE : public IGameController
 {
-	void SendTime(int ClientID, int To);
 	void OnCheckpoint(int ID, int z);
 
 	int GetTime(int ID) const;
@@ -58,7 +57,7 @@ public:
 	//CRaceData GetRaceData(int ID) {return m_aRace[ID]; };
 	virtual void DoWincheck();
 	virtual void Tick();
-	//virtual void Snap(int SnappingClient);
+	virtual void Snap(int SnappingClient);
 	virtual void OnCharacterSpawn(CCharacter *pChr);
 	virtual int OnCharacterDeath(class CCharacter *pVictim, class CPlayer *pKiller, int Weapon);
 	virtual bool IsFriendlyFire(int ClientID1, int ClientID2) const { return ClientID1 != ClientID2; };
