@@ -373,6 +373,12 @@ void CGameContext::EndVote(int Type, bool Force)
 	if(Force)
 		m_VoteCreator = -1;
 	SendVoteSet(Type, -1);
+        {
+                char aBuf[64];
+                str_format(aBuf, sizeof(aBuf), "end %d %d", Type, Force);
+                Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "vote", aBuf);
+        }
+
 }
 
 void CGameContext::ForceVote(int Type, const char *pDescription, const char *pReason)
@@ -917,6 +923,12 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			CNetMsg_Cl_CallVote *pMsg = (CNetMsg_Cl_CallVote *)pRawMsg;
 			int64 Now = Server()->Tick();
 
+                        {
+				char aBuf[256];
+				str_format(aBuf, sizeof(aBuf), "call %d %d %s::%s::%s", ClientID, pMsg->m_Force, pMsg->m_Type, pMsg->m_Value, pMsg->m_Reason);
+				Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "vote", aBuf);
+                        }
+
 			if(pMsg->m_Force)
 			{
 				if(!Server()->IsAuthed(ClientID))
@@ -937,7 +949,8 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			char aCmd[VOTE_CMD_LENGTH] = {0};
 			const char *pReason = pMsg->m_Reason[0] ? pMsg->m_Reason : "No reason given";
 
-			if(str_comp_nocase(pMsg->m_Type, "option") == 0)
+
+                        if(str_comp_nocase(pMsg->m_Type, "option") == 0)
 			{
 				CVoteOptionServer *pOption = m_pVoteOptionFirst;
 				while(pOption)
@@ -1022,11 +1035,23 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				pPlayer->m_Vote = 1;
 				pPlayer->m_VotePos = m_VotePos = 1;
 				pPlayer->m_LastVoteCall = Now;
-			}
-		}
-		else if(MsgID == NETMSGTYPE_CL_VOTE)
+
+				{
+                                        char aBuf[256];
+                                        str_format(aBuf, sizeof(aBuf), "start %d %d %d %s::%s::%s", ClientID, m_VoteType, m_VoteClientID, aDesc, aCmd, pReason);
+                                        Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "vote", aBuf);
+                                }
+                        }
+                }
+                else if(MsgID == NETMSGTYPE_CL_VOTE)
 		{
-			if(!m_VoteCloseTime)
+			{
+                                char aBuf[64];
+                                str_format(aBuf, sizeof(aBuf), "votemsg %d %d", ClientID, pPlayer->m_Vote);
+                                Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "vote", aBuf);
+                        }
+
+                        if(!m_VoteCloseTime)
 				return;
 
 			if(pPlayer->m_Vote == 0)
@@ -1038,6 +1063,11 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				pPlayer->m_Vote = pMsg->m_Vote;
 				pPlayer->m_VotePos = ++m_VotePos;
 				m_VoteUpdate = true;
+				{
+					char aBuf[64];
+					str_format(aBuf, sizeof(aBuf), "vote %d %d", ClientID, pPlayer->m_Vote);
+					Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "vote", aBuf);
+				}
 			}
 			else if(m_VoteCreator == pPlayer->GetCID())
 			{
