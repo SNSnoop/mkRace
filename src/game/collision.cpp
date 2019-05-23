@@ -28,9 +28,28 @@ CCollision::CCollision()
 	m_pSwitchers = 0;
 }
 
+void CCollision::Dest()
+{
+	if (m_pDoor)
+		delete[] m_pDoor;
+	if (m_pSwitchers)
+		delete[] m_pSwitchers;
+	m_pTiles = 0;
+	m_Width = 0;
+	m_Height = 0;
+	m_pLayers = 0;
+	m_pTele = 0;
+	m_pSpeedup = 0;
+	m_pFront = 0;
+	m_pSwitch = 0;
+	m_pTune = 0;
+	m_pDoor = 0;
+	m_pSwitchers = 0;
+}
+
 void CCollision::Init(class CLayers *pLayers)
 {
-	m_pTele = 0;
+	Dest();
 
 	m_pLayers = pLayers;
 	m_Width = m_pLayers->GameLayer()->m_Width;
@@ -910,6 +929,14 @@ bool CCollision::IsHookBlocker(int x, int y, vec2 pos0, vec2 pos1) const
 		(m_pFront[pos].m_Flags == ROTATION_270 && pos0.x < pos1.x) ))
 		return true;
 	return false;
+}
+
+void CCollision::SetCollisionAt(float x, float y, int id)
+{
+	int Nx = clamp(round_to_int(x)/32, 0, m_Width-1);
+	int Ny = clamp(round_to_int(y)/32, 0, m_Height-1);
+
+	m_pTiles[Ny * m_Width + Nx].m_Index = id;
 }
 
 void CCollision::SetDCollisionAt(float x, float y, int Type, int Flags, int Number) const

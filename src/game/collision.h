@@ -93,11 +93,13 @@ public:
 	std::map<int, std::vector<vec2> > m_TeleOuts;
 	std::map<int, std::vector<vec2> > m_TeleCheckOuts;
 
+	void Dest();
 	int IsSwitch(int Index) const;
 	int GetSwitchNumber(int Index) const;
 	int GetSwitchDelay(int Index) const;
 	int GetTile(int x, int y) const;
 	void SetDTile(float x, float y, bool State) const;
+	void SetCollisionAt(float x, float y, int id);
 	void SetDCollisionAt(float x, float y, int Type, int Flags, int Number) const;
 	int GetDTileIndex(int Index) const;
 	int GetDTileFlags(int Index) const;
