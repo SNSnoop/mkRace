@@ -1047,7 +1047,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		{
 			{
                                 char aBuf[64];
-                                str_format(aBuf, sizeof(aBuf), "votemsg %d %d", ClientID, pPlayer->m_Vote);
+                                str_format(aBuf, sizeof(aBuf), "votemsg %d %d", ClientID, ((CNetMsg_Cl_Vote *)pRawMsg)->m_Vote);
                                 Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "vote", aBuf);
                         }
 
