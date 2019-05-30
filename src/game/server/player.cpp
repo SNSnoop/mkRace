@@ -172,12 +172,12 @@ void CPlayer::Snap(int SnappingClient)
 	if(!pPlayerInfo)
 		return;
 
-	pPlayerInfo->m_PlayerFlags = m_PlayerFlags&PLAYERFLAG_CHATTING;
+	pPlayerInfo->m_PlayerFlags = m_PlayerFlags;
 	if(Server()->IsAuthed(m_ClientID))
 		pPlayerInfo->m_PlayerFlags |= PLAYERFLAG_ADMIN;
 	if(!GameServer()->m_pController->IsPlayerReadyMode() || m_IsReadyToPlay)
 		pPlayerInfo->m_PlayerFlags |= PLAYERFLAG_READY;
-	if(m_RespawnDisabled && (!GetCharacter() || !GetCharacter()->IsAlive()))
+	if((m_Team == TEAM_SPECTATORS || m_DeadSpecMode || m_Paused) && SnappingClient != m_ClientID)
 		pPlayerInfo->m_PlayerFlags |= PLAYERFLAG_DEAD;
 	if(SnappingClient != -1 && (m_Team == TEAM_SPECTATORS || m_DeadSpecMode || m_Paused) && (SnappingClient == m_SpectatorID))
 		pPlayerInfo->m_PlayerFlags |= PLAYERFLAG_WATCHING;
