@@ -1071,12 +1071,12 @@ void CCharacter::HandleTiles(int Index)
 	// endless hook
 	if(((m_TileIndex == TILE_EHOOK_START) || (m_TileFIndex == TILE_EHOOK_START)) && !m_EndlessHook)
 	{
-		GameServer()->SendChat(-1, CHAT_WHISPER, m_pPlayer->GetCID(), "Endless hook has been activated");
+		GameServer()->SendChat(-1, CHAT_ALL, m_pPlayer->GetCID(), "Endless hook has been activated");
 		m_EndlessHook = true;
 	}
 	else if(((m_TileIndex == TILE_EHOOK_END) || (m_TileFIndex == TILE_EHOOK_END)) && m_EndlessHook)
 	{
-		GameServer()->SendChat(-1, CHAT_WHISPER, m_pPlayer->GetCID(), "Endless hook has been deactivated");
+		GameServer()->SendChat(-1, CHAT_ALL, m_pPlayer->GetCID(), "Endless hook has been deactivated");
 		m_EndlessHook = false;
 	}
 

@@ -255,11 +255,11 @@ void CGameContext::ConSwap(IConsole::IResult *pResult, void *pUserData)
 		// send  notification to TargetID
 		str_format(aBuf, sizeof(aBuf), "%s wants to swap places with you. Type \'/swap %s\' to accept.",
 			   pSelf->Server()->ClientName(ClientID), pSelf->Server()->ClientName(ClientID));
-		pSelf->SendChat(-1, CHAT_WHISPER, TargetID, aBuf);
+		pSelf->SendChat(-1, CHAT_ALL, TargetID, aBuf);
 
 		str_format(aBuf, sizeof(aBuf), "Requst sent to %s.",
 			   pSelf->Server()->ClientName(TargetID));
-		pSelf->SendChat(-1, CHAT_WHISPER, ClientID, aBuf);
+		pSelf->SendChat(-1, CHAT_ALL, ClientID, aBuf);
 
 		pChar1->m_SwapRequest = TargetID;
 	}
