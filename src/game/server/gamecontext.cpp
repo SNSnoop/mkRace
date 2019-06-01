@@ -1878,4 +1878,11 @@ void CGameContext::SetPlayerState(const CPlayerRescueState& State, CCharacter * 
 	pChar->Core()->Read(&State.m_Core);
 }
 
+float CGameContext::PlayerJetpack()
+{
+	float Temp;
+	m_Tuning.Get("player_jetpack", &Temp);
+	return Temp;
+}
+
 IGameServer *CreateGameServer() { return new CGameContext; }

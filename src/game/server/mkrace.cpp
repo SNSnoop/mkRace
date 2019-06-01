@@ -331,3 +331,19 @@ void CGameContext::ConUnicast(IConsole::IResult* pResult, void* pUserData)
         CGameContext *pSelf = (CGameContext *)pUserData;
         pSelf->SendBroadcast(pResult->GetString(1), pResult->GetInteger(0));
 }
+
+void CGameContext::ConJetpack(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	CCharacter* pChr = pSelf->GetPlayerChar(pResult->m_ClientID);
+	if (pChr && pSelf->Server()->IsAuthed(pResult->m_ClientID))
+		pChr->m_Jetpack = true;
+}
+
+void CGameContext::ConUnJetpack(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	CCharacter* pChr = pSelf->GetPlayerChar(pResult->m_ClientID);
+	if (pChr && pSelf->Server()->IsAuthed(pResult->m_ClientID))
+		pChr->m_Jetpack = false;
+}

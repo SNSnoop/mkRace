@@ -85,6 +85,7 @@ bool CCharacter::Spawn(CPlayer *pPlayer, vec2 Pos)
 	m_Frozen = false;
 	m_EndlessHook = g_Config.m_SvEndlessHook;
 	m_SwapRequest = -1;
+	m_Jetpack = false;
 
 	GameServer()->m_pController->OnCharacterSpawn(this);
 
@@ -170,6 +171,45 @@ bool CCharacter::IsGrounded()
 	return false;
 }
 
+void CCharacter::HandleJetpack()
+{
+	vec2 Direction = normalize(vec2(m_LatestInput.m_TargetX, m_LatestInput.m_TargetY));
+
+	bool FullAuto = false;
+	if (m_ActiveWeapon == WEAPON_GRENADE || m_ActiveWeapon == WEAPON_SHOTGUN || m_ActiveWeapon == WEAPON_LASER)
+		FullAuto = true;
+	if (m_Jetpack && m_ActiveWeapon == WEAPON_GUN)
+		FullAuto = true;
+
+	// check if we gonna fire
+	bool WillFire = false;
+	if (CountInput(m_LatestPrevInput.m_Fire, m_LatestInput.m_Fire).m_Presses)
+		WillFire = true;
+
+	if (FullAuto && (m_LatestInput.m_Fire & 1) && m_aWeapons[m_ActiveWeapon].m_Ammo)
+		WillFire = true;
+
+	if (!WillFire)
+		return;
+
+	// check for ammo
+	if (!m_aWeapons[m_ActiveWeapon].m_Ammo)
+	{
+		return;
+	}
+
+	switch (m_ActiveWeapon)
+	{
+		case WEAPON_GUN:
+		{
+			if (m_Jetpack)
+			{
+				float Strength = GameServer()->Tuning()->m_JetpackStrength;
+				TakeDamage(Direction * -1.0f * (Strength / 100.0f / 6.11f), vec2(0,0), 0, m_pPlayer->GetCID(), m_ActiveWeapon);
+			}
+		}
+	}
+}
 
 void CCharacter::HandleNinja()
 {
@@ -280,6 +320,8 @@ void CCharacter::FireWeapon()
 	bool FullAuto = false;
 	if(m_ActiveWeapon == WEAPON_GRENADE || m_ActiveWeapon == WEAPON_SHOTGUN || m_ActiveWeapon == WEAPON_LASER)
 		FullAuto = true;
+	if (m_Jetpack && m_ActiveWeapon == WEAPON_GUN)
+		FullAuto = true;
 
 
 	// check if we gonna fire
@@ -355,14 +397,17 @@ void CCharacter::FireWeapon()
 
 		case WEAPON_GUN:
 		{
-			new CProjectile(GameWorld(), WEAPON_GUN,
-				m_pPlayer->GetCID(),
-				ProjStartPos,
-				Direction,
-				(int)(Server()->TickSpeed()*GameServer()->Tuning()->m_GunLifetime),
-				g_pData->m_Weapons.m_Gun.m_pBase->m_Damage, false, 0, -1, WEAPON_GUN);
+			if (!m_Jetpack)
+			{
+				new CProjectile(GameWorld(), WEAPON_GUN,
+					m_pPlayer->GetCID(),
+					ProjStartPos,
+					Direction,
+					(int)(Server()->TickSpeed()*GameServer()->Tuning()->m_GunLifetime),
+					g_pData->m_Weapons.m_Gun.m_pBase->m_Damage, false, 0, -1, WEAPON_GUN);
 
-			GameServer()->CreateSound(m_Pos, SOUND_GUN_FIRE, CmaskRace(GameServer(), m_pPlayer->GetCID()));
+				GameServer()->CreateSound(m_Pos, SOUND_GUN_FIRE, CmaskRace(GameServer(), m_pPlayer->GetCID()));
+			}
 		} break;
 
 		case WEAPON_SHOTGUN:
@@ -423,6 +468,7 @@ void CCharacter::HandleWeapons()
 {
 	//ninja
 	HandleNinja();
+	HandleJetpack();
 	
 	if(m_PainSoundTimer > 0)
 		m_PainSoundTimer--;
@@ -1078,6 +1124,18 @@ void CCharacter::HandleTiles(int Index)
 	{
 		GameServer()->SendChat(-1, CHAT_ALL, m_pPlayer->GetCID(), "Endless hook has been deactivated");
 		m_EndlessHook = false;
+	}
+
+	// jetpack gun
+	if (((m_TileIndex == TILE_JETPACK_START) || (m_TileFIndex == TILE_JETPACK_START)) && !m_Jetpack)
+	{
+		GameServer()->SendChat(-1, CHAT_ALL, GetPlayer()->GetCID(), "You have a jetpack gun");
+		m_Jetpack = true;
+	}
+	else if (((m_TileIndex == TILE_JETPACK_END) || (m_TileFIndex == TILE_JETPACK_END)) && m_Jetpack)
+	{
+		GameServer()->SendChat(-1, CHAT_ALL, GetPlayer()->GetCID(), "You lost your jetpack gun");
+		m_Jetpack = false;
 	}
 
 	int z = GameServer()->Collision()->IsTeleport(MapIndex);

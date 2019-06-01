@@ -223,6 +223,8 @@ public:
 	virtual const char *Version() const;
 	virtual const char *NetVersion() const;
 
+	virtual float PlayerJetpack();
+
 	// mkRace
 	struct CPlayerRescueState
 	{

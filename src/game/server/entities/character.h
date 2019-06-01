@@ -36,6 +36,7 @@ public:
 
 	void HandleWeapons();
 	void HandleNinja();
+	void HandleJetpack();
 
 	void OnPredictedInput(CNetObj_PlayerInput *pNewInput);
 	void OnDirectInput(CNetObj_PlayerInput *pNewInput);
@@ -79,6 +80,7 @@ public:
 	// mkRace
 	vec2 m_Intersection;
 	bool m_EndlessHook;
+	bool m_Jetpack;
 	int m_TileIndex;
 	int m_TileFlags;
 	int m_TileFIndex;
