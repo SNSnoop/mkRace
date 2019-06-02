@@ -28,6 +28,7 @@
 
 #include "score.h"
 #include "score/file_score.h"
+#include <game/server/mkjson.cpp>
 
 enum
 {
@@ -256,6 +257,7 @@ void CGameContext::SendChat(int ChatterClientID, int Mode, int To, const char *p
 			Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, ChatterClientID);
 		Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, To);
 	}
+	dumpjson("event", "chat", "from", json_plr(Server(),ChatterClientID), "msg", pText, "to", To);
 }
 
 void CGameContext::SendBroadcast(const char* pText, int ClientID)
@@ -758,6 +760,7 @@ void CGameContext::OnClientEnter(int ClientID)
 		Msg.m_Team = NewClientInfoMsg.m_Team;
 		Server()->SendPackMsg(&Msg, MSGFLAG_NOSEND, -1);
 	}
+	dumpjson("event", "joined", "player", json_plr(Server(), ClientID));
 }
 
 void CGameContext::OnClientConnected(int ClientID, bool Dummy, bool AsSpec)
