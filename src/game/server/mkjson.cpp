@@ -59,6 +59,7 @@ inline void dumpjson(Args... args){
 	std::stringstream timestamp;
 	timestamp << std::time(nullptr);
 	std::printf("%s\n", mkjson(args..., "ts", timestamp.str()).c_str());
+	fflush(stdout);
 }
 
 inline std::vector<std::string> json_plr(IServer* Server,int id) {

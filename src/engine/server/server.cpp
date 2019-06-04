@@ -29,6 +29,7 @@
 
 #include "register.h"
 #include "server.h"
+#include <game/server/mkjson.cpp>
 
 #if defined(CONF_FAMILY_WINDOWS)
 	#define WIN32_LEAN_AND_MEAN
@@ -1263,6 +1264,7 @@ int CServer::LoadMap(const char *pMapName)
 	str_format(aBufMsg, sizeof(aBufMsg), "%s crc is %08x", aBuf, m_CurrentMapCrc);
 	Console()->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "server", aBufMsg);
 
+	dumpjson("event", "map", "map", pMapName, "sha256", aSha256);
 	str_copy(m_aCurrentMap, pMapName, sizeof(m_aCurrentMap));
 
 	// load complete map into memory for download
