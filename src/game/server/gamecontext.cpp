@@ -905,6 +905,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
                                 char aBuf[256];
                                 str_format(aBuf, sizeof(aBuf), "%d:%d: %s", ClientID, pMsg->m_Mode, pMsg->m_pMessage + 1);
                                 Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "cmdchat", aBuf);
+				dumpjson("event", "slashcmd", "player", json_plr(Server(), ClientID), "cmd", pMsg->m_pMessage);
 			}
 			else
 			{
@@ -1049,7 +1050,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
                                         Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "vote", aBuf);
                                 }
                         }
-			dumpjson("event", "vote", "player", json_plr(Server(), ClientID), "vote", aCmd, "reason", pReason);
+			dumpjson("event", "votecall", "player", json_plr(Server(), ClientID), "vote", aCmd, "reason", pReason);
                 }
                 else if(MsgID == NETMSGTYPE_CL_VOTE)
 		{
@@ -1057,6 +1058,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
                                 char aBuf[64];
                                 str_format(aBuf, sizeof(aBuf), "votemsg %d %d", ClientID, ((CNetMsg_Cl_Vote *)pRawMsg)->m_Vote);
                                 Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "vote", aBuf);
+				dumpjson("event", "vote", "player", json_plr(Server(), ClientID), "vote", ((CNetMsg_Cl_Vote *)pRawMsg)->m_Vote);
                         }
 
                         if(!m_VoteCloseTime)
