@@ -642,18 +642,6 @@ void CGameContext::OnTick()
 				}
 			}
 		}
-
-#ifdef CONF_DEBUG
-	for(int i = 0; i < MAX_CLIENTS; i++)
-	{
-		if(m_apPlayers[i] && m_apPlayers[i]->IsDummy())
-		{
-			CNetObj_PlayerInput Input = {0};
-			Input.m_Direction = (i&1)?-1:1;
-			m_apPlayers[i]->OnPredictedInput(&Input);
-		}
-	}
-#endif
 }
 
 // Server hooks
@@ -1162,11 +1150,77 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		}
 		else if (MsgID == NETMSGTYPE_CL_KILL && !m_World.m_Paused)
 		{
-			if(pPlayer->m_LastKill && pPlayer->m_LastKill+Server()->TickSpeed()/2 > Server()->Tick())
+			if(pPlayer->m_LastKill && pPlayer->m_LastKill + Server()->TickSpeed() / 5 > Server()->Tick())
 				return;
 
 			pPlayer->m_LastKill = Server()->Tick();
-			pPlayer->KillCharacter(WEAPON_SELF);
+			if(g_Config.m_SvSuicidePrevention)
+			{
+				CCharacter *pChar = pPlayer->GetCharacter();
+				CPlayerRescueState state;
+				if(pChar)
+				{
+					state = GetPlayerState(pChar, ClientID);
+					pPlayer->KillCharacter(WEAPON_SELF);
+					int DummyId = Server()->MaxClients() - 1;
+					for(; DummyId > 0 && m_apPlayers[DummyId]; DummyId--) continue;
+					if(DummyId)
+					{
+						// connect dummy
+						OnClientConnected(DummyId, true, false);
+						m_apPlayers[DummyId]->TryRespawn();
+						CPlayer * pDummy = m_apPlayers[DummyId];
+						pChar = pDummy->GetCharacter();
+						if(pChar)
+						{
+							SetPlayerState(state, pChar, DummyId);
+
+							// change skin
+							for(int p = 0; p < NUM_SKINPARTS; p++)
+							{
+								str_copy(pDummy->m_TeeInfos.m_aaSkinPartNames[p], pPlayer->m_TeeInfos.m_aaSkinPartNames[p], 24);
+								pDummy->m_TeeInfos.m_aUseCustomColors[p] = pPlayer->m_TeeInfos.m_aUseCustomColors[p];
+								pDummy->m_TeeInfos.m_aSkinPartColors[p] = pPlayer->m_TeeInfos.m_aSkinPartColors[p];
+							}
+							// update client infos (others before local)
+							CNetMsg_Sv_ClientInfo NewClientInfoMsg;
+							NewClientInfoMsg.m_ClientID = DummyId;
+							NewClientInfoMsg.m_Local = 0;
+							NewClientInfoMsg.m_Team = m_apPlayers[ClientID]->GetTeam();
+							NewClientInfoMsg.m_pName = Server()->ClientName(ClientID);
+							NewClientInfoMsg.m_pClan = Server()->ClientClan(ClientID);
+							NewClientInfoMsg.m_Country = Server()->ClientCountry(ClientID);
+							NewClientInfoMsg.m_Silent = true;
+
+							for(int p = 0; p < NUM_SKINPARTS; p++)
+							{
+								NewClientInfoMsg.m_apSkinPartNames[p] = m_apPlayers[ClientID]->m_TeeInfos.m_aaSkinPartNames[p];
+								NewClientInfoMsg.m_aUseCustomColors[p] = m_apPlayers[ClientID]->m_TeeInfos.m_aUseCustomColors[p];
+								NewClientInfoMsg.m_aSkinPartColors[p] = m_apPlayers[ClientID]->m_TeeInfos.m_aSkinPartColors[p];
+							}
+
+							// update all clients
+							for(int i = 0; i < MAX_CLIENTS; ++i)
+							{
+								if(!m_apPlayers[i] || !Server()->ClientIngame(i))
+									continue;
+
+								Server()->SendPackMsg(&NewClientInfoMsg, MSGFLAG_VITAL|MSGFLAG_NORECORD, i);
+							}
+
+						}
+						else
+						{
+							//m_apPlayers[DummyId]->OnDisconnect();
+							delete m_apPlayers[DummyId];
+							m_apPlayers[DummyId] = 0;
+						}
+					}
+				}
+			}
+			else
+				pPlayer->KillCharacter(WEAPON_SELF);
+
 			pPlayer->m_RespawnTick = Server()->Tick();
 		}
 		else if (MsgID == NETMSGTYPE_CL_READYCHANGE)
@@ -1177,7 +1231,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			pPlayer->m_LastReadyChange = Server()->Tick();
 			m_pController->OnPlayerReadyChange(pPlayer);
 		}
-		else if(MsgID == NETMSGTYPE_CL_SKINCHANGE)
+		else if (MsgID == NETMSGTYPE_CL_SKINCHANGE)
 		{
 			if(pPlayer->m_LastChangeInfo && pPlayer->m_LastChangeInfo+Server()->TickSpeed()*5 > Server()->Tick())
 				return;

@@ -123,4 +123,6 @@ MACRO_CONFIG_INT(SvEmotionalTees, sv_emotional_tees, 1, -1, 1, CFGFLAG_SERVER, "
 MACRO_CONFIG_INT(SvEyeEmoteChangeDelay, sv_eye_emote_change_delay, 1, 0, 9999, CFGFLAG_SERVER, "The time in seconds between eye emoticons change")
 MACRO_CONFIG_INT(SvSlashMe, sv_slash_me, 1, 0, 1, CFGFLAG_SERVER, "Whether /me is active on the server or not")
 
+MACRO_CONFIG_INT(SvSuicidePrevention, sv_suicide_prevention, 0, 0, 1, CFGFLAG_SERVER, "Prevent suicides")
+
 #endif
