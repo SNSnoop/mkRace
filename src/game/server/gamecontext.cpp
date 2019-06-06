@@ -785,8 +785,8 @@ void CGameContext::OnClientDrop(int ClientID, const char *pReason)
 {
 	AbortVoteOnDisconnect(ClientID);
 	// save position
-	 {
-		CCharacter * pChar = GetPlayerChar(ClientID);
+	{
+		CCharacter *pChar = GetPlayerChar(ClientID);
 		if(pChar)
 		{
 			m_SavedPlayers[*Server()->ClientName(ClientID)] = GetPlayerState(pChar, ClientID);
@@ -795,7 +795,7 @@ void CGameContext::OnClientDrop(int ClientID, const char *pReason)
 	m_pController->OnPlayerDisconnect(m_apPlayers[ClientID]);
 
 	// update clients on drop
-	if(Server()->ClientIngame(ClientID))
+	if(Server()->ClientIngame(ClientID) || (m_apPlayers[ClientID] && m_apPlayers[ClientID]->IsDummy()))
 	{
 		if(Server()->DemoRecorder_IsRecording())
 		{
@@ -809,7 +809,7 @@ void CGameContext::OnClientDrop(int ClientID, const char *pReason)
 		Msg.m_ClientID = ClientID;
 		Msg.m_pReason = pReason;
 		Msg.m_Silent = false;
-		if(g_Config.m_SvSilentSpectatorMode && m_apPlayers[ClientID]->GetTeam() == TEAM_SPECTATORS)
+		if((g_Config.m_SvSilentSpectatorMode && m_apPlayers[ClientID]->GetTeam() == TEAM_SPECTATORS) || m_apPlayers[ClientID]->IsDummy())
 			Msg.m_Silent = true;
 		Server()->SendPackMsg(&Msg, MSGFLAG_VITAL|MSGFLAG_NORECORD, -1);
 	}
@@ -1028,21 +1028,22 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				pPlayer->m_LastVoteCall = Now;
 
 				{
-                                        char aBuf[256];
-                                        str_format(aBuf, sizeof(aBuf), "start %d %d %d %s::%s::%s", ClientID, m_VoteType, m_VoteClientID, aDesc, aCmd, pReason);
-                                        Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "vote", aBuf);
-                                }
-                        }
-                }
-                else if(MsgID == NETMSGTYPE_CL_VOTE)
+					char aBuf[256];
+					str_format(aBuf, sizeof(aBuf), "start %d %d %d %s::%s::%s", ClientID, m_VoteType, m_VoteClientID,
+							   aDesc, aCmd, pReason);
+					Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "vote", aBuf);
+				}
+			}
+		}
+		else if(MsgID == NETMSGTYPE_CL_VOTE)
 		{
 			{
-                                char aBuf[64];
-                                str_format(aBuf, sizeof(aBuf), "votemsg %d %d", ClientID, ((CNetMsg_Cl_Vote *)pRawMsg)->m_Vote);
-                                Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "vote", aBuf);
-                        }
+				char aBuf[64];
+				str_format(aBuf, sizeof(aBuf), "votemsg %d %d", ClientID, ((CNetMsg_Cl_Vote *) pRawMsg)->m_Vote);
+				Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "vote", aBuf);
+			}
 
-                        if(!m_VoteCloseTime)
+			if(!m_VoteCloseTime)
 				return;
 
 			if(pPlayer->m_Vote == 0)
