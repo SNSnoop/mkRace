@@ -1207,11 +1207,11 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 
 								Server()->SendPackMsg(&NewClientInfoMsg, MSGFLAG_VITAL|MSGFLAG_NORECORD, i);
 							}
-
 						}
 						else
 						{
 							//m_apPlayers[DummyId]->OnDisconnect();
+							m_pController->OnPlayerDisconnect(m_apPlayers[DummyId]);
 							delete m_apPlayers[DummyId];
 							m_apPlayers[DummyId] = 0;
 						}
