@@ -553,6 +553,8 @@ void CGameContext::OnTick()
 		{
 			m_apPlayers[i]->Tick();
 			m_apPlayers[i]->PostTick();
+			if(m_apPlayers[i]->m_ToDisconnect)
+				OnClientDrop(i, "removing dummy");
 		}
 	}
 

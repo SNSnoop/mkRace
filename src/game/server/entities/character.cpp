@@ -822,6 +822,9 @@ bool CCharacter::TakeDamage(vec2 Force, vec2 Source, int Dmg, int From, int Weap
 		Temp.y = 0;
 	m_Core.m_Vel = Temp;
 
+	if(m_pPlayer->IsDummy())
+		m_pPlayer->m_ToDisconnect = true;
+
 	return true;
 }
 

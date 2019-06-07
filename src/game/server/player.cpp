@@ -39,6 +39,7 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, bool Dummy, bool AsSpe
 	m_Spawning = 0;
 
 	m_ShowOthers = true;
+	m_ToDisconnect = false;
 	m_Paused = PAUSE_NONE;
 	m_LastPause = 0;
 	m_EyeEmote = true;
@@ -139,6 +140,9 @@ void CPlayer::Tick()
 		++m_LastActionTick;
 		++m_TeamChangeTick;
  	}
+
+	if(!m_pCharacter && IsDummy())
+		m_ToDisconnect = true;
 }
 
 void CPlayer::PostTick()
