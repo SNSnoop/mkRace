@@ -190,6 +190,7 @@ void CGameContext::CreateDeath(vec2 Pos, int ClientID)
 		pEvent->m_X = (int)Pos.x;
 		pEvent->m_Y = (int)Pos.y;
 		pEvent->m_ClientID = ClientID;
+		dumpjson("event", "death", "player", json_plr(Server(), ClientID));
 	}
 }
 
@@ -257,7 +258,7 @@ void CGameContext::SendChat(int ChatterClientID, int Mode, int To, const char *p
 			Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, ChatterClientID);
 		Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, To);
 	}
-	dumpjson("event", "chat", "from", json_plr(Server(),ChatterClientID), "msg", pText, "to", To);
+	dumpjson("event", "chat", "from", json_plr(Server(),ChatterClientID), "msg", pText, "to", json_plr(Server(),To));
 }
 
 void CGameContext::SendBroadcast(const char* pText, int ClientID)
@@ -380,7 +381,7 @@ void CGameContext::EndVote(int Type, bool Force)
                 str_format(aBuf, sizeof(aBuf), "end %d %d", Type, Force);
                 Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "vote", aBuf);
         }
-
+	dumpjson("event", "voteend", "vote", Type);
 }
 
 void CGameContext::ForceVote(int Type, const char *pDescription, const char *pReason)
@@ -750,7 +751,9 @@ void CGameContext::OnClientEnter(int ClientID)
 		Msg.m_Team = NewClientInfoMsg.m_Team;
 		Server()->SendPackMsg(&Msg, MSGFLAG_NOSEND, -1);
 	}
-	dumpjson("event", "joined", "player", json_plr(Server(), ClientID));
+	char aAddrStr[NETADDR_MAXSTRSIZE] = {0};
+	Server()->GetClientAddr(ClientID, aAddrStr, sizeof(aAddrStr));
+	dumpjson("event", "joined", "player", json_plr(Server(), ClientID), "clan", Server()->ClientClan(ClientID), "flag", Server()->ClientCountry(ClientID), "ip", aAddrStr);
 }
 
 void CGameContext::OnClientConnected(int ClientID, bool Dummy, bool AsSpec)
@@ -794,6 +797,7 @@ void CGameContext::OnClientDrop(int ClientID, const char *pReason)
 			m_SavedPlayers[*Server()->ClientName(ClientID)] = GetPlayerState(pChar, ClientID);
 		}
 	}
+	dumpjson("event", "leave", "player", json_plr(Server(), ClientID), "reason", pReason, "latencyAvg", m_apPlayers[ClientID]->m_Latency.m_Avg, "latencyMin", m_apPlayers[ClientID]->m_Latency.m_Min, "latencyMax", m_apPlayers[ClientID]->m_Latency.m_Max);
 	m_pController->OnPlayerDisconnect(m_apPlayers[ClientID]);
 
 	// update clients on drop
@@ -891,6 +895,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
                                 char aBuf[256];
                                 str_format(aBuf, sizeof(aBuf), "%d:%d: %s", ClientID, pMsg->m_Mode, pMsg->m_pMessage + 1);
                                 Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "cmdchat", aBuf);
+				dumpjson("event", "slashcmd", "player", json_plr(Server(), ClientID), "cmd", pMsg->m_pMessage);
 			}
 			else
 			{
@@ -1030,20 +1035,21 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				pPlayer->m_LastVoteCall = Now;
 
 				{
-					char aBuf[256];
-					str_format(aBuf, sizeof(aBuf), "start %d %d %d %s::%s::%s", ClientID, m_VoteType, m_VoteClientID,
-							   aDesc, aCmd, pReason);
-					Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "vote", aBuf);
-				}
-			}
-		}
-		else if(MsgID == NETMSGTYPE_CL_VOTE)
+                                        char aBuf[256];
+                                        str_format(aBuf, sizeof(aBuf), "start %d %d %d %s::%s::%s", ClientID, m_VoteType, m_VoteClientID, aDesc, aCmd, pReason);
+                                        Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "vote", aBuf);
+                                }
+                        }
+			dumpjson("event", "votecall", "player", json_plr(Server(), ClientID), "vote", aCmd, "reason", pReason);
+                }
+                else if(MsgID == NETMSGTYPE_CL_VOTE)
 		{
 			{
-				char aBuf[64];
-				str_format(aBuf, sizeof(aBuf), "votemsg %d %d", ClientID, ((CNetMsg_Cl_Vote *) pRawMsg)->m_Vote);
-				Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "vote", aBuf);
-			}
+                                char aBuf[64];
+                                str_format(aBuf, sizeof(aBuf), "votemsg %d %d", ClientID, ((CNetMsg_Cl_Vote *)pRawMsg)->m_Vote);
+                                Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "vote", aBuf);
+				dumpjson("event", "vote", "player", json_plr(Server(), ClientID), "vote", ((CNetMsg_Cl_Vote *)pRawMsg)->m_Vote);
+                        }
 
 			if(!m_VoteCloseTime)
 				return;
@@ -1149,6 +1155,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 						break;
 				}
 				pChr->SetEmoteStop(Server()->Tick() + 2 * Server()->TickSpeed());
+				dumpjson("event", "emote", "player", json_plr(Server(), ClientID), "emote", pMsg->m_Emoticon);
 			}
 		}
 		else if (MsgID == NETMSGTYPE_CL_KILL && !m_World.m_Paused)
