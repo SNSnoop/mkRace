@@ -138,6 +138,7 @@ public:
 	int m_DefEmoteReset;
 	void SpectatePlayerName(const char *pName);
 	bool m_ShowOthers;
+	bool m_ToDisconnect;
 
 private:
 	CCharacter *m_pCharacter;

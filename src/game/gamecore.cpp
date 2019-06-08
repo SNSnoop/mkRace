@@ -378,7 +378,7 @@ void CCharacterCore::Tick(bool UseInput)
 						Temp.x = 0;
 					if(Temp.x < 0 &&
 					   (STOP_TILER(, TILE_STOP, 90) || STOP_TILER(R, TILE_STOP, 90)
-						|| STOP_TILER(R, TILE_STOPS, 270) || STOP_TILER(L, TILE_STOPS, 90)
+						|| STOP_TILER(R, TILE_STOPS, 270) || STOP_TILER(R, TILE_STOPS, 90)
 						|| STOP_TILE(R, TILE_STOPA)
 					   ))
 						Temp.x = 0;

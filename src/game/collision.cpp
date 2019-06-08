@@ -26,6 +26,7 @@ CCollision::CCollision()
 	m_pSwitch = 0;
 	m_pDoor = 0;
 	m_pSwitchers = 0;
+	m_NumSwitchers = 0;
 }
 
 void CCollision::Dest()

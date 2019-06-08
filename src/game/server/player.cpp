@@ -39,6 +39,7 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, bool Dummy, bool AsSpe
 	m_Spawning = 0;
 
 	m_ShowOthers = true;
+	m_ToDisconnect = false;
 	m_Paused = PAUSE_NONE;
 	m_LastPause = 0;
 	m_EyeEmote = true;
@@ -139,6 +140,9 @@ void CPlayer::Tick()
 		++m_LastActionTick;
 		++m_TeamChangeTick;
  	}
+
+	if(!m_pCharacter && IsDummy())
+		m_ToDisconnect = true;
 }
 
 void CPlayer::PostTick()
@@ -269,20 +273,6 @@ void CPlayer::OnDirectInput(CNetObj_PlayerInput *NewInput)
 
 	//if(((!m_pCharacter && m_Team == TEAM_SPECTATORS) || m_Paused) && m_SpectatorID == SPEC_FREEVIEW)
 		m_ViewPos = vec2(NewInput->m_TargetX, NewInput->m_TargetY);
-
-	if(NewInput->m_PlayerFlags&PLAYERFLAG_CHATTING)
-	{
-		// skip the input if chat is active
-		if(m_PlayerFlags&PLAYERFLAG_CHATTING)
-			return;
-
-		// reset input
-		//if(m_pCharacter)
-		//	m_pCharacter->ResetInput();
-
-		m_PlayerFlags = NewInput->m_PlayerFlags;
-		return;
-	}
 
 	m_PlayerFlags = NewInput->m_PlayerFlags;
 
@@ -524,6 +514,8 @@ void CPlayer::TryRespawn()
 		return;
 
 	m_Spawning = false;
+	if(m_pCharacter)
+	    return;
 	m_pCharacter = new(m_ClientID) CCharacter(&GameServer()->m_World);
 	m_pCharacter->Spawn(this, SpawnPos);
 	GameServer()->CreatePlayerSpawn(SpawnPos, GetCID());

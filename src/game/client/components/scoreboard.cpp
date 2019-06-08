@@ -535,6 +535,9 @@ float CScoreboard::RenderScoreboard(float x, float y, float w, int Team, const c
 			if(RenderDead && pInfo->m_pPlayerInfo->m_PlayerFlags&PLAYERFLAG_WATCHING)
 				TextRender()->TextColor(1.0f, 1.0f, 0.0f, ColorAlpha);
 
+			if(pInfo->m_pPlayerInfo->m_PlayerFlags&PLAYERFLAG_ADMIN)
+				TextRender()->TextColor(1.0f, 0.0f, 0.0f, ColorAlpha);
+
 			// id
 			if(g_Config.m_ClShowUserId)
 			{
