@@ -1192,14 +1192,17 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 								pDummy->m_TeeInfos.m_aUseCustomColors[p] = pPlayer->m_TeeInfos.m_aUseCustomColors[p];
 								pDummy->m_TeeInfos.m_aSkinPartColors[p] = pPlayer->m_TeeInfos.m_aSkinPartColors[p];
 							}
-							// update client infos (others before local)
+							Server()->SetClientName(DummyId, Server()->ClientName(ClientID));
+							Server()->SetClientClan(DummyId, Server()->ClientClan(ClientID));
+							Server()->SetClientCountry(DummyId, Server()->ClientCountry(ClientID));
+							// send join info for others
 							CNetMsg_Sv_ClientInfo NewClientInfoMsg;
 							NewClientInfoMsg.m_ClientID = DummyId;
 							NewClientInfoMsg.m_Local = 0;
-							NewClientInfoMsg.m_Team = m_apPlayers[ClientID]->GetTeam();
-							NewClientInfoMsg.m_pName = Server()->ClientName(ClientID);
-							NewClientInfoMsg.m_pClan = Server()->ClientClan(ClientID);
-							NewClientInfoMsg.m_Country = Server()->ClientCountry(ClientID);
+							NewClientInfoMsg.m_Team = m_apPlayers[DummyId]->GetTeam();
+							NewClientInfoMsg.m_pName = Server()->ClientName(DummyId);
+							NewClientInfoMsg.m_pClan = Server()->ClientClan(DummyId);
+							NewClientInfoMsg.m_Country = Server()->ClientCountry(DummyId);
 							NewClientInfoMsg.m_Silent = true;
 
 							for(int p = 0; p < NUM_SKINPARTS; p++)

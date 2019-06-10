@@ -299,7 +299,7 @@ CServer::CServer() : m_DemoRecorder(&m_SnapshotDelta)
 
 void CServer::SetClientName(int ClientID, const char *pName)
 {
-	if(ClientID < 0 || ClientID >= MAX_CLIENTS || m_aClients[ClientID].m_State < CClient::STATE_READY || !pName)
+	if(ClientID < 0 || ClientID >= MAX_CLIENTS || !pName)
 		return;
 
 	str_copy(m_aClients[ClientID].m_aName, pName, MAX_NAME_LENGTH);
@@ -307,7 +307,7 @@ void CServer::SetClientName(int ClientID, const char *pName)
 
 void CServer::SetClientClan(int ClientID, const char *pClan)
 {
-	if(ClientID < 0 || ClientID >= MAX_CLIENTS || m_aClients[ClientID].m_State < CClient::STATE_READY || !pClan)
+	if(ClientID < 0 || ClientID >= MAX_CLIENTS || !pClan)
 		return;
 
 	str_copy(m_aClients[ClientID].m_aClan, pClan, MAX_CLAN_LENGTH);
@@ -315,7 +315,7 @@ void CServer::SetClientClan(int ClientID, const char *pClan)
 
 void CServer::SetClientCountry(int ClientID, int Country)
 {
-	if(ClientID < 0 || ClientID >= MAX_CLIENTS || m_aClients[ClientID].m_State < CClient::STATE_READY)
+	if(ClientID < 0 || ClientID >= MAX_CLIENTS)
 		return;
 
 	m_aClients[ClientID].m_Country = Country;
@@ -424,33 +424,23 @@ int CServer::GetClientVersion(int ClientID) const
 
 const char *CServer::ClientName(int ClientID) const
 {
-	if(ClientID < 0 || ClientID >= MAX_CLIENTS || m_aClients[ClientID].m_State == CServer::CClient::STATE_EMPTY)
+	if(ClientID < 0 || ClientID >= MAX_CLIENTS)
 		return "(invalid)";
-	if(m_aClients[ClientID].m_State == CServer::CClient::STATE_INGAME)
-		return m_aClients[ClientID].m_aName;
-	else
-		return "(connecting)";
-
+	return m_aClients[ClientID].m_aName;
 }
 
 const char *CServer::ClientClan(int ClientID) const
 {
-	if(ClientID < 0 || ClientID >= MAX_CLIENTS || m_aClients[ClientID].m_State == CServer::CClient::STATE_EMPTY)
+	if(ClientID < 0 || ClientID >= MAX_CLIENTS)
 		return "";
-	if(m_aClients[ClientID].m_State == CServer::CClient::STATE_INGAME)
-		return m_aClients[ClientID].m_aClan;
-	else
-		return "";
+	return m_aClients[ClientID].m_aClan;
 }
 
 int CServer::ClientCountry(int ClientID) const
 {
-	if(ClientID < 0 || ClientID >= MAX_CLIENTS || m_aClients[ClientID].m_State == CServer::CClient::STATE_EMPTY)
+	if(ClientID < 0 || ClientID >= MAX_CLIENTS)
 		return -1;
-	if(m_aClients[ClientID].m_State == CServer::CClient::STATE_INGAME)
-		return m_aClients[ClientID].m_Country;
-	else
-		return -1;
+	return m_aClients[ClientID].m_Country;
 }
 
 bool CServer::ClientIngame(int ClientID) const
