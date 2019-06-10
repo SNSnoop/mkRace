@@ -921,7 +921,7 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 				char aAddrStr[NETADDR_MAXSTRSIZE];
 				net_addr_str(m_NetServer.ClientAddr(ClientID), aAddrStr, sizeof(aAddrStr), true);
 
-                                m_aClients[ClientID].m_State = CClient::STATE_INGAME;
+				m_aClients[ClientID].m_State = CClient::STATE_INGAME;
 
 				char aBuf[256];
 				str_format(aBuf, sizeof(aBuf), "player has entered the game. ClientID=%d addr=%s %s", ClientID, aAddrStr, ClientName(ClientID));
