@@ -22,7 +22,7 @@ void CNamePlates::RenderNameplate(
 	vec2 Position = mix(vec2(pPrevChar->m_X, pPrevChar->m_Y), vec2(pPlayerChar->m_X, pPlayerChar->m_Y), IntraTick);
 
 
-	float FontSize = 18.0f + 20.0f * g_Config.m_ClNameplatesSize / 100.0f;
+	float FontSize = 38.0f * g_Config.m_ClNameplatesSize / 100.0f;
 	// render name plate
 	if(m_pClient->m_LocalClientID != ClientID)
 	{
