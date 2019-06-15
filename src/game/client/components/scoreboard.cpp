@@ -189,7 +189,7 @@ float CScoreboard::RenderScoreboard(float x, float y, float w, int Team, const c
 	float TeeSizeMod = 1.0f;
 	float Spacing = 2.0f;
 	float PingOffset = x+Spacing, PingLength = 35.0f;
-	float CountryFlagOffset = PingOffset+PingLength, CountryFlagLength = 20.f;
+	float CountryFlagOffset = PingOffset+PingLength, CountryFlagLength = 30.f;
 	float IdSize = g_Config.m_ClShowUserId ? LineHeight : 0.0f;
 	float ReadyLength = ReadyMode ? 10.f : 0.f;
 	float TeeOffset = CountryFlagOffset+CountryFlagLength+4.0f, TeeLength = 25*TeeSizeMod;
@@ -205,11 +205,21 @@ float CScoreboard::RenderScoreboard(float x, float y, float w, int Team, const c
 	// count players
 	dbg_assert(Team == TEAM_RED || Team == TEAM_BLUE, "Unknown team id");
 	int NumPlayers = m_pClient->m_GameInfo.m_aTeamSize[Team];
-	m_PlayerLines = max(m_PlayerLines, NumPlayers);
+	m_PlayerLines = NumPlayers;
 
-	// clamp to 16
-	if(m_PlayerLines > 16)
-		m_PlayerLines = 16;
+	while(NumPlayers > 16)
+	{
+		const float decreaseSize = 1.5f;
+		NumPlayers /= 2;
+		LineHeight /= decreaseSize;
+		TeeSizeMod /= decreaseSize;
+		Spacing /= decreaseSize;
+		HeadlineHeight /= decreaseSize;
+		HeadlineFontsize /= (decreaseSize / 1.2f);
+		TitleFontsize /= decreaseSize;
+		CountryFlagLength /= decreaseSize;
+		PingLength /= decreaseSize;
+	}
 
 	char aBuf[128] = {0};
 
@@ -342,7 +352,7 @@ float CScoreboard::RenderScoreboard(float x, float y, float w, int Team, const c
 	float FontSize = HeadlineFontsize;
 	CTextCursor Cursor;
 
-	const int MAX_IDS = 16;
+	const int MAX_IDS = 64;
 	int RenderScoreIDs[MAX_IDS];
 	int NumRenderScoreIDs = 0;
 	int HoleSizes[2];
@@ -490,7 +500,7 @@ float CScoreboard::RenderScoreboard(float x, float y, float w, int Team, const c
 			// country flag
 			const vec4 CFColor(1, 1, 1, 0.75f * ColorAlpha);
 			m_pClient->m_pCountryFlags->Render(m_pClient->m_aClients[pInfo->m_ClientID].m_Country, &CFColor,
-				CountryFlagOffset, y + 3.0f, 30.0f, LineHeight-5.0f);
+				CountryFlagOffset, y + 3.0f, CountryFlagLength, LineHeight-5.0f);
 
 			// flag
 			if(m_pClient->m_GameInfo.m_GameFlags&GAMEFLAG_FLAGS && m_pClient->m_Snap.m_pGameDataFlag &&
@@ -670,7 +680,7 @@ void CScoreboard::OnRender()
 	Graphics()->MapScreen(Screen.x, Screen.y, Screen.w, Screen.h);
 
 	float Width = Screen.w;
-	float y = 85.f;
+	float y = 0.f;
 	float w = 364.0f;
 	float FontSize = 86.0f;
 
