@@ -234,9 +234,9 @@ void CGameContext::SendChat(int ChatterClientID, int Mode, int To, const char *p
 	Msg.m_pMessage = pText;
 	Msg.m_TargetID = -1;
 
-	if(Mode == CHAT_ALL)
+	if(Mode == CHAT_ALL && !(g_Config.m_SvNoChat & 1))
 		Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, To);
-	else if(Mode == CHAT_TEAM)
+	else if(Mode == CHAT_TEAM && !(g_Config.m_SvNoChat & 2))
 	{
 		// pack one for the recording only
 		Server()->SendPackMsg(&Msg, MSGFLAG_VITAL|MSGFLAG_NOSEND, -1);
@@ -250,7 +250,7 @@ void CGameContext::SendChat(int ChatterClientID, int Mode, int To, const char *p
 				Server()->SendPackMsg(&Msg, MSGFLAG_VITAL|MSGFLAG_NORECORD, i);
 		}
 	}
-	else // Mode == CHAT_WHISPER
+	else if(Mode == CHAT_WHISPER && !(g_Config.m_SvNoChat & 4))
 	{
 		// send to the clients
 		Msg.m_TargetID = To;
@@ -696,10 +696,10 @@ void CGameContext::OnClientEnter(int ClientID)
 	NewClientInfoMsg.m_ClientID = ClientID;
 	NewClientInfoMsg.m_Local = 0;
 	NewClientInfoMsg.m_Team = m_apPlayers[ClientID]->GetTeam();
-	NewClientInfoMsg.m_pName = Server()->ClientName(ClientID);
+	NewClientInfoMsg.m_pName = g_Config.m_SvNoNames ? "" : Server()->ClientName(ClientID);
 	NewClientInfoMsg.m_pClan = Server()->ClientClan(ClientID);
 	NewClientInfoMsg.m_Country = Server()->ClientCountry(ClientID);
-	NewClientInfoMsg.m_Silent = false;
+	NewClientInfoMsg.m_Silent = g_Config.m_SvSilentLogin;
 
 	if(g_Config.m_SvSilentSpectatorMode && m_apPlayers[ClientID]->GetTeam() == TEAM_SPECTATORS)
 		NewClientInfoMsg.m_Silent = true;
@@ -726,7 +726,7 @@ void CGameContext::OnClientEnter(int ClientID)
 		ClientInfoMsg.m_ClientID = i;
 		ClientInfoMsg.m_Local = 0;
 		ClientInfoMsg.m_Team = m_apPlayers[i]->GetTeam();
-		ClientInfoMsg.m_pName = Server()->ClientName(i);
+		ClientInfoMsg.m_pName = g_Config.m_SvNoNames ? "" : Server()->ClientName(i);
 		ClientInfoMsg.m_pClan = Server()->ClientClan(i);
 		ClientInfoMsg.m_Country = Server()->ClientCountry(i);
 		ClientInfoMsg.m_Silent = false;
@@ -814,7 +814,7 @@ void CGameContext::OnClientDrop(int ClientID, const char *pReason)
 		CNetMsg_Sv_ClientDrop Msg;
 		Msg.m_ClientID = ClientID;
 		Msg.m_pReason = pReason;
-		Msg.m_Silent = false;
+		Msg.m_Silent = g_Config.m_SvSilentLogin;
 		if((g_Config.m_SvSilentSpectatorMode && m_apPlayers[ClientID]->GetTeam() == TEAM_SPECTATORS) || m_apPlayers[ClientID]->IsDummy())
 			Msg.m_Silent = true;
 		Server()->SendPackMsg(&Msg, MSGFLAG_VITAL|MSGFLAG_NORECORD, -1);
@@ -1200,7 +1200,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 							NewClientInfoMsg.m_ClientID = DummyId;
 							NewClientInfoMsg.m_Local = 0;
 							NewClientInfoMsg.m_Team = m_apPlayers[DummyId]->GetTeam();
-							NewClientInfoMsg.m_pName = Server()->ClientName(DummyId);
+							NewClientInfoMsg.m_pName = g_Config.m_SvNoNames ? "" : Server()->ClientName(DummyId);
 							NewClientInfoMsg.m_pClan = Server()->ClientClan(DummyId);
 							NewClientInfoMsg.m_Country = Server()->ClientCountry(DummyId);
 							NewClientInfoMsg.m_Silent = true;

@@ -124,5 +124,8 @@ MACRO_CONFIG_INT(SvEyeEmoteChangeDelay, sv_eye_emote_change_delay, 1, 0, 9999, C
 MACRO_CONFIG_INT(SvSlashMe, sv_slash_me, 1, 0, 1, CFGFLAG_SERVER, "Whether /me is active on the server or not")
 
 MACRO_CONFIG_INT(SvSuicidePrevention, sv_suicide_prevention, 0, 0, 1, CFGFLAG_SERVER, "Prevent suicides")
+MACRO_CONFIG_INT(SvSilentLogin, sv_silent_login, 0, 0, 1, CFGFLAG_SERVER, "No notification about joining or leaving")
+MACRO_CONFIG_INT(SvNoNames, sv_no_names, 0, 0, 1, CFGFLAG_SERVER, "Don't send client names")
+MACRO_CONFIG_INT(SvNoChat, sv_no_chat, 0, 0, 7, CFGFLAG_SERVER, "Don't send chat (1 - all, 2 - team, 4 - whisper)")
 
 #endif
