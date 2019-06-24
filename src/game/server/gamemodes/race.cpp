@@ -125,7 +125,7 @@ void CGameControllerRACE::OnRaceEnd(int ID, int FinishTime)
 	char aTime[64];
 	IRace::FormatTimeLong(aTime, sizeof(aTime), FinishTime, true);
 	str_format(aBuf, sizeof(aBuf), "%s finished in: %s", Server()->ClientName(ID), aTime);
-	dumpjson("event", "finish", "player", json_plr(Server(), ID));
+	dumpjson("event", "finish", "player", json_plr(Server(), ID), "time", FinishTime);
 	int To = g_Config.m_SvShowTimes ? -1 : ID;
 	GameServer()->SendChat(-1, CHAT_ALL, To, aBuf);
 
