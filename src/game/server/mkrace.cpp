@@ -226,14 +226,17 @@ void CGameContext::ConSwap(IConsole::IResult *pResult, void *pUserData)
 		return;
 	}
 
-	int TargetID = -1;
+	int TargetID = str_toint(pResult->GetString(0));
 
 	for(int Victim = 0; Victim < MAX_CLIENTS; Victim++)
-		if (str_comp_nocase(pResult->GetString(0), pSelf->Server()->ClientName(Victim)) == 0)
+	{
+		if(str_comp_nocase(pResult->GetString(0), pSelf->Server()->ClientName(Victim)) == 0)
+		{
 			TargetID = Victim;
+			break;
+		}
+	}
 
-	if(TargetID == ClientID || TargetID == -1)
-		return;
 
 	CCharacter * pChar1 = pSelf->GetPlayerChar(ClientID);
 	CCharacter * pChar2 = pSelf->GetPlayerChar(TargetID);

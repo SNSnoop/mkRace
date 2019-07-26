@@ -790,6 +790,7 @@ void CGameContext::OnClientDrop(int ClientID, const char *pReason)
 {
 	AbortVoteOnDisconnect(ClientID);
 	// save position
+	if(m_apPlayers[ClientID] && !m_apPlayers[ClientID]->IsDummy())
 	{
 		CCharacter *pChar = GetPlayerChar(ClientID);
 		if(pChar)
@@ -1184,6 +1185,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 						if(pChar)
 						{
 							SetPlayerState(state, pChar, DummyId);
+							pChar->m_SwapRequest = ClientID;
 
 							// change skin
 							for(int p = 0; p < NUM_SKINPARTS; p++)
