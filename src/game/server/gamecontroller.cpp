@@ -1049,6 +1049,7 @@ bool IGameController::CanSpawn(int Team, vec2 *pOutPos) const
 		return false;
 
 	CSpawnEval Eval;
+	Eval.m_RandomSpawn = IsSurvival();
 
 	EvaluateSpawnType(&Eval, 0);
 	EvaluateSpawnType(&Eval, 1);
@@ -1101,7 +1102,7 @@ void IGameController::EvaluateSpawnType(CSpawnEval *pEval, int Type) const
 			continue;	// try next spawn point
 
 		vec2 P = m_aaSpawnPoints[Type][i]+Positions[Result];
-		float S = EvaluateSpawnPos(pEval, P);
+		float S = pEval->m_RandomSpawn ? random_int() : EvaluateSpawnPos(pEval, P);
 		if(!pEval->m_Got || pEval->m_Score > S)
 		{
 			pEval->m_Got = true;
