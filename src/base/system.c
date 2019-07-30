@@ -297,7 +297,8 @@ void mem_free(void *p)
 
 void mem_copy(void *dest, const void *source, unsigned size)
 {
-	memcpy(dest, source, size);
+	if(size)
+		memcpy(dest, source, size);
 }
 
 void mem_move(void *dest, const void *source, unsigned size)
