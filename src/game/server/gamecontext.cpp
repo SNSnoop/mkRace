@@ -258,7 +258,7 @@ void CGameContext::SendChat(int ChatterClientID, int Mode, int To, const char *p
 			Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, ChatterClientID);
 		Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, To);
 	}
-	dumpjson("event", "chat", "from", json_plr(Server(),ChatterClientID), "msg", pText, "to", json_plr(Server(),To));
+	dumpjson("event", "chat", "from", json_plr(Server(), ChatterClientID), "msg", pText, "to", json_plr(Server(), To), "whisper", Mode == CHAT_WHISPER?1:0 );
 }
 
 void CGameContext::SendBroadcast(const char* pText, int ClientID)
@@ -381,7 +381,7 @@ void CGameContext::EndVote(int Type, bool Force)
                 str_format(aBuf, sizeof(aBuf), "end %d %d", Type, Force);
                 Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "vote", aBuf);
         }
-	dumpjson("event", "voteend", "vote", Type);
+	dumpjson("event", "voteend", "cmd", m_aVoteCommand, "reason", m_aVoteReason, "label", m_aVoteDescription, "type", Type, "force", Force?1:0);
 }
 
 void CGameContext::ForceVote(int Type, const char *pDescription, const char *pReason)
@@ -613,7 +613,6 @@ void CGameContext::OnTick()
 				Server()->SetRconCID(IServer::RCON_CID_SERV);
 				if(m_VoteCreator != -1 && m_apPlayers[m_VoteCreator])
 					m_apPlayers[m_VoteCreator]->m_LastVoteCall = 0;
-
 				EndVote(VOTE_END_PASS, m_VoteEnforce==VOTE_ENFORCE_YES);
 			}
 			else if(m_VoteEnforce == VOTE_ENFORCE_NO || (m_VoteUpdate && No >= (Total+1)/2) || time_get() > m_VoteCloseTime)
@@ -1041,7 +1040,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
                                         Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "vote", aBuf);
                                 }
                         }
-			dumpjson("event", "votecall", "player", json_plr(Server(), ClientID), "vote", aCmd, "reason", pReason);
+			dumpjson("event", "votecall", "player", json_plr(Server(), ClientID), "cmd", aCmd, "reason", pReason, "label", aDesc);
                 }
                 else if(MsgID == NETMSGTYPE_CL_VOTE)
 		{
