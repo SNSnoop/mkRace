@@ -65,10 +65,33 @@ void CGameControllerRACE::Snap(int SnappingClient)
                 this->DoSnap(i, m_GameStartTick);
 }
 
+void CGameControllerRACE::SendTime(int ClientID, int To)
+{
+	CRaceData *p = &m_aRace[ClientID];
+	bool Checkpoint = p->m_CpTick != -1 && p->m_CpTick > Server()->Tick();
+	if(Checkpoint){
+		char aDiff[64];
+		IRace::FormatTimeDiff(aDiff, sizeof(aDiff), p->m_CpDiff, false);
+		const char *pColor = (p->m_CpDiff <= 0) ? "^090" : "^900";
+		char aBuf[128] = {0};
+		str_format(aBuf, sizeof(aBuf), "%s%s", pColor, aDiff);
+		GameServer()->SendBroadcast(aBuf, To);
+	}
+}
+
 void CGameControllerRACE::Tick()
 {
 	IGameController::Tick();
 	DoWincheck();
+	for(int i = 0; i < MAX_CLIENTS; i++){
+		if(m_aRace[i].m_RaceState == RACE_STARTED && (Server()->Tick() - m_aRace[i].m_StartTick) % Server()->TickSpeed() == 0)
+			SendTime(i, i);
+
+		int SpecID = GameServer()->m_apPlayers[i] ? GameServer()->m_apPlayers[i]->GetSpectatorID() : -1;
+		if(SpecID != -1 && g_Config.m_SvShowTimes && m_aRace[SpecID].m_RaceState == RACE_STARTED &&
+			(Server()->Tick() - m_aRace[SpecID].m_StartTick) % Server()->TickSpeed() == 0)
+			SendTime(SpecID, i);
+	}
 }
 
 void CGameControllerRACE::OnCheckpoint(int ID, int z)
