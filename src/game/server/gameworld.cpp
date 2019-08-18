@@ -277,3 +277,19 @@ CEntity *CGameWorld::ClosestEntity(vec2 Pos, float Radius, int Type, CEntity *pN
 
 	return pClosest;
 }
+
+void CGameWorld::ReleaseHooked(int ClientID)
+{
+	CCharacter *pChr = (CCharacter *)CGameWorld::FindFirst(CGameWorld::ENTTYPE_CHARACTER);
+	for(; pChr; pChr = (CCharacter *)pChr->TypeNext())
+	{
+		CCharacterCore* Core = pChr->Core();
+		if(Core->m_HookedPlayer == ClientID)
+		{
+			Core->m_HookedPlayer = -1;
+			Core->m_HookState = HOOK_RETRACTED;
+			//Core->m_TriggeredEvents |= COREEVENT_HOOK_RETRACT;
+			Core->m_HookState = HOOK_RETRACTED;
+		}
+	}
+}

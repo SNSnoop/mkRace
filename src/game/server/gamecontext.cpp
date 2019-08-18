@@ -1921,7 +1921,7 @@ CGameContext::CPlayerRescueState CGameContext::GetPlayerState(CCharacter * pChar
 	}
 
 	State.m_ActiveWeapon = pChar->GetActiveWeapon();
-	State.m_LastWeapon = pChar->GetLastWeapon();	
+	State.m_LastWeapon = pChar->GetLastWeapon();
 
 	pChar->Core()->Write(&State.m_Core);
 
@@ -1944,9 +1944,10 @@ void CGameContext::SetPlayerState(const CPlayerRescueState& State, CCharacter * 
 	}
 
 	pChar->SetActiveWeapon(State.m_ActiveWeapon);
-	pChar->SetLastWeapon(State.m_LastWeapon);	
+	pChar->SetLastWeapon(State.m_LastWeapon);
 
 	pChar->Core()->Read(&State.m_Core);
+	pChar->GameWorld()->ReleaseHooked(ClientID);
 }
 
 float CGameContext::PlayerJetpack()
