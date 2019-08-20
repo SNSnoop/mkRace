@@ -27,7 +27,6 @@ void CGameControllerRACE::OnCharacterSpawn(CCharacter *pChr)
 {
 	IGameController::OnCharacterSpawn(pChr);
 
-	pChr->SetActiveWeapon(WEAPON_HAMMER);
 	ResetPickups(pChr->GetPlayer()->GetCID());
 }
 
