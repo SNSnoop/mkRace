@@ -237,6 +237,8 @@ void CGameContext::ConSwap(IConsole::IResult *pResult, void *pUserData)
 		}
 	}
 
+	if (TargetID == ClientID)
+		return;
 
 	CCharacter * pChar1 = pSelf->GetPlayerChar(ClientID);
 	CCharacter * pChar2 = pSelf->GetPlayerChar(TargetID);
@@ -269,6 +271,16 @@ void CGameContext::ConSwap(IConsole::IResult *pResult, void *pUserData)
 	else
 	{
 		// TargetID agreed
+		if (pChar1->GameServer()->Collision()->CheckIndexEx(pChar1->Core()->m_Pos, TILE_BEGIN)
+			|| pChar2->GameServer()->Collision()->CheckIndexEx(pChar2->Core()->m_Pos, TILE_BEGIN)
+			|| pChar1->GameServer()->Collision()->CheckIndexEx(pChar1->Core()->m_Pos, TILE_END)
+			|| pChar2->GameServer()->Collision()->CheckIndexEx(pChar2->Core()->m_Pos, TILE_END))
+		{
+			// cool race time fix
+			pSelf->m_pChatConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "swap", "Can\'t swap here!");
+			return;
+		}
+
 		CPlayerRescueState State1 = GetPlayerState(pChar1, ClientID),
 			State2 = GetPlayerState(pChar2, TargetID);
 
@@ -304,6 +316,14 @@ void CGameContext::ConDisconnectRescue(IConsole::IResult *pResult, void *pUserDa
 	std::map<const char, CPlayerRescueState>::iterator iterator = pSelf->m_SavedPlayers.find(*pSelf->Server()->ClientName(TargetID));
 	if(iterator == pSelf->m_SavedPlayers.end())
 		return;
+
+	if (pChar->GameServer()->Collision()->CheckIndexEx(pChar->Core()->m_Pos, TILE_BEGIN)
+		|| pChar->GameServer()->Collision()->CheckIndexEx(pChar->Core()->m_Pos, TILE_END))
+	{
+		// cool race time fix
+		pSelf->m_pChatConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "dr", "Can\'t use command here!");
+		return;
+	}
 
 	CPlayerRescueState& State = iterator->second;
 	CCharacter * m_SoloEnts[MAX_CLIENTS];
