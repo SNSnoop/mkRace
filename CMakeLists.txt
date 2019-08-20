@@ -1251,6 +1251,8 @@ set_src(GAME_SHARED GLOB src/game
   layers.cpp
   layers.h
   mapitems.h
+  race.cpp
+  race.h
   tuning.h
   variables.h
   version.h
@@ -1478,12 +1480,22 @@ set_src(GAME_SERVER GLOB_RECURSE src/game/server
   alloc.h
   entities/character.cpp
   entities/character.h
+  entities/door.cpp
+  entities/door.h
+  entities/dragger.cpp
+  entities/dragger.h
   entities/flag.cpp
   entities/flag.h
+  entities/gun.cpp
+  entities/gun.h
   entities/laser.cpp
   entities/laser.h
+  entities/light.cpp
+  entities/light.h
   entities/pickup.cpp
   entities/pickup.h
+  entities/plasma.cpp
+  entities/plasma.h
   entities/projectile.cpp
   entities/projectile.h
   entity.cpp
@@ -1494,22 +1506,19 @@ set_src(GAME_SERVER GLOB_RECURSE src/game/server
   gamecontext.h
   gamecontroller.cpp
   gamecontroller.h
-  gamemodes/ctf.cpp
-  gamemodes/ctf.h
-  gamemodes/dm.cpp
-  gamemodes/dm.h
-  gamemodes/lms.cpp
-  gamemodes/lms.h
-  gamemodes/lts.cpp
-  gamemodes/lts.h
-  gamemodes/mod.cpp
-  gamemodes/mod.h
-  gamemodes/tdm.cpp
-  gamemodes/tdm.h
+  gamemodes/race.cpp
+  gamemodes/race.h
   gameworld.cpp
   gameworld.h
+  mkjson.cpp
+  mkrace.cpp
+  mkrace.h
   player.cpp
   player.h
+  race.cpp
+  score/file_score.cpp
+  score/file_score.h
+  score.h
 )
 set(GAME_GENERATED_SERVER
   src/generated/server_data.cpp
