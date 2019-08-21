@@ -91,13 +91,13 @@ void CPlayer::Tick()
 
 	if(!GameServer()->m_pController->IsGamePaused())
 	{
-		if(!m_pCharacter && m_Team == TEAM_SPECTATORS && m_SpecMode == SPEC_FREEVIEW)
+		if(((!m_pCharacter && m_Team == TEAM_SPECTATORS) || m_Paused) && m_SpecMode == SPEC_FREEVIEW)
 			m_ViewPos -= vec2(clamp(m_ViewPos.x-m_LatestActivity.m_TargetX, -500.0f, 500.0f), clamp(m_ViewPos.y-m_LatestActivity.m_TargetY, -400.0f, 400.0f));
 
 		if(!m_pCharacter && m_DieTick+Server()->TickSpeed()*3 <= Server()->Tick() && !m_DeadSpecMode)
 			Respawn();
 
-		if(!m_pCharacter && m_Team == TEAM_SPECTATORS && m_pSpecFlag)
+		if(((!m_pCharacter && m_Team == TEAM_SPECTATORS) || m_Paused) && m_pSpecFlag)
 		{
 			if(m_pSpecFlag->GetCarrier())
 				m_SpectatorID = m_pSpecFlag->GetCarrier()->GetPlayer()->GetCID();
@@ -111,7 +111,7 @@ void CPlayer::Tick()
 			{
 				ProcessPause();
 				if(!m_Paused)
-					m_ViewPos = m_pCharacter->GetPos();
+					m_ViewPos = m_pCharacter->m_Pos;
 			}
 			else if(!m_pCharacter->IsPaused())
 			{
@@ -158,12 +158,12 @@ void CPlayer::PostTick()
 	}
 
 	// update view pos for spectators and dead players
-	if((m_Team == TEAM_SPECTATORS || m_DeadSpecMode || m_Paused) && m_SpecMode != SPEC_FREEVIEW && GameServer()->m_apPlayers[m_SpectatorID] && GameServer()->m_apPlayers[m_SpectatorID]->GetCharacter())
+	if((m_Team == TEAM_SPECTATORS || m_DeadSpecMode || m_Paused) && m_SpecMode != SPEC_FREEVIEW)
 	{
 		if(m_pSpecFlag)
 			m_ViewPos = m_pSpecFlag->GetPos();
-		else if (GameServer()->m_apPlayers[m_SpectatorID])
-			m_ViewPos = GameServer()->m_apPlayers[m_SpectatorID]->GetCharacter()->m_Pos;
+		else if(GameServer()->m_apPlayers[m_SpectatorID] && GameServer()->m_apPlayers[m_SpectatorID]->GetCharacter())
+			m_ViewPos = GameServer()->m_apPlayers[m_SpectatorID]->m_ViewPos;
 	}
 }
 
@@ -271,15 +271,16 @@ void CPlayer::OnDirectInput(CNetObj_PlayerInput *NewInput)
 		return;
 	}
 
-	//if(((!m_pCharacter && m_Team == TEAM_SPECTATORS) || m_Paused) && m_SpectatorID == SPEC_FREEVIEW)
+	//if(((!m_pCharacter && m_Team == TEAM_SPECTATORS) || !m_Paused) && m_SpectatorID == SPEC_FREEVIEW)
+	if(((!m_pCharacter && m_Team == TEAM_SPECTATORS) || m_Paused) && m_SpecMode == SPEC_FREEVIEW)
 		m_ViewPos = vec2(NewInput->m_TargetX, NewInput->m_TargetY);
 
 	m_PlayerFlags = NewInput->m_PlayerFlags;
 
 	if(m_pCharacter && !m_Paused)
 		m_pCharacter->OnDirectInput(NewInput);
-	//else
-	//	m_pCharacter->ResetInput();
+	
+	
 
 	if(!m_pCharacter && m_Team != TEAM_SPECTATORS && (NewInput->m_Fire&1))
 		Respawn();
@@ -580,9 +581,21 @@ int CPlayer::Pause(int State, bool Force)
 			break;
 		}
 
+		if(State == PAUSE_NONE)
+		{
+			m_SpecMode = SPEC_FREEVIEW;
+			m_SpectatorID = -1;
+		}
 		// Update state
 		m_Paused = State;
 		m_LastPause = Server()->Tick();
+
+		CNetMsg_Sv_Team Msg;
+		Msg.m_ClientID = m_ClientID;
+		Msg.m_Team = !m_Paused ? m_Team : TEAM_SPECTATORS;
+		Msg.m_Silent = 1;
+		Msg.m_CooldownTick = Server()->Tick();
+		Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, m_ClientID);
 	}
 
 	return m_Paused;
