@@ -52,9 +52,14 @@ void CGameControllerRACE::Snap(int SnappingClient)
 	const int i = SnappingClient;
 	if(i >= 0 && i < MAX_CLIENTS)
 	{
-		int SpecID = GameServer()->m_apPlayers[i] ? GameServer()->m_apPlayers[i]->GetSpectatorID() : -1;
+		int SpecID = (GameServer()->m_apPlayers[i] && GameServer()->m_apPlayers[i]->IsPaused()) ? GameServer()->m_apPlayers[i]->GetSpectatorID() : -1;
 		if(SpecID != -1)
-			this->DoSnap(i, m_aRace[SpecID].m_StartTick);
+		{
+			if(m_aRace[SpecID].m_RaceState == RACE_STARTED)
+				this->DoSnap(i, m_aRace[SpecID].m_StartTick);
+			else
+				this->DoSnap(i, m_GameStartTick);
+		}
 		else if(m_aRace[i].m_RaceState == RACE_STARTED)
 			this->DoSnap(i, m_aRace[i].m_StartTick);
 		else
