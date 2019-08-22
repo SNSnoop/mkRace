@@ -455,6 +455,7 @@ void CCharacterCore::Move()
 	m_Vel.x = m_Vel.x*RampValue;
 
 	vec2 NewPos = m_Pos;
+	vec2 OldVel = m_Vel;
 	m_Race.m_Teleported = 0;
 	m_pCollision->MoveBox(&NewPos, &m_Vel, vec2(PhysSize, PhysSize), 0, &m_Race, &m_Death);
 
@@ -465,6 +466,17 @@ void CCharacterCore::Move()
 		m_HookPos = m_Pos;
 		m_TriggeredEvents |= COREEVENTFLAG_TELEPORTED;
 	}
+
+	m_Colliding = 0;
+	if (m_Vel.x < 0.001 && m_Vel.x > -0.001)
+	{
+		if (OldVel.x > 0)
+			m_Colliding = 1;
+		else if (OldVel.x < 0)
+			m_Colliding = 2;
+	}
+	else
+		m_LeftWall = true;
 
 	m_Vel.x = m_Vel.x*(1.0f/RampValue);
 

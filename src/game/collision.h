@@ -108,6 +108,7 @@ public:
 	int GetIndex(int x, int y) const;
 	int GetIndex(vec2 PrevPos, vec2 Pos) const;
 	int GetFIndex(int x, int y) const;
+	int IsWallJump(int Index) const;
 	int IsNoLaser(int x, int y) const;
 	int IsFNoLaser(int x, int y) const;
 	int GetTileIndex(int Index) const;

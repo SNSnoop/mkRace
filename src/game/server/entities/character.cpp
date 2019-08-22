@@ -1141,6 +1141,16 @@ void CCharacter::HandleTiles(int Index)
 		m_Jetpack = false;
 	}
 
+	// walljump
+	if ((m_TileIndex == TILE_WALLJUMP) || (m_TileFIndex == TILE_WALLJUMP))
+	{
+		if (m_Core.m_Vel.y > 0 && m_Core.m_Colliding && m_Core.m_LeftWall)
+		{
+			m_Core.m_LeftWall = false;
+			m_Core.m_Jumped = 1;
+		}
+	}
+
 	int z = GameServer()->Collision()->IsTeleport(MapIndex);
 	int Num = GameServer()->Collision()->m_TeleOuts[z-1].size();
 	if(z && Num)

@@ -565,6 +565,14 @@ int CCollision::IntersectNoLaserNW(vec2 Pos0, vec2 Pos1, vec2 *pOutCollision, ve
 	return 0;
 }
 
+int CCollision::IsWallJump(int Index) const
+{
+	if (Index < 0)
+		return 0;
+
+	return m_pTiles[Index].m_Index == TILE_WALLJUMP;
+}
+
 int CCollision::IsNoLaser(int x, int y) const
 {
 	return (CCollision::GetTile(x,y) == TILE_NOLASER);

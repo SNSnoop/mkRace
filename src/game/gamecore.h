@@ -187,6 +187,9 @@ public:
 	void Write(CNetObj_CharacterCore *pObjCore);
 	void Quantize();
 	
+	int m_Colliding;
+	bool m_LeftWall;
+
 private:
 	int m_TileIndex;
 	int m_TileFlags;
