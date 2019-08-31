@@ -2227,15 +2227,15 @@ int str_utf8_is_whitespace(int code)
 	return 1;
 }
 
-char *str_utf8_skip_whitespaces(char *str)
+const char *str_utf8_skip_whitespaces(const char *str)
 {
-	char *str_old;
+	const char *str_old;
 	int code;
 
 	while(*str)
 	{
 		str_old = str;
-		code = str_utf8_decode((const char **)&str);
+		code = str_utf8_decode(&str);
 
 		if(!str_utf8_is_whitespace(code))
 		{
