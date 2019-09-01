@@ -4,6 +4,7 @@
 #include <engine/map.h>
 #include <engine/storage.h>
 #include <game/client/component.h>
+#include <engine/shared/config.h>
 #include <game/mapitems.h>
 
 #include "mapimages.h"
@@ -12,7 +13,7 @@ CMapImages::CMapImages()
 {
 	m_Info[MAP_TYPE_GAME].m_Count = 0;
 	m_Info[MAP_TYPE_MENU].m_Count = 0;
-
+	// m_EntitesTextures = -1;
 	m_EasterIsLoaded = false;
 }
 
@@ -62,11 +63,45 @@ void CMapImages::LoadMapImages(IMap *pMap, class CLayers *pLayers, int MapType)
 			pMap->UnloadData(pImg->m_ImageData);
 		}
 	}
+	LoadAutoMapres();	
+
+	// load game entities
+	Graphics()->UnloadTexture(&m_EntitiesTexture);
+	Graphics()->UnloadTexture(&m_AutoEntitiesTexture);
+	m_EntitiesTexture = Graphics()->LoadTexture("editor/entities_clear.png", IStorage::TYPE_ALL, CImageInfo::FORMAT_AUTO, IGraphics::TEXLOAD_ARRAY_256);
+	if(!m_EntitiesTexture.IsValid())
+		m_EntitiesTexture = Graphics()->LoadTexture("editor/entities.png", IStorage::TYPE_ALL, CImageInfo::FORMAT_AUTO, IGraphics::TEXLOAD_ARRAY_256);
+
+	m_AutoEntitiesTexture = Graphics()->LoadTexture("editor/entities_auto.png", IStorage::TYPE_ALL, CImageInfo::FORMAT_AUTO, IGraphics::TEXLOAD_ARRAY_256);
+	if(!m_AutoTilesTexture.IsValid())
+		Console()->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "automapper", "Failed to load entities_auto.png");
+
+	//m_TeleEntitiesTexture = Graphics()->LoadTexture("editor/entities_teleport.png", IStorage::TYPE_ALL, CImageInfo::FORMAT_AUTO, IGraphics::TEXLOAD_ARRAY_256);
+	//if(!m_TeleEntitiesTexture.IsValid())
+	//	Console()->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "automapper", "Failed to load entities_teleport.png");
 
 	// easter time, preload easter tileset
 	if(m_pClient->IsEaster())
 		GetEasterTexture();
 }
+
+void CMapImages::LoadAutoMapres()
+{
+	Graphics()->UnloadTexture(&m_AutoTilesTexture);
+	Graphics()->UnloadTexture(&m_AutoDoodadsTexture);
+
+	char aBuf[256];
+	str_format(aBuf, sizeof(aBuf), "mapres/%s_main.png", g_Config.m_GfxAutomapLayer);
+	m_AutoTilesTexture = Graphics()->LoadTexture(aBuf, IStorage::TYPE_ALL, CImageInfo::FORMAT_AUTO, IGraphics::TEXLOAD_ARRAY_256);
+	str_format(aBuf, sizeof(aBuf), "mapres/%s_doodads.png", g_Config.m_GfxAutomapLayer);
+	m_AutoDoodadsTexture = Graphics()->LoadTexture(aBuf, IStorage::TYPE_ALL, CImageInfo::FORMAT_AUTO, IGraphics::TEXLOAD_ARRAY_256);
+
+	if(!m_AutoTilesTexture.IsValid())
+		Console()->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "automapper", "Failed to load auto tiles");
+	if(!m_AutoDoodadsTexture.IsValid())
+		Console()->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "automapper", "Failed to load auto doodads");
+}
+
 
 void CMapImages::OnMapLoad()
 {
@@ -97,6 +132,28 @@ IGraphics::CTextureHandle CMapImages::Get(int Index) const
 	if(Client()->State() == IClient::STATE_ONLINE || Client()->State() == IClient::STATE_DEMOPLAYBACK)
 		return m_Info[MAP_TYPE_GAME].m_aTextures[clamp(Index, 0, m_Info[MAP_TYPE_GAME].m_Count)];
 	return m_Info[MAP_TYPE_MENU].m_aTextures[clamp(Index, 0, m_Info[MAP_TYPE_MENU].m_Count)];
+}
+
+
+IGraphics::CTextureHandle CMapImages::GetEntities() const
+{
+	return m_EntitiesTexture;
+}
+IGraphics::CTextureHandle CMapImages::GetAutoEntities() const
+{
+	return m_AutoEntitiesTexture;
+}
+//IGraphics::CTextureHandle CMapImages::GetTeleEntities() const
+//{
+//	return m_TeleEntitiesTexture;
+//}
+IGraphics::CTextureHandle CMapImages::GetAutoTiles() const
+{
+	return m_AutoTilesTexture;
+}
+IGraphics::CTextureHandle CMapImages::GetAutoDoodads() const
+{
+	return m_AutoDoodadsTexture;
 }
 
 int CMapImages::Num() const

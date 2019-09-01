@@ -138,6 +138,15 @@ MACRO_CONFIG_INT(ClPredictTeleport, cl_predict_teleport, 1, 0, 1, CFGFLAG_CLIENT
 MACRO_CONFIG_INT(ClPredictSpeedup, cl_predict_speedup, 1, 0, 1, CFGFLAG_CLIENT|CFGFLAG_SAVE, "Predict speedup")
 MACRO_CONFIG_INT(ClPredictStopTiles, cl_predict_stop_tiles, 1, 0, 1, CFGFLAG_CLIENT|CFGFLAG_SAVE, "Predict stop tiles")
 
+// Tile modifiers
+MACRO_CONFIG_INT(ClAutomapperMenus, cl_automapper_menus, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enable automapper in-game menus GUI (to switch between none/game tiles/automap modes)")
+MACRO_CONFIG_INT(GfxGameTiles, gfx_game_tiles, 0, 0, 3, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show game tiles (2 = game tiles only, 3 = automapper)")
+MACRO_CONFIG_INT(GfxKeepBackgroundAlways, gfx_keep_background_always, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Always keep the background, even when showing game tiles / automapping")
+MACRO_CONFIG_INT(GfxAutomapDoodads, gfx_automap_doodads, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Automap doodads too")
+MACRO_CONFIG_STR(GfxAutomapLayer, gfx_automap_layer, 255, "grass", CFGFLAG_CLIENT | CFGFLAG_SAVE, "Layer to use for the automapper")
+
+MACRO_CONFIG_INT(GfxClearColor, gfx_clear_color, 0, 0, 0xFFFFFF, CFGFLAG_SAVE | CFGFLAG_CLIENT, "Color to use to clear the screen")
+
 // map settings
 MACRO_CONFIG_INT(SvRegen, sv_regen, 0, 0, 50, CFGFLAG_MAPSETTINGS, "Set regeneration")
 MACRO_CONFIG_INT(SvStrip, sv_strip, 0, 0, 1, CFGFLAG_MAPSETTINGS, "Enable or disable keeping weapon after teleporting")

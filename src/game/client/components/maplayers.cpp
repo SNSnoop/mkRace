@@ -16,7 +16,8 @@
 
 #include <game/client/components/camera.h>
 #include <game/client/components/mapimages.h>
-
+#include <game/collision.h>
+#include <game/client/components/auto_tile.h>
 
 #include "maplayers.h"
 
@@ -26,9 +27,16 @@ CMapLayers::CMapLayers(int t)
 	m_CurrentLocalTick = 0;
 	m_LastLocalTick = 0;
 	m_EnvelopeUpdate = false;
+	m_AutolayerUpdate = false;
+	m_TeleUpdate = true;
 	m_pMenuMap = 0;
 	m_pMenuLayers = 0;
 	m_OnlineStartTime = 0;
+	m_pTilesetPainter = 0;
+	m_pDoodadsPainter = 0;
+	m_pTeleTiles = 0;
+	m_pAutoTiles = 0;
+	m_pAutoDoodads = 0;
 }
 
 void CMapLayers::OnStateChange(int NewState, int OldState)
@@ -143,6 +151,8 @@ void CMapLayers::OnMapLoad()
 {
 	if(Layers())
 		LoadEnvPoints(Layers(), m_lEnvPoints);
+	LoadPainters(Layers());
+	m_TeleUpdate = true;
 
 	// easter time, place eggs
 	if(m_pClient->IsEaster())
@@ -368,10 +378,27 @@ void CMapLayers::OnRender()
 	vec2 Center = *m_pClient->m_pCamera->GetCenter();
 
 	bool PassedGameLayer = false;
+	int GameLayerId = -1;
+	int FrontLayerId = -1;
+	int SwitchLayerId = -1;
+	int TeleLayerId = -1;
+	int SpeedupLayerId = -1;
+	int TuneLayerId = -1;
+	CMapItemGroup *pGameGroup = NULL;
+	CMapItemGroup *pRaceGroup = NULL;
 
 	for(int g = 0; g < pLayers->NumGroups(); g++)
 	{
 		CMapItemGroup *pGroup = pLayers->GetGroup(g);
+
+		// don't print race group
+		char aName[12];
+		IntsToStr(pGroup->m_aName, sizeof(aName)/sizeof(int), aName);
+		if(str_comp(aName, "#race") == 0)
+		{
+			pRaceGroup = pGroup;
+			continue;
+		}
 
 		if(!g_Config.m_GfxNoclip && pGroup->m_Version >= 2 && pGroup->m_UseClipping)
 		{
@@ -397,12 +424,55 @@ void CMapLayers::OnRender()
 		{
 			CMapItemLayer *pLayer = pLayers->GetLayer(pGroup->m_StartLayer+l);
 			bool Render = false;
+			bool IsFrontLayer = false;
+			bool IsSwitchLayer = false;
+			bool IsTeleLayer = false;
+			bool IsSpeedupLayer = false;
+			bool IsTuneLayer = false;
 			bool IsGameLayer = false;
+			bool IsEntityLayer = false;
 
 			if(pLayer == (CMapItemLayer*)pLayers->GameLayer())
 			{
-				IsGameLayer = true;
-				PassedGameLayer = true;
+				IsEntityLayer = IsGameLayer = true;
+				PassedGameLayer = 1;
+				GameLayerId = l;
+				pGameGroup = pGroup;
+			}
+
+			if(pLayer == (CMapItemLayer*)pLayers->FrontLayer())
+			{
+				IsEntityLayer = IsFrontLayer = true;
+				FrontLayerId = l;
+				pGameGroup = pGroup;
+			}
+
+			if(pLayer == (CMapItemLayer*)pLayers->SwitchLayer())
+			{
+				IsEntityLayer = IsSwitchLayer = true;
+				SwitchLayerId = l;
+				pGameGroup = pGroup;
+			}
+
+			if(pLayer == (CMapItemLayer*)pLayers->TeleLayer())
+			{
+				IsEntityLayer = IsTeleLayer = true;
+				TeleLayerId = l;
+				pGameGroup = pGroup;
+			}
+
+			if(pLayer == (CMapItemLayer*)pLayers->SpeedupLayer())
+			{
+				IsEntityLayer = IsSpeedupLayer = true;
+				SpeedupLayerId = l;
+				pGameGroup = pGroup;
+			}
+
+			if(pLayer == (CMapItemLayer*)pLayers->TuneLayer())
+			{
+				IsEntityLayer = IsTuneLayer = true;
+				TuneLayerId = l;
+				pGameGroup = pGroup;
 			}
 
 			if(m_Type == -1)
@@ -415,7 +485,7 @@ void CMapLayers::OnRender()
 			}
 			else
 			{
-				if(PassedGameLayer && !IsGameLayer)
+				if(PassedGameLayer && !IsEntityLayer)
 					Render = true;
 			}
 
@@ -423,7 +493,7 @@ void CMapLayers::OnRender()
 				continue;
 
 			// skip rendering if detail layers is not wanted
-			if(!(pLayer->m_Flags&LAYERFLAG_DETAIL && !g_Config.m_GfxHighDetail && !IsGameLayer && (Client()->State() == IClient::STATE_ONLINE || Client()->State() == IClient::STATE_DEMOPLAYBACK)))
+			if(!(pLayer->m_Flags&LAYERFLAG_DETAIL && !g_Config.m_GfxHighDetail && !IsEntityLayer && (Client()->State() == IClient::STATE_ONLINE || Client()->State() == IClient::STATE_DEMOPLAYBACK)))
 			{
 				if(pLayer->m_Type == LAYERTYPE_TILES && Input()->KeyIsPressed(KEY_LCTRL) && Input()->KeyIsPressed(KEY_LSHIFT) && Input()->KeyPress(KEY_KP_0))
 				{
@@ -446,8 +516,13 @@ void CMapLayers::OnRender()
 					}
 				}
 
-				if(!IsGameLayer)
+				if(Render && !IsEntityLayer
+					&& !(g_Config.m_GfxGameTiles >= 2 && !g_Config.m_GfxKeepBackgroundAlways)
+					&& !(g_Config.m_GfxGameTiles >= 2 && m_Type != TYPE_BACKGROUND && g_Config.m_GfxKeepBackgroundAlways)
+					)
 				{
+				// if(!IsGameLayer)
+				// {
 					if(pLayer->m_Type == LAYERTYPE_TILES)
 					{
 						CMapItemLayerTilemap *pTMap = (CMapItemLayerTilemap *)pLayer;
@@ -457,6 +532,8 @@ void CMapLayers::OnRender()
 							Graphics()->TextureSet(m_pClient->m_pMapimages->Get(pTMap->m_Image));
 
 						CTile *pTiles = (CTile *)pLayers->Map()->GetData(pTMap->m_Data);
+						//if (IsFrontLayer)
+						//	*pTiles = (CTile *)pLayers->Map()->GetData(pTMap->m_Front);
 						Graphics()->BlendNone();
 						vec4 Color = vec4(pTMap->m_Color.r/255.0f, pTMap->m_Color.g/255.0f, pTMap->m_Color.b/255.0f, pTMap->m_Color.a/255.0f);
 						RenderTools()->RenderTilemap(pTiles, pTMap->m_Width, pTMap->m_Height, 32.0f, Color, TILERENDERFLAG_EXTEND|LAYERRENDERFLAG_OPAQUE,
@@ -499,11 +576,384 @@ void CMapLayers::OnRender()
 			Graphics()->ClipDisable();
 	}
 
+	if (g_Config.m_GfxGameTiles && FrontLayerId != -1)
+	{ 
+		RenderTools()->MapScreenToGroup(Center.x, Center.y, pGameGroup, m_pClient->m_pCamera->GetZoom());
+		CMapItemLayer *pLayer = pLayers->GetLayer(pGameGroup->m_StartLayer + FrontLayerId);
+		CMapItemLayerTilemap *pTMap = (CMapItemLayerTilemap *)pLayer;
+		int DataIndex = pTMap->m_Front;
+		CTile *pTiles;
+		vec4 Color;
+		{
+			if (g_Config.m_GfxGameTiles == 1)
+				Color = vec4(pTMap->m_Color.r / 255.0f, pTMap->m_Color.g / 255.0f, pTMap->m_Color.b / 255.0f, pTMap->m_Color.a*0.8f / 255.0f); // bit of alpha
+			else if (g_Config.m_GfxGameTiles == 2)
+				Color = vec4(pTMap->m_Color.r / 255.0f, pTMap->m_Color.g / 255.0f, pTMap->m_Color.b / 255.0f, pTMap->m_Color.a*0.9f / 255.0f); // lil bit of alpha
+			else
+				Color = vec4(pTMap->m_Color.r / 255.0f, pTMap->m_Color.g / 255.0f, pTMap->m_Color.b / 255.0f, pTMap->m_Color.a / 255.0f);
+		}
+		// the game tiles now
+		Graphics()->TextureSet(g_Config.m_GfxGameTiles == 3 ? m_pClient->m_pMapimages->GetAutoEntities() : m_pClient->m_pMapimages->GetEntities());
+		Graphics()->BlendNone();
+		pTiles = (CTile *)pLayers->Map()->GetData(DataIndex);
+		RenderTools()->RenderTilemap(pTiles, pTMap->m_Width, pTMap->m_Height, 32.0f, Color, TILERENDERFLAG_EXTEND | LAYERRENDERFLAG_OPAQUE,
+			EnvelopeEval, this, pTMap->m_ColorEnv, pTMap->m_ColorEnvOffset);
+		Graphics()->BlendNormal();
+		RenderTools()->RenderTilemap(pTiles, pTMap->m_Width, pTMap->m_Height, 32.0f, Color, TILERENDERFLAG_EXTEND | LAYERRENDERFLAG_TRANSPARENT,
+			EnvelopeEval, this, pTMap->m_ColorEnv, pTMap->m_ColorEnvOffset);
+	}
+
+	if (g_Config.m_GfxGameTiles && TeleLayerId != -1)
+	{
+		RenderTools()->MapScreenToGroup(Center.x, Center.y, pGameGroup, m_pClient->m_pCamera->GetZoom());
+		CMapItemLayer *pLayer = pLayers->GetLayer(pGameGroup->m_StartLayer + TeleLayerId);
+		CMapItemLayerTilemap *pTMap = (CMapItemLayerTilemap *)pLayer;
+		Graphics()->TextureSet(m_pClient->m_pMapimages->GetEntities());
+		CTeleTile *pTeleTiles = (CTeleTile *)Layers()->Map()->GetData(pTMap->m_Tele);
+		Graphics()->BlendNone();
+		vec4 Color;
+		{
+			if (g_Config.m_GfxGameTiles == 1)
+				Color = vec4(pTMap->m_Color.r / 255.0f, pTMap->m_Color.g / 255.0f, pTMap->m_Color.b / 255.0f, pTMap->m_Color.a*0.8f / 255.0f); // bit of alpha
+			else if (g_Config.m_GfxGameTiles == 2)
+				Color = vec4(pTMap->m_Color.r / 255.0f, pTMap->m_Color.g / 255.0f, pTMap->m_Color.b / 255.0f, pTMap->m_Color.a*0.9f / 255.0f); // lil bit of alpha
+			else
+				Color = vec4(pTMap->m_Color.r / 255.0f, pTMap->m_Color.g / 255.0f, pTMap->m_Color.b / 255.0f, pTMap->m_Color.a / 255.0f);
+		}
+
+		//RenderTools()->RenderTelemap(pTeleTiles, pTMap->m_Width, pTMap->m_Height, 32.0f, Color, TILERENDERFLAG_EXTEND | LAYERRENDERFLAG_OPAQUE);
+		Graphics()->BlendNormal();
+		//RenderTools()->RenderTelemap(pTeleTiles, pTMap->m_Width, pTMap->m_Height, 32.0f, Color, TILERENDERFLAG_EXTEND | LAYERRENDERFLAG_TRANSPARENT);
+		RenderTools()->RenderTeleOverlay(pTeleTiles, pTMap->m_Width, pTMap->m_Height, 32.0f);
+	}
+
+	/*if (g_Config.m_GfxGameTiles && SpeedupLayerId != -1)
+	{
+		RenderTools()->MapScreenToGroup(Center.x, Center.y, pGameGroup, m_pClient->m_pCamera->GetZoom());
+		CMapItemLayer *pLayer = pLayers->GetLayer(pGameGroup->m_StartLayer + SpeedupLayerId);
+		CMapItemLayerTilemap *pTMap = (CMapItemLayerTilemap *)pLayer;
+		int DataIndex = pTMap->m_Speedup;
+		CTile *pTiles;
+		vec4 Color;
+		{
+			if (g_Config.m_GfxGameTiles == 1)
+				Color = vec4(pTMap->m_Color.r / 255.0f, pTMap->m_Color.g / 255.0f, pTMap->m_Color.b / 255.0f, pTMap->m_Color.a*0.8f / 255.0f); // bit of alpha
+			else if (g_Config.m_GfxGameTiles == 2)
+				Color = vec4(pTMap->m_Color.r / 255.0f, pTMap->m_Color.g / 255.0f, pTMap->m_Color.b / 255.0f, pTMap->m_Color.a*0.9f / 255.0f); // lil bit of alpha
+			else
+				Color = vec4(pTMap->m_Color.r / 255.0f, pTMap->m_Color.g / 255.0f, pTMap->m_Color.b / 255.0f, pTMap->m_Color.a / 255.0f);
+		}
+		// the game tiles now
+		Graphics()->TextureSet(g_Config.m_GfxGameTiles == 3 ? m_pClient->m_pMapimages->GetAutoEntities() : m_pClient->m_pMapimages->GetEntities());
+		Graphics()->BlendNone();
+		pTiles = (CTile *)pLayers->Map()->GetData(DataIndex);
+		RenderTools()->RenderTilemap(pTiles, pTMap->m_Width, pTMap->m_Height, 32.0f, Color, TILERENDERFLAG_EXTEND | LAYERRENDERFLAG_OPAQUE,
+			EnvelopeEval, this, pTMap->m_ColorEnv, pTMap->m_ColorEnvOffset);
+		Graphics()->BlendNormal();
+		RenderTools()->RenderTilemap(pTiles, pTMap->m_Width, pTMap->m_Height, 32.0f, Color, TILERENDERFLAG_EXTEND | LAYERRENDERFLAG_TRANSPARENT,
+			EnvelopeEval, this, pTMap->m_ColorEnv, pTMap->m_ColorEnvOffset);
+	}*/
+
+	if (g_Config.m_GfxGameTiles && SwitchLayerId != -1)
+	{
+		RenderTools()->MapScreenToGroup(Center.x, Center.y, pGameGroup, m_pClient->m_pCamera->GetZoom());
+		CMapItemLayer *pLayer = pLayers->GetLayer(pGameGroup->m_StartLayer + SwitchLayerId);
+		CMapItemLayerTilemap *pTMap = (CMapItemLayerTilemap *)pLayer;
+		int DataIndex = pTMap->m_Switch;
+		CTile *pTiles;
+		vec4 Color;
+		{
+			if (g_Config.m_GfxGameTiles == 1)
+				Color = vec4(pTMap->m_Color.r / 255.0f, pTMap->m_Color.g / 255.0f, pTMap->m_Color.b / 255.0f, pTMap->m_Color.a*0.8f / 255.0f); // bit of alpha
+			else if (g_Config.m_GfxGameTiles == 2)
+				Color = vec4(pTMap->m_Color.r / 255.0f, pTMap->m_Color.g / 255.0f, pTMap->m_Color.b / 255.0f, pTMap->m_Color.a*0.9f / 255.0f); // lil bit of alpha
+			else
+				Color = vec4(pTMap->m_Color.r / 255.0f, pTMap->m_Color.g / 255.0f, pTMap->m_Color.b / 255.0f, pTMap->m_Color.a / 255.0f);
+		}
+		// the game tiles now
+		Graphics()->TextureSet(g_Config.m_GfxGameTiles == 3 ? m_pClient->m_pMapimages->GetAutoEntities() : m_pClient->m_pMapimages->GetEntities());
+		Graphics()->BlendNone();
+		pTiles = (CTile *)pLayers->Map()->GetData(DataIndex);
+
+		for (int i = 0; i < pTMap->m_Width*pTMap->m_Height; i++)
+		{
+			if (pTiles[i].m_Index && pTiles[i].m_Index < ENTITY_OFFSET)
+				pTiles[i].m_Index = ENTITY_OFFSET+ENTITY_DOOR;
+			//{
+				//if (pTiles[i].m_Index == 26)
+				//	pTeleTiles[i].m_Index = pTeleTiles[i].m_Index * 2 - 1;
+				//else if (pTiles[i].m_Index == 27)
+				//	pTeleTiles[i].m_Index = pTeleTiles[i].m_Index * 2 - 2;
+				//else
+				//	dbg_msg("automap", "Strange teleport, game ID = %d", pTiles[i].m_Index);
+			//}
+		}
+		//m_pTeleTiles = (CTile *)malloc(sizeof(CTile) * pTMap->m_Width * pTMap->m_Height);
+		//mem_copy(pTiles, pTiles, sizeof(CTile) * pTMap->m_Width * pTMap->m_Height);
+
+		RenderTools()->RenderTilemap(pTiles, pTMap->m_Width, pTMap->m_Height, 32.0f, Color, TILERENDERFLAG_EXTEND | LAYERRENDERFLAG_OPAQUE,
+			EnvelopeEval, this, pTMap->m_ColorEnv, pTMap->m_ColorEnvOffset);
+		Graphics()->BlendNormal();
+		RenderTools()->RenderTilemap(pTiles, pTMap->m_Width, pTMap->m_Height, 32.0f, Color, TILERENDERFLAG_EXTEND | LAYERRENDERFLAG_TRANSPARENT,
+			EnvelopeEval, this, pTMap->m_ColorEnv, pTMap->m_ColorEnvOffset);
+	}
+
+	// render automap/game tiles
+	if(g_Config.m_GfxGameTiles && (GameLayerId != -1))
+	{
+		RenderTools()->MapScreenToGroup(Center.x, Center.y, pGameGroup, m_pClient->m_pCamera->GetZoom());
+
+		// useless calculation to get the game layer
+		CMapItemLayer *pLayer = pLayers->GetLayer(pGameGroup->m_StartLayer + GameLayerId);
+		CMapItemLayerTilemap *pTMap = (CMapItemLayerTilemap *)pLayer;
+		int DataIndex = pTMap->m_Data;
+
+		//else if(TuneLayerId != -1)
+		//	pLayer = pLayers->GetLayer(pGameGroup->m_StartLayer+TuneLayerId);
+		
+		//dbg_assert(pLayer->m_Type == LAYERTYPE_TILES || pTMap->m_Image == -1, "not the game layer");
+
+		CTile *pTiles;
+		vec4 Color;
+		{
+			if(g_Config.m_GfxGameTiles == 1)
+				Color = vec4(pTMap->m_Color.r/255.0f, pTMap->m_Color.g/255.0f, pTMap->m_Color.b/255.0f, pTMap->m_Color.a*0.8f/255.0f); // bit of alpha
+			else if(g_Config.m_GfxGameTiles == 2)
+				Color = vec4(pTMap->m_Color.r/255.0f, pTMap->m_Color.g/255.0f, pTMap->m_Color.b/255.0f, pTMap->m_Color.a*0.9f/255.0f); // lil bit of alpha
+			else
+				Color = vec4(pTMap->m_Color.r/255.0f, pTMap->m_Color.g/255.0f, pTMap->m_Color.b/255.0f, pTMap->m_Color.a/255.0f);
+		}
+
+		if(g_Config.m_GfxGameTiles == 3 && m_Type != TYPE_BACKGROUND)
+		{
+			dbg_assert(pLayers && (bool)pLayers->Map(), "no map");
+			if(m_AutolayerUpdate) // need to update auto ressources
+			{
+				m_pClient->m_pMapimages->LoadAutoMapres();
+				LoadPainters(pLayers);
+				m_AutolayerUpdate = false;
+			}
+
+			// render doodads first
+			if(g_Config.m_GfxAutomapDoodads && m_pAutoDoodads)
+			{
+				pTiles = m_pAutoDoodads;
+				Graphics()->TextureSet(m_pClient->m_pMapimages->GetAutoDoodads());
+				Graphics()->BlendNone();
+				RenderTools()->RenderTilemap(pTiles, pTMap->m_Width, pTMap->m_Height, 32.0f, Color, TILERENDERFLAG_EXTEND|LAYERRENDERFLAG_OPAQUE,
+												EnvelopeEval, this, pTMap->m_ColorEnv, pTMap->m_ColorEnvOffset);
+				Graphics()->BlendNormal();
+				RenderTools()->RenderTilemap(pTiles, pTMap->m_Width, pTMap->m_Height, 32.0f, Color, TILERENDERFLAG_EXTEND|LAYERRENDERFLAG_TRANSPARENT,
+											EnvelopeEval, this, pTMap->m_ColorEnv, pTMap->m_ColorEnvOffset);
+			}
+
+			if(m_pAutoTiles)
+			{
+				pTiles = m_pAutoTiles;
+				Graphics()->TextureSet(m_pClient->m_pMapimages->GetAutoTiles());
+				Graphics()->BlendNone();
+				RenderTools()->RenderTilemap(pTiles, pTMap->m_Width, pTMap->m_Height, 32.0f, Color, TILERENDERFLAG_EXTEND|LAYERRENDERFLAG_OPAQUE,
+												EnvelopeEval, this, pTMap->m_ColorEnv, pTMap->m_ColorEnvOffset);
+				Graphics()->BlendNormal();
+				RenderTools()->RenderTilemap(pTiles, pTMap->m_Width, pTMap->m_Height, 32.0f, Color, TILERENDERFLAG_EXTEND|LAYERRENDERFLAG_TRANSPARENT,
+												EnvelopeEval, this, pTMap->m_ColorEnv, pTMap->m_ColorEnvOffset);
+			}
+		}
+
+		// the game tiles now
+		Graphics()->TextureSet(g_Config.m_GfxGameTiles == 3 ? m_pClient->m_pMapimages->GetAutoEntities() : m_pClient->m_pMapimages->GetEntities());
+		Graphics()->BlendNone();
+		pTiles = (CTile *)pLayers->Map()->GetData(DataIndex);
+		RenderTools()->RenderTilemap(pTiles, pTMap->m_Width, pTMap->m_Height, 32.0f, Color, TILERENDERFLAG_EXTEND|LAYERRENDERFLAG_OPAQUE,
+										EnvelopeEval, this, pTMap->m_ColorEnv, pTMap->m_ColorEnvOffset);
+		Graphics()->BlendNormal();
+		RenderTools()->RenderTilemap(pTiles, pTMap->m_Width, pTMap->m_Height, 32.0f, Color, TILERENDERFLAG_EXTEND|LAYERRENDERFLAG_TRANSPARENT,
+										EnvelopeEval, this, pTMap->m_ColorEnv, pTMap->m_ColorEnvOffset);
+
+		// and the race tiles
+		/*if(pRaceGroup)
+		{
+			for(int l = 0; l < pRaceGroup->m_NumLayers; l++)
+			{
+				CMapItemLayer *pLayer = pLayers->GetLayer(pRaceGroup->m_StartLayer+l);
+				if(pLayer->m_Type != LAYERTYPE_TILES)
+					continue;
+				CMapItemLayerTilemap *pTilemap = reinterpret_cast<CMapItemLayerTilemap *>(pLayer);
+				
+				char aName[12];
+				IntsToStr(pTilemap->m_aName, sizeof(aName)/sizeof(int), aName);
+
+				// teleport layer
+				if(str_comp(aName, "#tele") == 0)
+				{
+					const int Width = pTilemap->m_Width;
+					const int Height = pTilemap->m_Height;
+					dbg_assert(Width <= pTMap->m_Width && Height <= pTMap->m_Height, "teleport layer is too big");
+					if(m_TeleUpdate) // need to reload teleport stuff
+					{
+						delete m_pTeleTiles;
+
+						CTile *pTeleTiles = (CTile *)pLayers->Map()->GetData(pTilemap->m_Data);
+
+						// arrange tiles
+						for(int i = 0 ; i < Width*Height; i++)
+						{
+							if(pTeleTiles[i].m_Index)
+							{
+								if(pTiles[i].m_Index == 26)
+									pTeleTiles[i].m_Index = pTeleTiles[i].m_Index*2 - 1;
+								else if(pTiles[i].m_Index == 27)
+									pTeleTiles[i].m_Index = pTeleTiles[i].m_Index*2 - 2;
+								else
+									dbg_msg("automap", "Strange teleport, game ID = %d", pTiles[i].m_Index);
+							}
+						}
+						m_pTeleTiles = (CTile *)malloc(sizeof(CTile) * Width * Height);
+						mem_copy(m_pTeleTiles, pTeleTiles, sizeof(CTile) * Width * Height);
+						m_TeleUpdate = false;
+					}
+
+					if(m_pTeleTiles)
+					{
+						// vec4 Color = vec4(1.f,1.f,1.f,1.f);
+						Graphics()->TextureSet(m_pClient->m_pMapimages->GetTeleEntities());
+						Graphics()->BlendNone();
+						RenderTools()->RenderTilemap(m_pTeleTiles, Width, Height, 32.0f, Color, TILERENDERFLAG_EXTEND|LAYERRENDERFLAG_OPAQUE,
+														EnvelopeEval, this, pTilemap->m_ColorEnv, pTilemap->m_ColorEnvOffset);
+						Graphics()->BlendNormal();
+						RenderTools()->RenderTilemap(m_pTeleTiles, Width, Height, 32.0f, Color, TILERENDERFLAG_EXTEND|LAYERRENDERFLAG_TRANSPARENT,
+														EnvelopeEval, this, pTilemap->m_ColorEnv, pTilemap->m_ColorEnvOffset);
+					}
+				}
+			}
+		}*/
+	}
+
 	if(!g_Config.m_GfxNoclip)
 		Graphics()->ClipDisable();
 
 	// reset the screen like it was before
 	Graphics()->MapScreen(Screen.x, Screen.y, Screen.w, Screen.h);
+}
+
+// on auto mapres change
+void CMapLayers::ReloadPainters()
+{
+	m_AutolayerUpdate = true;
+}
+
+void CMapLayers::LoadPainters(CLayers *pLayers)
+{
+	if(m_pTilesetPainter)
+	{
+		delete(m_pTilesetPainter);
+		m_pTilesetPainter = 0;
+		m_pAutoTiles = 0;
+	}
+	if(m_pDoodadsPainter)
+	{
+		delete(m_pDoodadsPainter);
+		m_pDoodadsPainter = 0;
+		m_pAutoDoodads = 0;
+	}
+	delete(m_pAutoTiles);
+	delete(m_pAutoDoodads);
+
+	char aBuf[64];
+	str_format(aBuf, sizeof(aBuf), "%s_main", g_Config.m_GfxAutomapLayer);
+	LoadAutomapperRules(pLayers, aBuf);
+	str_format(aBuf, sizeof(aBuf), "%s_doodads", g_Config.m_GfxAutomapLayer);
+	LoadAutomapperRules(pLayers, aBuf);
+	
+	// fill m_pAutoTiles
+	if(m_pTilesetPainter)
+	{
+		CMapItemLayerTilemap *pTMap = pLayers->GameLayer();
+		CTile *pTilesOriginal = ((CTile *)pLayers->Map()->GetData(pTMap->m_Data));
+		m_pAutoTiles = (CTile *)malloc(sizeof(CTile) * pTMap->m_Width * pTMap->m_Height);
+		mem_copy(m_pAutoTiles, pTilesOriginal, sizeof(CTile) * pTMap->m_Width * pTMap->m_Height);
+
+		// cleanup game tiles from anything but hookable and unhookable
+		int MaxIndex = pTMap->m_Width * pTMap->m_Height;	
+		for(int i = 0 ; i < MaxIndex; i++)
+		{
+			if(m_pAutoTiles[i].m_Index != CCollision::COLFLAG_SOLID && m_pAutoTiles[i].m_Index != (CCollision::COLFLAG_NOHOOK|CCollision::COLFLAG_SOLID)) // hookable and unhookable
+			{
+				m_pAutoTiles[i].m_Index = 0;
+				m_pAutoTiles[i].m_Flags = 0;
+			}
+		}
+
+		// proceed tiles
+		m_pTilesetPainter->Proceed(m_pAutoTiles, pTMap->m_Width, pTMap->m_Height, 0);
+
+		if(m_pDoodadsPainter)
+		{
+			// copy the collision from the tiles
+			m_pAutoDoodads = (CTile *)malloc(sizeof(CTile) * pTMap->m_Width * pTMap->m_Height);
+			mem_copy(m_pAutoDoodads, m_pAutoTiles, sizeof(CTile) * pTMap->m_Width * pTMap->m_Height);
+
+			// proceed
+			m_pDoodadsPainter->Proceed(m_pAutoDoodads, pTMap->m_Width, pTMap->m_Height, 0, 1);
+		}
+	}
+}
+
+// void CMapLayers::LoadTeleports(CLayers *pLayers)
+// {
+// 	delete(m_pTeleTiles);
+// }
+
+void CMapLayers::LoadAutomapperRules(CLayers *pLayers, const char* pName)
+{
+	// read file data into buffer
+	char aBuf[256];
+	str_format(aBuf, sizeof(aBuf), "editor/automap/%s.json", pName);
+	IOHANDLE File = Storage()->OpenFile(aBuf, IOFLAG_READ, IStorage::TYPE_ALL);
+	if(!File)
+		return;
+	int FileSize = (int)io_length(File);
+	char *pFileData = (char *)mem_alloc(FileSize, 1);
+	io_read(File, pFileData, FileSize);
+	io_close(File);
+
+	// parse json data
+	json_settings JsonSettings;
+	mem_zero(&JsonSettings, sizeof(JsonSettings));
+	char aError[256];
+	json_value *pJsonData = json_parse_ex(&JsonSettings, pFileData, FileSize, aError);
+	mem_free(pFileData);
+
+	if(pJsonData == 0)
+	{
+		Console()->Print(IConsole::OUTPUT_LEVEL_ADDINFO, aBuf, aError);
+		return;
+	}
+
+	// generate configurations
+	const json_value &rTileset = (*pJsonData)[(const char *)IAutoMapper::GetTypeName(IAutoMapper::TYPE_TILESET)];
+	if(rTileset.type == json_array)
+	{
+		m_pTilesetPainter = new CTilesetPainter(pLayers);
+		m_pTilesetPainter->Load(rTileset);
+	}
+	else
+	{
+		const json_value &rDoodads = (*pJsonData)[(const char *)IAutoMapper::GetTypeName(IAutoMapper::TYPE_DOODADS)];
+		if(rDoodads.type == json_array)
+		{
+			m_pDoodadsPainter = new CDoodadsPainter(pLayers);
+			m_pDoodadsPainter->Load(rDoodads);
+		}
+	}
+
+	// clean up
+	json_value_free(pJsonData);
+	// if(m_pTilesetPainter && g_Config.m_Debug)
+	// {
+	// 	str_format(aBuf, sizeof(aBuf),"loaded %s.json (%s)", pName, IAutoMapper::GetTypeName(m_pTilesetPainter->GetType()));
+	// 	Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "editor", aBuf);
+	// }
 }
 
 void CMapLayers::ConchainBackgroundMap(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData)
@@ -513,10 +963,36 @@ void CMapLayers::ConchainBackgroundMap(IConsole::IResult *pResult, void *pUserDa
 		((CMapLayers*)pUserData)->BackgroundMapUpdate();
 }
 
+void CMapLayers::ConchainAutomapperReload(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData)
+{
+	pfnCallback(pResult, pCallbackUserData);
+	if(pResult->NumArguments())
+	{
+		((CMapLayers*)pUserData)->ReloadPainters();
+	}
+}
+
+void CMapLayers::Con_Automap(IConsole::IResult *pResult, void *pUserData)
+{
+	CMapLayers *pSelf = (CMapLayers *)pUserData;
+	if(!pResult->GetString(0)[0])
+	{
+		g_Config.m_GfxGameTiles = 0;
+		return;
+	}
+	g_Config.m_GfxGameTiles = 3;
+	str_copy(g_Config.m_GfxAutomapLayer, pResult->GetString(0), sizeof(g_Config.m_GfxAutomapLayer));
+	pSelf->ReloadPainters();
+}
+
+
 void CMapLayers::OnConsoleInit()
 {
 	Console()->Chain("cl_menu_map", ConchainBackgroundMap, this);
 	Console()->Chain("cl_show_menu_map", ConchainBackgroundMap, this);
+	Console()->Chain("gfx_automap_layer", ConchainAutomapperReload, this);
+
+	Console()->Register("automap", "s", CFGFLAG_CLIENT, Con_Automap, this, "Automap the specified layer");
 }
 
 void CMapLayers::BackgroundMapUpdate()

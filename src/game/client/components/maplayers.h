@@ -4,17 +4,26 @@
 #define GAME_CLIENT_COMPONENTS_MAPLAYERS_H
 #include <base/tl/array.h>
 #include <game/client/component.h>
+//#include <game/client/components/auto_tile.h>
 
 class CMapLayers : public CComponent
 {
 	CLayers *m_pMenuLayers;
 	IEngineMap *m_pMenuMap;
+	// gamer
+	CTilesetPainter* m_pTilesetPainter;
+	CDoodadsPainter* m_pDoodadsPainter;
+	CTile* m_pTeleTiles;
+	CTile* m_pAutoTiles;
+	CTile* m_pAutoDoodads;
 
 	int m_Type;
 	int m_CurrentLocalTick;
 	int m_LastLocalTick;
 	float m_OnlineStartTime;
 	bool m_EnvelopeUpdate;
+	bool m_AutolayerUpdate;
+	bool m_TeleUpdate;
 
 	array<CEnvPoint> m_lEnvPoints;
 	array<CEnvPoint> m_lEnvPointsMenu;
@@ -27,6 +36,9 @@ class CMapLayers : public CComponent
 
 	void LoadEnvPoints(const CLayers *pLayers, array<CEnvPoint>& lEnvPoints);
 	void LoadBackgroundMap();
+	void ReloadPainters();
+	void LoadPainters(CLayers *pLayers);
+	void LoadAutomapperRules(CLayers *pLayers, const char* pName);
 
 public:
 	enum
@@ -45,6 +57,8 @@ public:
 	void EnvelopeUpdate();
 
 	static void ConchainBackgroundMap(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
+	static void ConchainAutomapperReload(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
+	static void Con_Automap(IConsole::IResult *pResult, void *pUserData);
 
 	virtual void OnConsoleInit();
 

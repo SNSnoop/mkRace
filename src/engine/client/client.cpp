@@ -771,6 +771,11 @@ void CClient::Render()
 {
 	if(g_Config.m_GfxClear)
 		Graphics()->Clear(1,1,0);
+	if(g_Config.m_GfxClear || g_Config.m_GfxGameTiles >= 2)
+	{
+		vec3 RGBClearColor = vec3((g_Config.m_GfxClearColor>>16&0xff)/255.0f,(g_Config.m_GfxClearColor>>8&0xff)/255.0f,(g_Config.m_GfxClearColor&0xff)/255.0f);
+		Graphics()->Clear(RGBClearColor.r, RGBClearColor.g, RGBClearColor.v);
+	}
 
 	GameClient()->OnRender();
 	DebugRender();
