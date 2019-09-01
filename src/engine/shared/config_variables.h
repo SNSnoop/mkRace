@@ -106,6 +106,9 @@ MACRO_CONFIG_INT(DbgHitch, dbg_hitch, 0, 0, 0, CFGFLAG_SERVER, "Hitch warnings")
 MACRO_CONFIG_STR(DbgStressServer, dbg_stress_server, 32, "localhost", CFGFLAG_CLIENT, "Server to stress")
 MACRO_CONFIG_INT(DbgResizable, dbg_resizable, 0, 0, 0, CFGFLAG_CLIENT, "Enables window resizing")
 
+MACRO_CONFIG_INT(ZoomMax, zoom_max, 160, 110, 500, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Zoom maximum")
+MACRO_CONFIG_INT(ZoomMin, zoom_min, 40, 20, 90, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Zoom minimum")
+
 // mkRace
 MACRO_CONFIG_INT(SvSwap, sv_swap, 1, 0, 1, CFGFLAG_SERVER, "Turns player swapping on/off")
 MACRO_CONFIG_INT(SvDisconnectRescue, sv_disconnect_rescue, 1, 0, 1, CFGFLAG_SERVER, "Turns disconnect rescue on/off")

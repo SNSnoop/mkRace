@@ -32,13 +32,37 @@ CCamera::CCamera()
 
 	m_CurrentPosition = -1;
 	m_MoveTime = 0.0f;
+
+	m_Zoom = 1.0f;
+	m_TempZoom = 1.0f;
+}
+
+void CCamera::ConKeyZoomIn(IConsole::IResult *pResult, void *pUserData)
+{
+	((CCamera *)pUserData)->m_TempZoom = clamp(((CCamera *)pUserData)->m_TempZoom - 0.05f, (float)g_Config.m_ZoomMin / 100, (float)g_Config.m_ZoomMax / 100);
+}
+
+void CCamera::ConKeyZoomOut(IConsole::IResult *pResult, void *pUserData)
+{
+	((CCamera *)pUserData)->m_TempZoom = clamp(((CCamera *)pUserData)->m_TempZoom + 0.05f, (float)g_Config.m_ZoomMin / 100, (float)g_Config.m_ZoomMax / 100);
+}
+
+void CCamera::ConZoomReset(IConsole::IResult *pResult, void *pUserData)
+{
+	((CCamera *)pUserData)->m_TempZoom = 1.0f;
 }
 
 void CCamera::OnRender()
 {
 	if(Client()->State() == IClient::STATE_ONLINE || Client()->State() == IClient::STATE_DEMOPLAYBACK)
 	{
-		m_Zoom = 1.0f;
+		if (!m_pClient->m_Snap.m_SpecInfo.m_Active && Client()->State() != IClient::STATE_DEMOPLAYBACK)	// check zoom
+			m_Zoom = 1.0f;
+
+		if (m_TempZoom + 0.005f < m_Zoom)
+			m_Zoom -= 0.01f;
+		else if (m_TempZoom - 0.005f > m_Zoom)
+			m_Zoom += 0.01f;
 
 		// update camera center
 		if(m_pClient->m_Snap.m_SpecInfo.m_Active && !m_pClient->m_Snap.m_SpecInfo.m_UsePosition &&
@@ -139,6 +163,9 @@ void CCamera::ConSetPosition(IConsole::IResult *pResult, void *pUserData)
 void CCamera::OnConsoleInit()
 {
 	Console()->Register("set_position", "iii", CFGFLAG_CLIENT, ConSetPosition, this, "Sets the rotation position");
+	Console()->Register("+zoomin", "", CFGFLAG_CLIENT, ConKeyZoomIn, this, "");
+	Console()->Register("+zoomout", "", CFGFLAG_CLIENT, ConKeyZoomOut, this, "");
+	Console()->Register("zoomreset", "", CFGFLAG_CLIENT, ConZoomReset, this, "");
 }
 
 void CCamera::OnStateChange(int NewState, int OldState)

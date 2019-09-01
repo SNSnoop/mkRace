@@ -32,6 +32,10 @@ public:
 	const vec2 *GetCenter() const { return &m_Center; };
 	float GetZoom() const { return m_Zoom; };
 
+	static void ConKeyZoomIn(IConsole::IResult *pResult, void *pUserData);
+	static void ConKeyZoomOut(IConsole::IResult *pResult, void *pUserData);
+	static void ConZoomReset(IConsole::IResult *pResult, void *pUserData);
+
 	static void ConSetPosition(IConsole::IResult *pResult, void *pUserData);
 
 	virtual void OnConsoleInit();
@@ -49,6 +53,7 @@ private:
 	vec2 m_MenuCenter;
 	vec2 m_RotationCenter;
 	float m_Zoom;
+	float m_TempZoom;
 	int m_CamType;
 	vec2 m_PrevCenter;
 	vec2 m_Positions[NUM_POS];
