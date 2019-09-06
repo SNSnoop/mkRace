@@ -4,7 +4,7 @@
 #define GAME_CLIENT_COMPONENTS_MAPLAYERS_H
 #include <base/tl/array.h>
 #include <game/client/component.h>
-//#include <game/client/components/auto_tile.h>
+#include <game/client/components/auto_tile.h>
 
 class CMapLayers : public CComponent
 {
