@@ -78,6 +78,9 @@ class CGameContext : public IGameServer
 	static void ConTeleportTo(IConsole::IResult *pResult, void *pUserData);
 	static void ConGetPos(IConsole::IResult *pResult, void *pUserData);
 
+	static void ConJetpack(IConsole::IResult *pResult, void *pUserData);
+	static void ConUnJetpack(IConsole::IResult *pResult, void *pUserData);
+
 	static void SendChatResponse(const char *pLine, void *pUser, bool Highlighted);
 	static void ChatConInfo(IConsole::IResult *pResult, void *pUser);
 	static void ChatConTop5(IConsole::IResult *pResult, void *pUser);

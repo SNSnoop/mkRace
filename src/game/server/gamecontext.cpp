@@ -887,10 +887,8 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			{
 				m_ChatConsoleClientID = ClientID;
 				m_pChatConsole->SetFlagMask(CFGFLAG_SERVERCHAT);
-				//m_pChatConsole->ExecuteLine(pMsg->m_pMessage + 1);
 				m_pChatConsole->ExecuteLine(pMsg->m_pMessage + 1, ClientID, false);
-				//Console()->SetFlagMask(CFGFLAG_CHAT);
-				//Console()->ExecuteLine(pMsg->m_pMessage + 1, ClientID, false);
+
 				m_ChatConsoleClientID = -1;
                                 char aBuf[256];
                                 str_format(aBuf, sizeof(aBuf), "%d:%d: %s", ClientID, pMsg->m_Mode, pMsg->m_pMessage + 1);
@@ -1716,9 +1714,40 @@ void CGameContext::OnConsoleInit()
 	Console()->Register("teleport_to", "iii", CFGFLAG_SERVER, ConTeleportTo, this, "Teleport ID to (Pos X ; Pos Y)");
 	Console()->Register("get_pos", "i", CFGFLAG_SERVER, ConGetPos, this, "Retrun the position of a player");
 
+	Console()->Register("jetpack", "i", CFGFLAG_SERVER, ConJetpack, this, "Gives jetpack to you");
+	Console()->Register("unjetpack", "i", CFGFLAG_SERVER, ConUnJetpack, this, "Takes the jetpack from you");
+
 	#define CHAT_COMMAND(name, params, flags, callback, userdata, help) Console()->Register(name, params, flags, callback, userdata, help);
 	#include "mkrace.h"
 	#undef CHAT_COMMAND
+}
+
+void CGameContext::ConJetpack(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	int CID = clamp(pResult->GetInteger(0), 0, (int)MAX_CLIENTS - 1);
+	if (pSelf->m_apPlayers[CID])
+	{
+		CCharacter* pChr = pSelf->GetPlayerChar(CID);
+		if (pChr) pChr->m_Jetpack = true;
+		char aBuf[64];
+		str_format(aBuf, sizeof(aBuf), "%s got a jetpack gun", pSelf->Server()->ClientName(CID));
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", aBuf);
+	}
+}
+
+void CGameContext::ConUnJetpack(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	int CID = clamp(pResult->GetInteger(0), 0, (int)MAX_CLIENTS - 1);
+	if (pSelf->m_apPlayers[CID])
+	{
+		CCharacter* pChr = pSelf->GetPlayerChar(CID);
+		if (pChr) pChr->m_Jetpack = false;
+		char aBuf[64];
+		str_format(aBuf, sizeof(aBuf), "%s lost a jetpack gun", pSelf->Server()->ClientName(CID));
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", aBuf);
+	}
 }
 
 void CGameContext::OnInit()

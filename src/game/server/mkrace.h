@@ -21,7 +21,4 @@ CHAT_COMMAND("swap", "?r[playername]", CFGFLAG_SERVERCHAT|CFGFLAG_SERVER, ConSwa
 CHAT_COMMAND("fake", "i[mode] i[from] i[to] r[text]", CFGFLAG_SERVER, ConFake, this, "Send fake message")
 CHAT_COMMAND("unicast", "i[to] r[text]", CFGFLAG_SERVER, ConUnicast, this, "Send broadcast message to single player")
 
-CHAT_COMMAND("jetpack", "", CFGFLAG_SERVERCHAT|CFGFLAG_SERVER, ConJetpack, this, "Gives jetpack to you")
-CHAT_COMMAND("unjetpack", "", CFGFLAG_SERVERCHAT|CFGFLAG_SERVER, ConUnJetpack, this, "Takes the jetpack from you")
-
 #undef CHAT_COMMAND
