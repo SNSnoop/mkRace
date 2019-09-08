@@ -85,7 +85,13 @@ bool CCharacter::Spawn(CPlayer *pPlayer, vec2 Pos)
 	m_Frozen = false;
 	m_EndlessHook = g_Config.m_SvEndlessHook;
 	m_SwapRequest = -1;
+	m_PrevPos = m_Pos;
 	m_Jetpack = false;
+
+	m_LastIndexTile = 0;
+	m_LastIndexFrontTile = 0;
+	m_Core.m_MaxJumps = 2; //2 is default
+	m_Core.m_JumpCount = 0;
 
 	GameServer()->m_pController->OnCharacterSpawn(this);
 
@@ -632,6 +638,8 @@ void CCharacter::Tick()
 	HandleWeapons();
 	
 	DDRacePostCoreTick();
+
+	m_PrevPos = m_Core.m_Pos;
 }
 
 void CCharacter::TickDefered()
@@ -972,6 +980,8 @@ void CCharacter::DDRaceTick()
 		if (m_FreezeTime == 1)
 			Unfreeze();
 	}
+	if (g_Config.m_SvXXLDDRace)
+		HandleJumps();
 }
 
 void CCharacter::Pause(bool Pause)
@@ -1014,7 +1024,18 @@ void CCharacter::DDRacePostCoreTick()
 
 	int CurrentIndex = GameServer()->Collision()->GetMapIndex(m_Pos);
 	HandleSkippableTiles(CurrentIndex);
-	HandleTiles(CurrentIndex);
+
+	// handle Anti-Skip tiles
+	std::list < int > Indices = GameServer()->Collision()->GetMapIndices(m_PrevPos, m_Pos);
+	if (!Indices.empty())
+		for (std::list < int >::iterator i = Indices.begin(); i != Indices.end(); i++)
+			HandleTiles(*i);
+	else
+	{
+		HandleTiles(CurrentIndex);
+		m_LastIndexTile = 0;
+		m_LastIndexFrontTile = 0;
+	}
 }
 
 void CCharacter::HandleBroadcast()
@@ -1180,6 +1201,40 @@ void CCharacter::HandleTiles(int Index)
 		}
 	}
 
+	if(g_Config.m_SvXXLDDRace)
+	{
+		if ((m_TileIndex == TILE_JUMPS_DEFAULT || m_TileFIndex == TILE_JUMPS_DEFAULT) && m_Core.m_MaxJumps != 2)
+		{
+			m_Core.m_MaxJumps = 2; //default
+			GameServer()->SendChat(-1, CHAT_ALL, GetPlayer()->GetCID(), "Jumps reseted");
+		}
+		if (m_TileIndex == TILE_JUMPS_ADD || m_TileFIndex == TILE_JUMPS_ADD)
+		{
+			if (m_LastIndexTile == TILE_JUMPS_ADD || m_LastIndexFrontTile == TILE_JUMPS_ADD)
+				return;
+			m_Core.m_MaxJumps++; //add a jump
+			char aBuf[256];
+			str_format(aBuf, sizeof(aBuf), "Jumps: %d", m_Core.m_MaxJumps);
+			GameServer()->SendChat(-1, CHAT_ALL, GetPlayer()->GetCID(), aBuf);
+		}
+		if (m_TileIndex == TILE_JUMPS_REMOVE || m_TileFIndex == TILE_JUMPS_REMOVE)
+		{
+			if (m_LastIndexTile == TILE_JUMPS_REMOVE || m_LastIndexFrontTile == TILE_JUMPS_REMOVE)
+				return;
+			if (m_Core.m_MaxJumps > 0)
+			{
+				m_Core.m_MaxJumps--; //remove a jump
+				char aBuf[256];
+				str_format(aBuf, sizeof(aBuf), "Jumps: %d", m_Core.m_MaxJumps);
+				GameServer()->SendChat(-1, CHAT_ALL, GetPlayer()->GetCID(), aBuf);
+			}
+		}
+	}
+
+	//First time here?
+	m_LastIndexTile = m_TileIndex;
+	m_LastIndexFrontTile = m_TileFIndex;
+
 	int z = GameServer()->Collision()->IsTeleport(MapIndex);
 	int Num = GameServer()->Collision()->m_TeleOuts[z-1].size();
 	if(z && Num)
@@ -1293,6 +1348,19 @@ void CCharacter::HandleSkippableTiles(int Index)
 			m_Core.m_Vel = TempVel;
 		}
 	}
+}
+
+void CCharacter::HandleJumps()
+{
+	if (m_Core.m_Jumped > 1 && m_Core.m_MaxJumps > m_Core.m_JumpCount + 2)
+	{
+		m_Core.m_Jumped = 1;
+		m_Core.m_JumpCount++;
+	}
+	else if (m_Core.m_MaxJumps == 1)
+		m_Core.m_Jumped = 2; //1 Jump
+	else if (m_Core.m_MaxJumps == 0)
+		m_Core.m_Jumped = 1; //0 Jumps
 }
 
 int CCharacter::Team()

@@ -111,6 +111,8 @@ public:
 	int m_TileFFlagsB;
 	int m_TileSIndexB;
 	int m_TileSFlagsB;
+	int m_LastIndexTile;
+	int m_LastIndexFrontTile;
 	//CGameTeams* Teams();
 	int m_PainSoundTimer;
 	bool m_DeepFreeze;
@@ -212,6 +214,7 @@ private:
 	void HandleBroadcast();
 	void HandleTiles(int Index);
 	void HandleSkippableTiles(int Index);
+	void HandleJumps();
 };
 
 #endif

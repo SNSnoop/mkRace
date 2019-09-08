@@ -139,6 +139,7 @@ void CCharacterCore::Tick(bool UseInput)
 					m_TriggeredEvents |= COREEVENTFLAG_GROUND_JUMP;
 					m_Vel.y = -m_pWorld->m_Tuning.m_GroundJumpImpulse;
 					m_Jumped |= 1;
+					m_JumpCount = 0;
 				}
 				else if(!(m_Jumped&2))
 				{
