@@ -82,6 +82,7 @@ public:
 	bool m_EndlessHook;
 	bool m_SuperJump;
 	bool m_Jetpack;
+	int m_TeleCheckpoint;
 	int m_TileIndex;
 	int m_TileFlags;
 	int m_TileFIndex;

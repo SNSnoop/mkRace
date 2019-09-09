@@ -510,6 +510,48 @@ int CCollision::IntersectLineTeleHook(vec2 Pos0, vec2 Pos1, vec2 *pOutCollision,
 	return 0;
 }
 
+int CCollision::IntersectLineTeleWeapon(vec2 Pos0, vec2 Pos1, vec2 *pOutCollision, vec2 *pOutBeforeCollision, int *pTeleNr) const
+{
+	float Distance = distance(Pos0, Pos1);
+	int End(Distance + 1);
+	vec2 Last = Pos0;
+	int ix = 0, iy = 0; // Temporary position for checking collision
+	for (int i = 0; i <= End; i++)
+	{
+		float a = i / (float)End;
+		vec2 Pos = mix(Pos0, Pos1, a);
+		ix = round_to_int(Pos.x);
+		iy = round_to_int(Pos.y);
+
+		int Index = GetPureMapIndex(Pos);
+		*pTeleNr = IsTeleportWeapon(Index);
+		if (*pTeleNr)
+		{
+			if (pOutCollision)
+				*pOutCollision = Pos;
+			if (pOutBeforeCollision)
+				*pOutBeforeCollision = Last;
+			return TILE_TELEINWEAPON;
+		}
+
+		if (CheckPoint(ix, iy))
+		{
+			if (pOutCollision)
+				*pOutCollision = Pos;
+			if (pOutBeforeCollision)
+				*pOutBeforeCollision = Last;
+			return GetCollisionAt(ix, iy);
+		}
+
+		Last = Pos;
+	}
+	if (pOutCollision)
+		*pOutCollision = Pos1;
+	if (pOutBeforeCollision)
+		*pOutBeforeCollision = Pos1;
+	return 0;
+}
+
 int CCollision::GetIndex(int Nx, int Ny) const
 {
 	return m_pTiles[Ny*m_Width+Nx].m_Index;
@@ -962,12 +1004,35 @@ int CCollision::IsCheckEvilTeleport(int Index) const
 	return 0;
 }
 
+int CCollision::IsTCheckpoint(int Index) const
+{
+	if(Index < 0)
+		return 0;
+	if(!m_pTele)
+		return 0;
+	if(m_pTele[Index].m_Type == TILE_TELECHECK)
+		return m_pTele[Index].m_Number;
+
+	return 0;
+}
+
 int CCollision::IsTeleportHook(int Index) const
 {
 	if(Index < 0 || !m_pTele)
 		return 0;
 
 	if(m_pTele[Index].m_Type == TILE_TELEINHOOK)
+		return m_pTele[Index].m_Number;
+
+	return 0;
+}
+
+int CCollision::IsTeleportWeapon(int Index) const
+{
+	if (Index < 0 || !m_pTele)
+		return 0;
+
+	if (m_pTele[Index].m_Type == TILE_TELEINWEAPON)
 		return m_pTele[Index].m_Number;
 
 	return 0;

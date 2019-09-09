@@ -70,7 +70,7 @@ bool CCharacter::Spawn(CPlayer *pPlayer, vec2 Pos)
 	m_Pos = Pos;
 
 	m_Core.Reset();
-	m_Core.Init(&GameServer()->m_World.m_Core, GameServer()->Collision());
+	m_Core.Init(&GameServer()->m_World.m_Core, GameServer()->Collision(), &GameServer()->Collision()->m_TeleOuts);
 	m_Core.m_Pos = m_Pos;
 	GameServer()->m_World.m_Core.m_apCharacters[m_pPlayer->GetCID()] = &m_Core;
 
@@ -85,6 +85,7 @@ bool CCharacter::Spawn(CPlayer *pPlayer, vec2 Pos)
 	m_Alive = true;
 	m_Frozen = false;
 	m_EndlessHook = g_Config.m_SvEndlessHook;
+	m_TeleCheckpoint = 0;
 	m_SwapRequest = -1;
 	m_PrevPos = m_Pos;
 	m_SuperJump = false;
@@ -637,7 +638,7 @@ void CCharacter::TickDefered()
 	// advance the dummy
 	{
 		CWorldCore TempWorld;
-		m_ReckoningCore.Init(&TempWorld, GameServer()->Collision());
+		m_ReckoningCore.Init(&TempWorld, GameServer()->Collision(), &GameServer()->Collision()->m_TeleOuts);
 		m_ReckoningCore.Tick(false);
 		m_ReckoningCore.Move();
 		m_ReckoningCore.Quantize();
@@ -712,11 +713,12 @@ void CCharacter::TickDefered()
 		m_Core.Write(&Current);
 
 		// only allow dead reackoning for a top of 3 seconds
-		if(m_ReckoningTick+Server()->TickSpeed()*3 < Server()->Tick() || mem_comp(&Predicted, &Current, sizeof(CNetObj_Character)) != 0)
+		if(m_Core.m_pReset || m_ReckoningTick+Server()->TickSpeed()*3 < Server()->Tick() || mem_comp(&Predicted, &Current, sizeof(CNetObj_Character)) != 0)
 		{
 			m_ReckoningTick = Server()->Tick();
 			m_SendCore = m_Core;
 			m_ReckoningCore = m_Core;
+			m_Core.m_pReset = false;
 		}
 	}
 }
@@ -1076,6 +1078,11 @@ void CCharacter::HandleTiles(int Index)
 		return;
 	}
 
+	int tcp = GameServer()->Collision()->IsTCheckpoint(MapIndex);
+	if (tcp)
+		m_TeleCheckpoint = tcp;
+
+
 	// stopper
 	if(((m_TileIndex == TILE_STOP && m_TileFlags == ROTATION_270) || (m_TileIndexL == TILE_STOP && m_TileFlagsL == ROTATION_270) || (m_TileIndexL == TILE_STOPS && (m_TileFlagsL == ROTATION_90 || m_TileFlagsL ==ROTATION_270)) || (m_TileIndexL == TILE_STOPA) || (m_TileFIndex == TILE_STOP && m_TileFFlags == ROTATION_270) || (m_TileFIndexL == TILE_STOP && m_TileFFlagsL == ROTATION_270) || (m_TileFIndexL == TILE_STOPS && (m_TileFFlagsL == ROTATION_90 || m_TileFFlagsL == ROTATION_270)) || (m_TileFIndexL == TILE_STOPA) || (m_TileSIndex == TILE_STOP && m_TileSFlags == ROTATION_270) || (m_TileSIndexL == TILE_STOP && m_TileSFlagsL == ROTATION_270) || (m_TileSIndexL == TILE_STOPS && (m_TileSFlagsL == ROTATION_90 || m_TileSFlagsL == ROTATION_270)) || (m_TileSIndexL == TILE_STOPA)) && m_Core.m_Vel.x > 0)
 	{
@@ -1289,7 +1296,69 @@ void CCharacter::HandleTiles(int Index)
 		m_Core.m_HookPos = m_Core.m_Pos;
 		return;
 	}
-	
+	/* till better times
+	if (GameServer()->Collision()->IsCheckEvilTeleport(MapIndex))
+	{
+		// first check if there is a TeleCheckOut for the current recorded checkpoint, if not check previous checkpoints
+		for (int k = m_TeleCheckpoint - 1; k >= 0; k--)
+		{
+			if (GameServer()->Collision()->m_TeleCheckOuts[k].size())
+			{
+				int Num = GameServer()->Collision()->m_TeleCheckOuts[k].size();
+				m_Core.m_Pos = GameServer()->Collision()->m_TeleCheckOuts[k][(!Num) ? Num : rand() % Num];
+				m_Core.m_Vel = vec2(0, 0);
+
+				m_Core.m_HookedPlayer = -1;
+				m_Core.m_HookState = HOOK_RETRACTED;
+				GameWorld()->ReleaseHooked(GetPlayer()->GetCID());
+				m_Core.m_HookPos = m_Core.m_Pos;
+
+				return;
+			}
+		}
+		// if no checkpointout have been found (or if there no recorded checkpoint), teleport to start
+		vec2 SpawnPos;
+		if (GameServer()->m_pController->CanSpawn(m_pPlayer->GetTeam(), &SpawnPos))
+		{
+			m_Core.m_Pos = SpawnPos;
+			m_Core.m_Vel = vec2(0, 0);
+
+			m_Core.m_HookedPlayer = -1;
+			m_Core.m_HookState = HOOK_RETRACTED;
+			GameWorld()->ReleaseHooked(GetPlayer()->GetCID());
+			m_Core.m_HookPos = m_Core.m_Pos;
+		}
+		return;
+	}
+	if (GameServer()->Collision()->IsCheckTeleport(MapIndex))
+	{
+		// first check if there is a TeleCheckOut for the current recorded checkpoint, if not check previous checkpoints
+		for (int k = m_TeleCheckpoint - 1; k >= 0; k--)
+		{
+			if (GameServer()->Collision()->m_TeleCheckOuts[k].size())
+			{
+				int Num = GameServer()->Collision()->m_TeleCheckOuts[k].size();
+				m_Core.m_Pos = GameServer()->Collision()->m_TeleCheckOuts[k][(!Num) ? Num : rand() % Num];
+
+				m_Core.m_HookedPlayer = -1;
+				m_Core.m_HookState = HOOK_RETRACTED;
+				m_Core.m_HookPos = m_Core.m_Pos;
+
+				return;
+			}
+		}
+		// if no checkpointout have been found (or if there no recorded checkpoint), teleport to start
+		vec2 SpawnPos;
+		if (GameServer()->m_pController->CanSpawn(m_pPlayer->GetTeam(), &SpawnPos))
+		{
+			m_Core.m_Pos = SpawnPos;
+
+			m_Core.m_HookedPlayer = -1;
+			m_Core.m_HookState = HOOK_RETRACTED;
+			m_Core.m_HookPos = m_Core.m_Pos;
+		}
+		return;
+	}*/
 }
 
 void CCharacter::HandleSkippableTiles(int Index)

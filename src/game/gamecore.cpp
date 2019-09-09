@@ -61,6 +61,17 @@ void CCharacterCore::Init(CWorldCore *pWorld, CCollision *pCollision)
 	m_pWorld = pWorld;
 	m_pCollision = pCollision;
 	m_Race.m_PhysicsFlags = m_pWorld->m_PhysicsFlags;
+	m_pTeleOuts = NULL;
+
+	m_JumpedTotal = 0;
+	m_Jumps = 2;
+}
+
+void CCharacterCore::Init(CWorldCore *pWorld, CCollision *pCollision, std::map<int, std::vector<vec2> > *pTeleOuts)
+{
+	m_pWorld = pWorld;
+	m_pCollision = pCollision;
+	m_pTeleOuts = pTeleOuts;
 
 	m_JumpedTotal = 0;
 	m_Jumps = 2;
@@ -70,6 +81,7 @@ void CCharacterCore::Reset()
 {
 	m_Pos = vec2(0,0);
 	m_Vel = vec2(0,0);
+	m_NewHook = false;
 	m_HookPos = vec2(0,0);
 	m_HookDir = vec2(0,0);
 	m_HookTick = 0;
@@ -214,25 +226,30 @@ void CCharacterCore::Tick(bool UseInput)
 	}
 	else if(m_HookState == HOOK_FLYING)
 	{
-		vec2 NewPos = m_HookPos+m_HookDir*m_pWorld->m_Tuning.m_HookFireSpeed;
-		if(distance(m_Pos, NewPos) > m_pWorld->m_Tuning.m_HookLength)
+		vec2 NewPos = m_HookPos + m_HookDir * m_pWorld->m_Tuning.m_HookFireSpeed;
+		if ((!m_NewHook && distance(m_Pos, NewPos) > m_pWorld->m_Tuning.m_HookLength)
+			|| (m_NewHook && distance(m_HookTeleBase, NewPos) > m_pWorld->m_Tuning.m_HookLength))
 		{
 			m_HookState = HOOK_RETRACT_START;
-			NewPos = m_Pos + normalize(NewPos-m_Pos) * m_pWorld->m_Tuning.m_HookLength;
+			NewPos = m_Pos + normalize(NewPos - m_Pos) * m_pWorld->m_Tuning.m_HookLength;
+			m_pReset = true;
 		}
 
 		// make sure that the hook doesn't go though the ground
 		bool GoingToHitGround = false;
 		bool GoingToRetract = false;
-		//int Hit = m_pCollision->IntersectLine(m_HookPos, NewPos, &NewPos, 0);
+		bool GoingThroughTele = false;
 		int teleNr = 0;
 		int Hit = m_pCollision->IntersectLineTeleHook(m_HookPos, NewPos, &NewPos, 0, &teleNr);
 		if(Hit)
 		{
-			if(Hit&CCollision::COLFLAG_NOHOOK)
+			if (Hit == TILE_TELEINHOOK)
+				GoingThroughTele = true;
+			else if (Hit&CCollision::COLFLAG_NOHOOK)
 				GoingToRetract = true;
 			else
 				GoingToHitGround = true;
+			m_pReset = true;
 		}
 
 		// Check against other players first
@@ -272,8 +289,22 @@ void CCharacterCore::Tick(bool UseInput)
 				m_TriggeredEvents |= COREEVENTFLAG_HOOK_HIT_NOHOOK;
 				m_HookState = HOOK_RETRACT_START;
 			}
+			
+			if (GoingThroughTele && m_pTeleOuts && m_pTeleOuts->size() && (*m_pTeleOuts)[teleNr - 1].size())
+			{
+				m_TriggeredEvents = 0;
+				m_HookedPlayer = -1;
 
-			m_HookPos = NewPos;
+				m_NewHook = true;
+				int Num = (*m_pTeleOuts)[teleNr - 1].size();
+				m_HookPos = (*m_pTeleOuts)[teleNr - 1][(Num == 1) ? 0 : rand() % Num] + TargetDirection * PhysSize*1.5f;
+				m_HookDir = TargetDirection;
+				m_HookTeleBase = m_HookPos;
+			}
+			else
+			{
+				m_HookPos = NewPos;
+			}
 		}
 	}
 
@@ -446,6 +477,10 @@ void CCharacterCore::Tick(bool UseInput)
 					m_Vel = Temp;
 				}
 			}
+		}
+		if (m_HookState != HOOK_FLYING)
+		{
+			m_NewHook = false;
 		}
 	}
 

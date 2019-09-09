@@ -155,15 +155,19 @@ class CCharacterCore
 {
 	CWorldCore *m_pWorld;
 	CCollision *m_pCollision;
+	std::map<int, std::vector<vec2> > *m_pTeleOuts;
 public:
 	vec2 m_Pos;
 	vec2 m_Vel;
 
 	vec2 m_HookPos;
 	vec2 m_HookDir;
+	vec2 m_HookTeleBase;
 	int m_HookTick;
 	int m_HookState;
 	int m_HookedPlayer;
+
+	bool m_NewHook;
 
 	int m_Jumped;
 
@@ -182,6 +186,7 @@ public:
 	CCollisionData m_Race;
 
 	void Init(CWorldCore *pWorld, CCollision *pCollision);
+	void Init(CWorldCore *pWorld, CCollision *pCollision, std::map<int, std::vector<vec2> > *pTeleOuts);
 	void Reset();
 	void Tick(bool UseInput);
 	void Move();
@@ -190,6 +195,8 @@ public:
 	void Write(CNetObj_CharacterCore *pObjCore);
 	void Quantize();
 	
+	bool m_pReset;
+
 	int m_Colliding;
 	bool m_LeftWall;
 

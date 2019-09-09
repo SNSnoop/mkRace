@@ -94,6 +94,15 @@ void CProjectile::Tick()
 		
 		GameServer()->m_World.DestroyEntity(this);
 	}
+
+	int x = GameServer()->Collision()->GetIndex(PrevPos, CurPos);
+	int z = GameServer()->Collision()->IsTeleportWeapon(x);
+	if (z && GameServer()->Collision()->m_TeleOuts[z-1].size())
+	{
+		int Num = GameServer()->Collision()->m_TeleOuts[z-1].size();
+		m_Pos = GameServer()->Collision()->m_TeleOuts[z-1][(!Num) ? Num : rand() % Num];
+		m_StartTick = Server()->Tick();
+	}
 }
 
 void CProjectile::TickPaused()

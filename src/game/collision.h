@@ -72,8 +72,8 @@ public:
 	int GetWidth() const { return m_Width; };
 	int GetHeight() const { return m_Height; };
 	int IntersectLine(vec2 Pos0, vec2 Pos1, vec2 *pOutCollision, vec2 *pOutBeforeCollision) const;
-        int IntersectLineTeleWeapon(vec2 Pos0, vec2 Pos1, vec2 *pOutCollision, vec2 *pOutBeforeCollision, int *pTeleNr) const;
-        int IntersectLineTeleHook(vec2 Pos0, vec2 Pos1, vec2 *pOutCollision, vec2 *pOutBeforeCollision, int *pTeleNr) const;
+	int IntersectLineTeleHook(vec2 Pos0, vec2 Pos1, vec2 *pOutCollision, vec2 *pOutBeforeCollision, int *pTeleNr) const;
+	int IntersectLineTeleWeapon(vec2 Pos0, vec2 Pos1, vec2 *pOutCollision, vec2 *pOutBeforeCollision, int *pTeleNr) const;
 	void MovePoint(vec2 *pInoutPos, vec2 *pInoutVel, float Elasticity, int *pBounces) const;
 	void MoveBox(vec2 *pInoutPos, vec2 *pInoutVel, vec2 Size, float Elasticity, CCollisionData* pCollisionData = 0, bool *pDeath = 0) const;
 	bool TestBox(vec2 Pos, vec2 Size, int Flag=COLFLAG_SOLID) const;
@@ -129,7 +129,9 @@ public:
 	int IsEvilTeleport(int Index) const;
 	int IsCheckTeleport(int Index) const;
 	int IsCheckEvilTeleport(int Index) const;
+	int IsTCheckpoint(int Index) const;
 	int IsTeleportHook(int Index) const;
+	int IsTeleportWeapon(int Index) const;
 	int IsMover(int x, int y, int *pFlags) const;
 	bool IsThrough(int x, int y, int xoff, int yoff, vec2 pos0, vec2 pos1) const;
 	bool IsHookBlocker(int x, int y, vec2 pos0, vec2 pos1) const;
