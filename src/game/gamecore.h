@@ -167,8 +167,8 @@ public:
 
 	int m_Jumped;
 
-	int m_MaxJumps;
-	int m_JumpCount;
+	int m_Jumps;
+	int m_JumpedTotal;
 
 	int m_Direction;
 	int m_Angle;

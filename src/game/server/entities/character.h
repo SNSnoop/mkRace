@@ -80,6 +80,7 @@ public:
 	// mkRace
 	vec2 m_Intersection;
 	bool m_EndlessHook;
+	bool m_SuperJump;
 	bool m_Jetpack;
 	int m_TileIndex;
 	int m_TileFlags;
@@ -114,6 +115,7 @@ public:
 	int m_LastIndexTile;
 	int m_LastIndexFrontTile;
 	//CGameTeams* Teams();
+	bool m_LastRefillJumps;
 	int m_PainSoundTimer;
 	bool m_DeepFreeze;
 	int m_SwapRequest;

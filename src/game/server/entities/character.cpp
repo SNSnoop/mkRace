@@ -64,6 +64,7 @@ bool CCharacter::Spawn(CPlayer *pPlayer, vec2 Pos)
 	m_ActiveWeapon = WEAPON_GUN;
 	m_LastWeapon = WEAPON_HAMMER;
 	m_QueuedWeapon = -1;
+	m_LastRefillJumps = false;
 
 	m_pPlayer = pPlayer;
 	m_Pos = Pos;
@@ -86,12 +87,13 @@ bool CCharacter::Spawn(CPlayer *pPlayer, vec2 Pos)
 	m_EndlessHook = g_Config.m_SvEndlessHook;
 	m_SwapRequest = -1;
 	m_PrevPos = m_Pos;
+	m_SuperJump = false;
 	m_Jetpack = false;
 
 	m_LastIndexTile = 0;
 	m_LastIndexFrontTile = 0;
-	m_Core.m_MaxJumps = 2; //2 is default
-	m_Core.m_JumpCount = 0;
+	m_Core.m_Jumps = 2; //2 is default
+	m_Core.m_JumpedTotal = 0;
 
 	GameServer()->m_pController->OnCharacterSpawn(this);
 
@@ -997,6 +999,16 @@ void CCharacter::DDRacePostCoreTick()
 	if (m_DeepFreeze)
 		Freeze();
 
+	if (m_Core.m_Jumps == 0)
+		m_Core.m_Jumped = 3;
+	else if (m_Core.m_Jumps == 1 && m_Core.m_Jumped > 0)
+		m_Core.m_Jumped = 3;
+	else if (m_Core.m_JumpedTotal < m_Core.m_Jumps - 1 && m_Core.m_Jumped > 1)
+		m_Core.m_Jumped = 1;
+
+	if (m_SuperJump && m_Core.m_Jumped > 1)
+		m_Core.m_Jumped = 1;
+
 	int CurrentIndex = GameServer()->Collision()->GetMapIndex(m_Pos);
 	HandleSkippableTiles(CurrentIndex);
 
@@ -1058,6 +1070,12 @@ void CCharacter::HandleTiles(int Index)
 	m_TileSIndexT = (GameServer()->Collision()->m_pSwitchers && GameServer()->Collision()->m_pSwitchers[GameServer()->Collision()->GetDTileNumber(MapIndexT)].m_Status[Team()])? GameServer()->Collision()->GetDTileIndex(MapIndexT) : 0;
 	m_TileSFlagsT = (GameServer()->Collision()->m_pSwitchers && GameServer()->Collision()->m_pSwitchers[GameServer()->Collision()->GetDTileNumber(MapIndexT)].m_Status[Team()])? GameServer()->Collision()->GetDTileFlags(MapIndexT) : 0;
 
+	if (Index < 0)
+	{
+		m_LastRefillJumps = false;
+		return;
+	}
+
 	// stopper
 	if(((m_TileIndex == TILE_STOP && m_TileFlags == ROTATION_270) || (m_TileIndexL == TILE_STOP && m_TileFlagsL == ROTATION_270) || (m_TileIndexL == TILE_STOPS && (m_TileFlagsL == ROTATION_90 || m_TileFlagsL ==ROTATION_270)) || (m_TileIndexL == TILE_STOPA) || (m_TileFIndex == TILE_STOP && m_TileFFlags == ROTATION_270) || (m_TileFIndexL == TILE_STOP && m_TileFFlagsL == ROTATION_270) || (m_TileFIndexL == TILE_STOPS && (m_TileFFlagsL == ROTATION_90 || m_TileFFlagsL == ROTATION_270)) || (m_TileFIndexL == TILE_STOPA) || (m_TileSIndex == TILE_STOP && m_TileSFlags == ROTATION_270) || (m_TileSIndexL == TILE_STOP && m_TileSFlagsL == ROTATION_270) || (m_TileSIndexL == TILE_STOPS && (m_TileSFlagsL == ROTATION_90 || m_TileSFlagsL == ROTATION_270)) || (m_TileSIndexL == TILE_STOPA)) && m_Core.m_Vel.x > 0)
 	{
@@ -1087,6 +1105,7 @@ void CCharacter::HandleTiles(int Index)
 				m_Core.m_Pos = m_PrevPos;
 		m_Core.m_Vel.y = 0;
 		m_Core.m_Jumped = 0;
+		m_Core.m_JumpedTotal = 0;
 	}
 	
 	// handle switch tiles
@@ -1129,6 +1148,21 @@ void CCharacter::HandleTiles(int Index)
 		if(GameServer()->Collision()->GetSwitchNumber(MapIndex) == 0 || GameServer()->Collision()->m_pSwitchers[GameServer()->Collision()->GetSwitchNumber(MapIndex)].m_Status[Team()])
 			m_DeepFreeze = false;
 	}
+	else if (GameServer()->Collision()->IsSwitch(MapIndex) == TILE_JUMP)
+	{
+		int newJumps = GameServer()->Collision()->GetSwitchDelay(MapIndex);
+
+		if (newJumps != m_Core.m_Jumps)
+		{
+			char aBuf[256];
+			if (newJumps == 1)
+				str_format(aBuf, sizeof(aBuf), "You can jump %d time", newJumps);
+			else
+				str_format(aBuf, sizeof(aBuf), "You can jump %d times", newJumps);
+			GameServer()->SendChat(-1, CHAT_ALL, m_pPlayer->GetCID(), aBuf);
+			m_Core.m_Jumps = newJumps;
+		}
+	}
 	
 	// freeze
 	if(((m_TileIndex == TILE_FREEZE) || (m_TileFIndex == TILE_FREEZE)) && !m_DeepFreeze)
@@ -1166,6 +1200,18 @@ void CCharacter::HandleTiles(int Index)
 		m_Jetpack = false;
 	}
 
+	// unlimited air jumps
+	if (((m_TileIndex == TILE_SUPER_START) || (m_TileFIndex == TILE_SUPER_START)) && !m_SuperJump)
+	{
+		GameServer()->SendChat(-1, CHAT_ALL, GetPlayer()->GetCID(), "You have unlimited air jumps");
+		m_SuperJump = true;
+	}
+	else if (((m_TileIndex == TILE_SUPER_END) || (m_TileFIndex == TILE_SUPER_END)) && m_SuperJump)
+	{
+		GameServer()->SendChat(-1, CHAT_ALL, GetPlayer()->GetCID(), "You don't have unlimited air jumps");
+		m_SuperJump = false;
+	}
+
 	// walljump
 	if ((m_TileIndex == TILE_WALLJUMP) || (m_TileFIndex == TILE_WALLJUMP))
 	{
@@ -1176,31 +1222,43 @@ void CCharacter::HandleTiles(int Index)
 		}
 	}
 
+	// refill jumps
+	if (((m_TileIndex == TILE_REFILL_JUMPS) || (m_TileFIndex == TILE_REFILL_JUMPS)) && !m_LastRefillJumps)
+	{
+		m_Core.m_JumpedTotal = 0;
+		m_Core.m_Jumped = 0;
+		m_LastRefillJumps = true;
+	}
+	if ((m_TileIndex != TILE_REFILL_JUMPS) && (m_TileFIndex != TILE_REFILL_JUMPS))
+	{
+		m_LastRefillJumps = false;
+	}
+
 	if(g_Config.m_SvXXLDDRace)
 	{
-		if ((m_TileIndex == TILE_JUMPS_DEFAULT || m_TileFIndex == TILE_JUMPS_DEFAULT) && m_Core.m_MaxJumps != 2)
+		if ((m_TileIndex == TILE_JUMPS_DEFAULT || m_TileFIndex == TILE_JUMPS_DEFAULT) && m_Core.m_Jumps != 2)
 		{
-			m_Core.m_MaxJumps = 2; //default
+			m_Core.m_Jumps = 2; //default
 			GameServer()->SendChat(-1, CHAT_ALL, GetPlayer()->GetCID(), "Jumps reseted");
 		}
 		if (m_TileIndex == TILE_JUMPS_ADD || m_TileFIndex == TILE_JUMPS_ADD)
 		{
 			if (m_LastIndexTile == TILE_JUMPS_ADD || m_LastIndexFrontTile == TILE_JUMPS_ADD)
 				return;
-			m_Core.m_MaxJumps++; //add a jump
+			m_Core.m_Jumps++; //add a jump
 			char aBuf[256];
-			str_format(aBuf, sizeof(aBuf), "Jumps: %d", m_Core.m_MaxJumps);
+			str_format(aBuf, sizeof(aBuf), "Jumps: %d", m_Core.m_Jumps);
 			GameServer()->SendChat(-1, CHAT_ALL, GetPlayer()->GetCID(), aBuf);
 		}
 		if (m_TileIndex == TILE_JUMPS_REMOVE || m_TileFIndex == TILE_JUMPS_REMOVE)
 		{
 			if (m_LastIndexTile == TILE_JUMPS_REMOVE || m_LastIndexFrontTile == TILE_JUMPS_REMOVE)
 				return;
-			if (m_Core.m_MaxJumps > 0)
+			if (m_Core.m_Jumps > 0)
 			{
-				m_Core.m_MaxJumps--; //remove a jump
+				m_Core.m_Jumps--; //remove a jump
 				char aBuf[256];
-				str_format(aBuf, sizeof(aBuf), "Jumps: %d", m_Core.m_MaxJumps);
+				str_format(aBuf, sizeof(aBuf), "Jumps: %d", m_Core.m_Jumps);
 				GameServer()->SendChat(-1, CHAT_ALL, GetPlayer()->GetCID(), aBuf);
 			}
 		}
@@ -1327,14 +1385,14 @@ void CCharacter::HandleSkippableTiles(int Index)
 
 void CCharacter::HandleJumps()
 {
-	if (m_Core.m_Jumped > 1 && m_Core.m_MaxJumps > m_Core.m_JumpCount + 2)
+	if (m_Core.m_Jumped > 1 && m_Core.m_Jumps > m_Core.m_JumpedTotal + 2)
 	{
 		m_Core.m_Jumped = 1;
-		m_Core.m_JumpCount++;
+		m_Core.m_JumpedTotal++;
 	}
-	else if (m_Core.m_MaxJumps == 1)
+	else if (m_Core.m_Jumps == 1)
 		m_Core.m_Jumped = 2; //1 Jump
-	else if (m_Core.m_MaxJumps == 0)
+	else if (m_Core.m_Jumps == 0)
 		m_Core.m_Jumped = 1; //0 Jumps
 }
 
