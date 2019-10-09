@@ -24,6 +24,7 @@ CDragger::CDragger(CGameWorld *pGameWorld, vec2 Pos, float Strength, bool NW,
 	m_NW = NW;
 	m_CatchedTeam = CatchedTeam;
 	GameWorld()->InsertEntity(this);
+	m_Target = NULL;
 
 	for (int i = 0; i < MAX_CLIENTS; i++)
 	{
