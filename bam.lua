@@ -24,7 +24,7 @@ content_src_dir = "datasrc/"
 function Python(name)
 	if family == "windows" then
 		-- Python is usually registered for .py files in Windows
-		return str_replace(name, "/", "\\")
+		--return str_replace(name, "/", "\\")
 	end
 	return "python " .. name
 end
@@ -80,6 +80,7 @@ end
 function GenerateCommonSettings(settings, conf, arch, compiler)
 	if compiler == "gcc" or compiler == "clang" then
 		settings.cc.flags:Add("-Wall", "-fno-exceptions")
+		settings.link.flags:Add("-fno-exceptions")
 	end
 
 	-- Compile zlib if needed
@@ -393,8 +394,8 @@ function BuildContent(settings, arch, conf)
 		end
 		-- dependencies
 		dl = Python("scripts/download.py")
-		AddJob("other/sdl/include/SDL.h", "Downloading SDL2", dl .. " sdl")
-		AddJob("other/freetype/include/ft2build.h", "Downloading freetype", dl .. " freetype")
+		AddJob({"other/sdl/include/SDL.h", "other/sdl/windows/lib" .. _arch .. "/SDL2.dll"}, "Downloading SDL2", dl .. " sdl")
+		AddJob({"other/freetype/include/ft2build.h", "other/freetype/windows/lib" .. _arch .. "/freetype.dll"}, "Downloading freetype", dl .. " freetype")
 		table.insert(content, CopyFile(settings.link.Output(settings, "") .. "/SDL2.dll", "other/sdl/windows/lib" .. _arch .. "/SDL2.dll"))
 		table.insert(content, CopyFile(settings.link.Output(settings, "") .. "/freetype.dll", "other/freetype/windows/lib" .. _arch .. "/freetype.dll"))
 		AddDependency(settings.link.Output(settings, "") .. "/SDL2.dll", "other/sdl/include/SDL.h")
@@ -424,10 +425,15 @@ function GenerateSettings(conf, arch, builddir, compiler)
 		settings.debug = 1
 		settings.optimize = 0
 		settings.cc.defines:Add("CONF_DEBUG")
+                                settings.cc.flags:Add("-fno-exceptions", "-Og", "-fsanitize=undefined", "-fno-rtti")
+		                settings.link.flags:Add("-fno-exceptions", "-Og", "-fsanitize=undefined", "", "-fno-rtti", "-static-libgcc", "-static-libstdc++")
+
 	else
 		settings.debug = 0
 		settings.optimize = 1
 		settings.cc.defines:Add("CONF_RELEASE")
+                settings.cc.flags:Add("-O3", "-s", "-fvisibility=hidden", "-flto", "-fno-rtti")
+		settings.link.flags:Add("-O3", "-s", "-fvisibility=hidden", "-flto", "-fno-rtti")
 	end
 	
 	-- Generate object files in {builddir}/objs/

@@ -17,6 +17,18 @@ else()
   message(FATAL_ERROR "Couldn't parse version from src/game/version.h")
 endif()
 
+if(POLICY CMP0072)
+  cmake_policy(SET CMP0072 OLD)
+endif()
+
+if(POLICY CMP0091)
+  cmake_policy(SET CMP0091 NEW)
+endif()
+
+if(POLICY CMP0092)
+  cmake_policy(SET CMP0092 NEW)
+endif()
+
 if(POLICY CMP0048)
   cmake_policy(SET CMP0048 NEW)
   project(teeworlds VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH})
@@ -74,7 +86,7 @@ set(OpenGL_GL_PREFERENCE LEGACY)
 
 # Set the default build type to Release
 if(NOT(CMAKE_BUILD_TYPE))
-  if(DEV)
+  if(NOT(DEV))
     set(CMAKE_BUILD_TYPE Release)
   else()
     set(CMAKE_BUILD_TYPE Debug)
@@ -440,7 +452,12 @@ if(NOT(GTEST_FOUND) AND DOWNLOAD_GTEST)
           # `/w` disables all warnings. This is needed because `gtest` enables
           # `/WX` (equivalent of `-Werror`) for some reason, breaking builds
           # when MSVS adds new warnings.
-          target_compile_options(${target} PRIVATE $<$<NOT:${DBG}>:/MT> $<${DBG}:/MTd> /w)
+          target_compile_options(${target} PRIVATE /w)
+          if(POLICY CMP0091)
+            set_property(TARGET ${target} PROPERTY MSVC_RUNTIME_LIBRARY MultiThreaded$<${DBG}:Debug>)
+          else()
+            target_compile_options(${target} PRIVATE $<$<NOT:${DBG}>:/MT> $<${DBG}:/MTd>)
+          endif()
         endforeach()
       endif()
 
@@ -464,7 +481,11 @@ set_src(DEP_MD5_SRC GLOB src/engine/external/md5 md5.c md5.h)
 add_library(md5 EXCLUDE_FROM_ALL OBJECT ${DEP_MD5_SRC})
 
 list(APPEND TARGETS_DEP json md5)
-set(DEP_MD5 $<TARGET_OBJECTS:json> $<TARGET_OBJECTS:md5>)
+set(DEP_JSON $<TARGET_OBJECTS:json>)
+set(DEP_MD5)
+if(NOT CRYPTO_FOUND)
+  set(DEP_MD5 $<TARGET_OBJECTS:md5>)
+endif()
 
 ########################################################################
 # DATA
@@ -961,48 +982,126 @@ set(EXPECTED_DATA
   maps/lms1.map
   maps/readme.txt
   particles.png
+  race_flag.png
+  skins/beaver.json
   skins/bluekitty.json
   skins/bluestripe.json
+  skins/body/bat.png
   skins/body/bear.png
+  skins/body/beaver.png
+  skins/body/dog.png
+  skins/body/force.png
+  skins/body/fox.png
+  skins/body/hippo.png
   skins/body/kitty.png
+  skins/body/koala.png
+  skins/body/monkey.png
+  skins/body/mouse.png
+  skins/body/piglet.png
+  skins/body/raccoon.png
+  skins/body/spiky.png
   skins/body/standard.png
   skins/body/x_ninja.png
   skins/bot.png
   skins/brownbear.json
+  skins/bumbler.json
   skins/cammo.json
   skins/cammostripes.json
+  skins/cavebat.json
   skins/decoration/hair.png
   skins/decoration/twinbopp.png
+  skins/decoration/twinmello.png
+  skins/decoration/twinpen.png
   skins/decoration/unibop.png
+  skins/decoration/unimelo.png
+  skins/decoration/unipento.png
   skins/default.json
+  skins/eyes/colorable.png
+  skins/eyes/negative.png
   skins/eyes/standard.png
   skins/eyes/standardreal.png
   skins/eyes/x_ninja.png
   skins/feet/standard.png
+  skins/force.json
+  skins/fox.json
+  skins/greycoon.json
+  skins/greyfox.json
   skins/hands/standard.png
+  skins/hippo.json
   skins/koala.json
+  skins/limedog.json
   skins/limekitty.json
   skins/marking/bear.png
+  skins/marking/belly1.png
+  skins/marking/belly2.png
+  skins/marking/blush.png
+  skins/marking/bug.png
   skins/marking/cammo1.png
   skins/marking/cammo2.png
   skins/marking/cammostripes.png
+  skins/marking/coonfluff.png
   skins/marking/donny.png
+  skins/marking/downdony.png
   skins/marking/duodonny.png
+  skins/marking/fox.png
+  skins/marking/hipbel.png
+  skins/marking/lowcross.png
+  skins/marking/lowpaint.png
+  skins/marking/marksman.png
+  skins/marking/mice.png
+  skins/marking/mixture1.png
+  skins/marking/mixture2.png
+  skins/marking/monkey.png
+  skins/marking/panda1.png
+  skins/marking/panda2.png
+  skins/marking/purelove.png
   skins/marking/saddo.png
+  skins/marking/setisu.png
+  skins/marking/sidemarks.png
+  skins/marking/singu.png
   skins/marking/stripe.png
+  skins/marking/striped.png
   skins/marking/stripes.png
+  skins/marking/stripes2.png
+  skins/marking/thunder.png
+  skins/marking/tiger1.png
+  skins/marking/tiger2.png
   skins/marking/toptri.png
+  skins/marking/triangular.png
+  skins/marking/tricircular.png
+  skins/marking/tripledon.png
+  skins/marking/tritri.png
+  skins/marking/twinbelly.png
+  skins/marking/twincross.png
   skins/marking/twintri.png
   skins/marking/uppy.png
   skins/marking/warpaint.png
+  skins/marking/warstripes.png
   skins/marking/whisker.png
+  skins/marking/wildpaint.png
+  skins/marking/wildpatch.png
+  skins/marking/yinyang.png
+  skins/monkey.json
+  skins/paintgre.json
+  skins/pandabear.json
+  skins/panther.json
+  skins/pento.json
+  skins/piggy.json
   skins/pinky.json
+  skins/raccoon.json
   skins/redbopp.json
   skins/redstripe.json
   skins/saddo.json
+  skins/setisu.json
+  skins/snowti.json
+  skins/spiky.json
+  skins/swardy.json
+  skins/tiger.json
+  skins/tooxy.json
   skins/toptri.json
   skins/twinbop.json
   skins/twintri.json
+  skins/warmouse.json
   skins/warpaint.json
   skins/x_ninja.json
   skins/xmas_hat.png
@@ -1017,6 +1116,7 @@ set(EXPECTED_DATA
   ui/gametypes/lms.png
   ui/gametypes/lts.png
   ui/gametypes/mod.png
+  ui/gametypes/race.png
   ui/gametypes/tdm.png
   ui/gui_buttons.png
   ui/gui_cursor.png
@@ -1024,11 +1124,13 @@ set(EXPECTED_DATA
   ui/gui_logo.png
   ui/icons/arrows.png
   ui/icons/browse.png
+  ui/icons/browser.png
   ui/icons/chat_whisper.png
   ui/icons/friend.png
   ui/icons/level.png
   ui/icons/menu.png
   ui/icons/sidebar.png
+  ui/icons/timer_clock.png
   ui/icons/tools.png
   ui/menuimages/demos.png
   ui/menuimages/editor.png
@@ -1044,6 +1146,9 @@ set(EXPECTED_DATA
   ui/themes/jungle_day.map
   ui/themes/jungle_night.map
   ui/themes/none.png
+  ui/themes/winter.png
+  ui/themes/winter_day.map
+  ui/themes/winter_night.map
 )
 
 if(NOT EXISTS ${PROJECT_SOURCE_DIR}/datasrc/languages/index.json)
@@ -1156,6 +1261,7 @@ set_src(BASE GLOB_RECURSE src/base
   detect.h
   hash.c
   hash.h
+  hash_bundled.c
   hash_ctxt.h
   hash_libtomcrypt.c
   hash_openssl.c
@@ -1176,10 +1282,10 @@ set_src(ENGINE_INTERFACE GLOB src/engine
   client.h
   config.h
   console.h
+  contacts.h
   demo.h
   editor.h
   engine.h
-  friends.h
   graphics.h
   input.h
   kernel.h
@@ -1243,7 +1349,7 @@ set_src(ENGINE_SHARED GLOB src/engine/shared
   snapshot.h
   storage.cpp
 )
-set(ENGINE_GENERATED_SHARED src/generated/protocol.cpp src/generated/protocol.h)
+set(ENGINE_GENERATED_SHARED src/generated/nethash.cpp src/generated/protocol.cpp src/generated/protocol.h)
 set_src(GAME_SHARED GLOB src/game
   collision.cpp
   collision.h
@@ -1265,7 +1371,7 @@ set(GAME_GENERATED_SHARED
   src/generated/protocol.h
 )
 
-set(DEPS ${DEP_MD5} ${ZLIB_DEP})
+set(DEPS ${DEP_JSON} ${DEP_MD5} ${ZLIB_DEP})
 
 # Libraries
 set(LIBS ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES} ${CRYPTO_LIBRARIES} ${PLATFORM_LIBS})
@@ -1287,8 +1393,8 @@ if(CLIENT)
     backend_sdl.h
     client.cpp
     client.h
-    friends.cpp
-    friends.h
+    contacts.cpp
+    contacts.h
     graphics_threaded.cpp
     graphics_threaded.h
     input.cpp
@@ -1337,10 +1443,10 @@ if(CLIENT)
     components/flow.h
     components/hud.cpp
     components/hud.h
+    components/infomessages.cpp
+    components/infomessages.h
     components/items.cpp
     components/items.h
-    components/killmessages.cpp
-    components/killmessages.h
     components/mapimages.cpp
     components/mapimages.h
     components/maplayers.cpp
@@ -1843,9 +1949,9 @@ if(CLIENT AND (DMGTOOLS_FOUND OR HDIUTIL))
     COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/other/icons/${TARGET_CLIENT}.icns ${DMG_TMPDIR}/${TARGET_CLIENT}.app/Contents/Resources/
     COMMAND ${CMAKE_COMMAND} -E copy bundle/client/Info.plist ${PROJECT_SOURCE_DIR}/other/bundle/client/PkgInfo ${DMG_TMPDIR}/${TARGET_CLIENT}.app/Contents/
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${TARGET_CLIENT}> ${DMG_TMPDIR}/${TARGET_CLIENT}.app/Contents/MacOS/
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_SOURCE_DIR}/other/sdl/mac/lib64/SDL2.framework ${DMG_TMPDIR}/${TARGET_CLIENT}.app/Contents/Frameworks/SDL2.framework
-    COMMAND ${CMAKE_COMMAND} -E copy ${FREETYPE_LIBRARY} ${DMG_TMPDIR}/${TARGET_CLIENT}.app/Contents/Frameworks/
-    COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/scripts/darwin_change_dylib.py change --tools ${CMAKE_INSTALL_NAME_TOOL} ${CMAKE_OTOOL} ${DMG_TMPDIR}/${TARGET_CLIENT}.app/Contents/MacOS/${TARGET_CLIENT} SDL2 @executable_path/../Frameworks/SDL2.framework/SDL2
+    COMMAND ${CMAKE_COMMAND} -E copy ${SDL2_LIBRARY} ${DMG_TMPDIR}/${TARGET_CLIENT}.app/Contents/Frameworks/libSDL2-2.0.0.dylib
+    COMMAND ${CMAKE_COMMAND} -E copy ${FREETYPE_LIBRARY} ${DMG_TMPDIR}/${TARGET_CLIENT}.app/Contents/Frameworks/libfreetype.6.dylib
+    COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/scripts/darwin_change_dylib.py change --tools ${CMAKE_INSTALL_NAME_TOOL} ${CMAKE_OTOOL} ${DMG_TMPDIR}/${TARGET_CLIENT}.app/Contents/MacOS/${TARGET_CLIENT} SDL2 @executable_path/../Frameworks/libSDL2-2.0.0.dylib
     COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/scripts/darwin_change_dylib.py change --tools ${CMAKE_INSTALL_NAME_TOOL} ${CMAKE_OTOOL} ${DMG_TMPDIR}/${TARGET_CLIENT}.app/Contents/MacOS/${TARGET_CLIENT} libfreetype @executable_path/../Frameworks/libfreetype.6.dylib
 
     # SERVER
@@ -1957,7 +2063,11 @@ set(TARGETS ${TARGETS_OWN} ${TARGETS_DEP})
 
 foreach(target ${TARGETS})
   if(MSVC)
-    target_compile_options(${target} PRIVATE $<$<NOT:${DBG}>:/MT> $<${DBG}:/MTd>) # Use static CRT
+    if(POLICY CMP0091)
+      set_property(TARGET ${target} PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<${DBG}:Debug>")
+    else()
+      target_compile_options(${target} PRIVATE $<$<NOT:${DBG}>:/MT> $<${DBG}:/MTd>)
+    endif()
     target_compile_options(${target} PRIVATE /MP) # Use multiple cores
     target_compile_options(${target} PRIVATE /EHsc) # Only catch C++ exceptions with catch.
     target_compile_options(${target} PRIVATE /GS) # Protect the stack pointer.
@@ -1995,6 +2105,7 @@ endforeach()
 
 foreach(target ${TARGETS_OWN})
   if(MSVC)
+    target_compile_options(${target} PRIVATE /W3)
     target_compile_options(${target} PRIVATE /wd4244) # Possible loss of data (float -> int, int -> float, etc.).
     target_compile_options(${target} PRIVATE /wd4267) # Possible loss of data (size_t - int on win64).
     target_compile_options(${target} PRIVATE /wd4800) # Implicit conversion of int to bool.
