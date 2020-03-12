@@ -50,7 +50,7 @@ void ToggleSpecPause(IConsole::IResult *pResult, void *pUserData, int PauseType)
 
 void CGameContext::ConToggleSpec(IConsole::IResult *pResult, void *pUserData)
 {
-	ToggleSpecPause(pResult, pUserData, g_Config.m_SvPauseable ? CPlayer::PAUSE_SPEC : CPlayer::PAUSE_PAUSED);
+	ToggleSpecPause(pResult, pUserData, ((CGameContext *)pUserData)->Config()->m_SvPauseable ? CPlayer::PAUSE_SPEC : CPlayer::PAUSE_PAUSED);
 }
 
 void CGameContext::ConTogglePause(IConsole::IResult *pResult, void *pUserData)
@@ -94,7 +94,7 @@ void CGameContext::ConSetEyeEmote(IConsole::IResult *pResult,
 void CGameContext::ConEyeEmote(IConsole::IResult *pResult, void *pUserData, int Emote, int Duration)
 {
 	CGameContext *pSelf = (CGameContext *) pUserData;
-	if (g_Config.m_SvEmotionalTees == -1)
+	if (pSelf->Config()->m_SvEmotionalTees == -1)
 	{
 		pSelf->m_pChatConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "emote",
 				"Emotes are disabled.");
@@ -105,7 +105,7 @@ void CGameContext::ConEyeEmote(IConsole::IResult *pResult, void *pUserData, int 
 	if (!pPlayer)
 		return;
 
-	if(pPlayer->m_LastEyeEmote + g_Config.m_SvEyeEmoteChangeDelay * pSelf->Server()->TickSpeed() >= pSelf->Server()->Tick())
+	if(pPlayer->m_LastEyeEmote + pSelf->Config()->m_SvEyeEmoteChangeDelay * pSelf->Server()->TickSpeed() >= pSelf->Server()->Tick())
 			return;
 
 	pPlayer->m_DefEmote = Emote;
@@ -203,7 +203,7 @@ void CGameContext::ConMe(IConsole::IResult *pResult, void *pUserData)
 	str_format(aBuf, 256 + 24, "'%s' %s",
 			pSelf->Server()->ClientName(pResult->m_ClientID),
 			pResult->GetString(0));
-	if (g_Config.m_SvSlashMe)
+	if (pSelf->Config()->m_SvSlashMe)
 		pSelf->SendChat(-1, CHAT_ALL, -1, aBuf);
 	else
 		pSelf->m_pChatConsole->Print(
@@ -220,7 +220,7 @@ void CGameContext::ConSwap(IConsole::IResult *pResult, void *pUserData)
 	//if(!CheckClientID(ClientID))
 	//	return;
 
-	if(!g_Config.m_SvSwap)
+	if(!pSelf->Config()->m_SvSwap)
 	{
 		pSelf->m_pChatConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "swap", "Swap is not activated.");
 		return;
@@ -305,7 +305,7 @@ void CGameContext::ConDisconnectRescue(IConsole::IResult *pResult, void *pUserDa
 
 	int TargetID = pResult->m_ClientID;
 	
-	if(!g_Config.m_SvDisconnectRescue)
+	if(!pSelf->Config()->m_SvDisconnectRescue)
 		return;
 
 	CCharacter * pChar = pSelf->GetPlayerChar(TargetID);
@@ -327,7 +327,7 @@ void CGameContext::ConDisconnectRescue(IConsole::IResult *pResult, void *pUserDa
 
 	CPlayerRescueState& State = iterator->second;
 	CCharacter * m_SoloEnts[MAX_CLIENTS];
-	if (pSelf->m_World.FindEntities(State.m_Pos, g_Config.m_SvDisconnectRescueRadius, (CEntity**) m_SoloEnts, MAX_CLIENTS, CGameWorld::ENTTYPE_CHARACTER))
+	if (pSelf->m_World.FindEntities(State.m_Pos, pSelf->Config()->m_SvDisconnectRescueRadius, (CEntity**) m_SoloEnts, MAX_CLIENTS, CGameWorld::ENTTYPE_CHARACTER))
 	{
 		pSelf->m_pChatConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "dr", "Someone is standing in your place, you have to wait until they move away.");
 		return;

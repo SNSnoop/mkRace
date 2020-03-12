@@ -39,12 +39,12 @@ CCamera::CCamera()
 
 void CCamera::ConKeyZoomIn(IConsole::IResult *pResult, void *pUserData)
 {
-	((CCamera *)pUserData)->m_TempZoom = clamp(((CCamera *)pUserData)->m_TempZoom - 0.05f, (float)g_Config.m_ZoomMin / 100, (float)g_Config.m_ZoomMax / 100);
+	((CCamera *)pUserData)->m_TempZoom = clamp(((CCamera *)pUserData)->m_TempZoom - 0.05f, (float)gConfig->m_ZoomMin / 100, (float)gConfig->m_ZoomMax / 100);
 }
 
 void CCamera::ConKeyZoomOut(IConsole::IResult *pResult, void *pUserData)
 {
-	((CCamera *)pUserData)->m_TempZoom = clamp(((CCamera *)pUserData)->m_TempZoom + 0.05f, (float)g_Config.m_ZoomMin / 100, (float)g_Config.m_ZoomMax / 100);
+	((CCamera *)pUserData)->m_TempZoom = clamp(((CCamera *)pUserData)->m_TempZoom + 0.05f, (float)gConfig->m_ZoomMin / 100, (float)gConfig->m_ZoomMax / 100);
 }
 
 void CCamera::ConZoomReset(IConsole::IResult *pResult, void *pUserData)
@@ -56,8 +56,8 @@ void CCamera::OnRender()
 {
 	if(Client()->State() == IClient::STATE_ONLINE || Client()->State() == IClient::STATE_DEMOPLAYBACK)
 	{
-		if (!m_pClient->m_Snap.m_SpecInfo.m_Active && Client()->State() != IClient::STATE_DEMOPLAYBACK)	// check zoom
-			m_Zoom = 1.0f;
+		//if (!m_pClient->m_Snap.m_SpecInfo.m_Active && Client()->State() != IClient::STATE_DEMOPLAYBACK)	// check zoom
+			//m_Zoom = 1.0f;
 
 		if (m_TempZoom + 0.005f < m_Zoom)
 			m_Zoom -= 0.01f;
@@ -87,10 +87,10 @@ void CCamera::OnRender()
 			vec2 CameraOffset(0, 0);
 
 			float l = length(m_pClient->m_pControls->m_MousePos);
-			if(g_Config.m_ClDynamicCamera && l > 0.0001f) // make sure that this isn't 0
+			if(Config()->m_ClDynamicCamera && l > 0.0001f) // make sure that this isn't 0
 			{
-				float DeadZone = g_Config.m_ClMouseDeadzone;
-				float FollowFactor = g_Config.m_ClMouseFollowfactor/100.0f;
+				float DeadZone = Config()->m_ClMouseDeadzone;
+				float FollowFactor = Config()->m_ClMouseFollowfactor/100.0f;
 				float OffsetAmount = max(l-DeadZone, 0.0f) * FollowFactor;
 
 				CameraOffset = normalize(m_pClient->m_pControls->m_MousePos)*OffsetAmount;
@@ -107,22 +107,22 @@ void CCamera::OnRender()
 		m_Zoom = 0.7f;
 		static vec2 Dir = vec2(1.0f, 0.0f);
 
-		if(distance(m_Center, m_RotationCenter) <= (float)g_Config.m_ClRotationRadius+0.5f)
+		if(distance(m_Center, m_RotationCenter) <= (float)Config()->m_ClRotationRadius+0.5f)
 		{
 			// do little rotation
-			float RotPerTick = 360.0f/(float)g_Config.m_ClRotationSpeed * Client()->RenderFrameTime();
+			float RotPerTick = 360.0f/(float)Config()->m_ClRotationSpeed * Client()->RenderFrameTime();
 			Dir = rotate(Dir, RotPerTick);
-			m_Center = m_RotationCenter+Dir*(float)g_Config.m_ClRotationRadius;
+			m_Center = m_RotationCenter+Dir*(float)Config()->m_ClRotationRadius;
 		}
 		else
 		{
 			// positions for the animation
 			Dir = normalize(m_AnimationStartPos - m_RotationCenter);
-			vec2 TargetPos = m_RotationCenter + Dir * (float)g_Config.m_ClRotationRadius;
+			vec2 TargetPos = m_RotationCenter + Dir * (float)Config()->m_ClRotationRadius;
 			float Distance = distance(m_AnimationStartPos, TargetPos);
 
 			// move time
-			m_MoveTime += Client()->RenderFrameTime()*g_Config.m_ClCameraSpeed / 10.0f;
+			m_MoveTime += Client()->RenderFrameTime()*Config()->m_ClCameraSpeed / 10.0f;
 			float XVal = 1 - m_MoveTime;
 			XVal = pow(XVal, 7.0f);
 

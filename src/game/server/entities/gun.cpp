@@ -38,7 +38,7 @@ void CGun::Fire()
 	}
 
 	int Num = -1;
-	Num =  GameServer()->m_World.FindEntities(m_Pos, g_Config.m_SvPlasmaRange, (CEntity**)Ents, MAX_CLIENTS, CGameWorld::ENTTYPE_CHARACTER);
+	Num =  GameServer()->m_World.FindEntities(m_Pos, Config()->m_SvPlasmaRange, (CEntity**)Ents, MAX_CLIENTS, CGameWorld::ENTTYPE_CHARACTER);
 
 	for (int i = 0; i < Num; i++)
 	{
@@ -90,7 +90,7 @@ void CGun::Tick()
 		}
 		m_Pos+=m_Core;
 	}
-	if (m_LastFire + Server()->TickSpeed() / g_Config.m_SvPlasmaPerSec <= Server()->Tick())
+	if (m_LastFire + Server()->TickSpeed() / Config()->m_SvPlasmaPerSec <= Server()->Tick())
 		Fire();
 
 }
@@ -113,7 +113,7 @@ void CGun::Snap(int SnappingClient)
 	CNetObj_Laser *pObj = static_cast<CNetObj_Laser *>(Server()->SnapNewItem(NETOBJTYPE_LASER, GetID(), sizeof(CNetObj_Laser)));
 	if (!pObj)
 		return;
-	if(g_Config.m_SvPlasmaStyle)
+	if(Config()->m_SvPlasmaStyle)
 	{
 		if (m_Freeze && m_Explosive)
 		{
@@ -147,7 +147,7 @@ void CGun::Snap(int SnappingClient)
 	}
 	pObj->m_StartTick = m_EvalTick;
 
-	if(g_Config.m_SvPlasmaStyle)
+	if(Config()->m_SvPlasmaStyle)
 	{
 		CNetObj_Projectile *pObj2 = static_cast<CNetObj_Projectile *>(Server()->SnapNewItem(NETOBJTYPE_PROJECTILE, GetID(), sizeof(CNetObj_Projectile)));
 		if (!pObj2)

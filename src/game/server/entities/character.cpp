@@ -85,7 +85,7 @@ bool CCharacter::Spawn(CPlayer *pPlayer, vec2 Pos)
 	GameWorld()->InsertEntity(this);
 	m_Alive = true;
 	m_Frozen = false;
-	m_EndlessHook = g_Config.m_SvEndlessHook;
+	m_EndlessHook = Config()->m_SvEndlessHook;
 	m_TeleCheckpoint = 0;
 	m_SwapRequest = -1;
 	m_PrevPos = m_Pos;
@@ -396,7 +396,7 @@ void CCharacter::FireWeapon()
 
 	vec2 ProjStartPos = m_Pos+Direction*GetProximityRadius()*0.75f;
 
-	if(g_Config.m_Debug)
+	if(Config()->m_Debug)
 	{
 		char aBuf[256];
 		str_format(aBuf, sizeof(aBuf), "shot player='%d:%s' team=%d weapon=%d", m_pPlayer->GetCID(), Server()->ClientName(m_pPlayer->GetCID()), m_pPlayer->GetTeam(), m_ActiveWeapon);
@@ -421,7 +421,7 @@ void CCharacter::FireWeapon()
 			{
 				CCharacter *pTarget = apEnts[i];
 
-				if ((pTarget == this) || (g_Config.m_SvWallHammer && GameServer()->Collision()->IntersectLine(ProjStartPos, pTarget->m_Pos, NULL, NULL)))
+				if ((pTarget == this) || (Config()->m_SvWallHammer && GameServer()->Collision()->IntersectLine(ProjStartPos, pTarget->m_Pos, NULL, NULL)))
 					continue;
 
 				// set his velocity to fast upward (for now)
@@ -511,7 +511,7 @@ void CCharacter::FireWeapon()
 
 	m_AttackTick = Server()->Tick();
 
-	//if(m_aWeapons[m_ActiveWeapon].m_Ammo > 0 && !g_Config.m_SvInfiniteAmmo) // -1 == unlimited
+	//if(m_aWeapons[m_ActiveWeapon].m_Ammo > 0 && !Config()->m_SvInfiniteAmmo) // -1 == unlimited
 	//	m_aWeapons[m_ActiveWeapon].m_Ammo--;
 
 	if(!m_ReloadTimer)
@@ -656,7 +656,7 @@ void CCharacter::Tick()
 	m_Core.Tick(true);
 
 	// race
-	if(g_Config.m_SvRegen > 0 && (Server()->Tick()%g_Config.m_SvRegen) == 0)
+	if(Config()->m_SvRegen > 0 && (Server()->Tick()%Config()->m_SvRegen) == 0)
 	{
 		if(m_Health < 10)
 			m_Health++;
@@ -701,7 +701,7 @@ void CCharacter::TickDefered()
 	bool StuckAfterQuant = GameServer()->Collision()->TestBox(m_Core.m_Pos, vec2(28.0f, 28.0f));
 	m_Pos = m_Core.m_Pos;
 
-	if(m_Core.m_TriggeredEvents&COREEVENTFLAG_TELEPORTED && g_Config.m_SvStrip)
+	if(m_Core.m_TriggeredEvents&COREEVENTFLAG_TELEPORTED && Config()->m_SvStrip)
 	{
 		if(m_ActiveWeapon >= WEAPON_SHOTGUN)
 			m_ActiveWeapon = WEAPON_HAMMER;
@@ -822,7 +822,7 @@ void CCharacter::Die(int Killer, int Weapon)
 	CNetMsg_Sv_KillMsg Msg;
 	Msg.m_Victim = m_pPlayer->GetCID();
 	Msg.m_ModeSpecial = ModeSpecial;
-	for(int i = 0 ; i < Server()->MaxClients(); i++)
+	for(int i = 0 ; i < MAX_CLIENTS; i++)
 	{
 		if(!Server()->ClientIngame(i))
 			continue;
@@ -874,7 +874,7 @@ bool CCharacter::Freeze(int Seconds)
 
 bool CCharacter::Freeze()
 {
-	return Freeze(g_Config.m_SvFreezeDelay);
+	return Freeze(Config()->m_SvFreezeDelay);
 }
 
 void CCharacter::FreezeIndicator(unsigned Amount)
@@ -978,14 +978,14 @@ void CCharacter::Snap(int SnappingClient)
 	}
 
 	if(m_pPlayer->GetCID() == SnappingClient || SnappingClient == -1 ||
-		(!g_Config.m_SvStrictSpectateMode && m_pPlayer->GetCID() == GameServer()->m_apPlayers[SnappingClient]->GetSpectatorID()))
+		(!Config()->m_SvStrictSpectateMode && m_pPlayer->GetCID() == GameServer()->m_apPlayers[SnappingClient]->GetSpectatorID()))
 	{
 		pCharacter->m_Health = m_Health;
 		pCharacter->m_Armor = m_Armor;
 		if(m_ActiveWeapon == WEAPON_NINJA)
 			pCharacter->m_AmmoCount = m_Ninja.m_ActivationTick + g_pData->m_Weapons.m_Ninja.m_Duration * Server()->TickSpeed() / 1000;
 		else
-			pCharacter->m_AmmoCount =  m_FreezeTick + g_Config.m_SvFreezeDelay * Server()->TickSpeed();
+			pCharacter->m_AmmoCount =  m_FreezeTick + Config()->m_SvFreezeDelay * Server()->TickSpeed();
 	}
 
 	if(pCharacter->m_Emote == EMOTE_NORMAL)
@@ -1022,7 +1022,7 @@ void CCharacter::DDRaceTick()
 		if (m_FreezeTime == 1)
 			Unfreeze();
 	}
-	if (g_Config.m_SvXXLDDRace)
+	if (Config()->m_SvXXLDDRace)
 		HandleJumps();
 }
 
@@ -1304,7 +1304,7 @@ void CCharacter::HandleTiles(int Index)
 		m_LastRefillJumps = false;
 	}
 
-	if(g_Config.m_SvXXLDDRace)
+	if(Config()->m_SvXXLDDRace)
 	{
 		if ((m_TileIndex == TILE_JUMPS_DEFAULT || m_TileFIndex == TILE_JUMPS_DEFAULT) && m_Core.m_Jumps != 2)
 		{

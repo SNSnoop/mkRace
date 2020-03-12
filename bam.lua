@@ -204,7 +204,6 @@ function GenerateLinuxSettings(settings, conf, arch, compiler)
 	-- Client
 	settings.link.libs:Add("X11")
 	settings.link.libs:Add("GL")
-	settings.link.libs:Add("GLU")
 	BuildClient(settings)
 
 	-- Content
@@ -268,7 +267,6 @@ function GenerateWindowsSettings(settings, conf, target_arch, compiler)
 	settings.link.extrafiles:Add(icons.client)
 	settings.link.extrafiles:Add(manifests.client)
 	settings.link.libs:Add("opengl32")
-	settings.link.libs:Add("glu32")
 	settings.link.libs:Add("winmm")
 	BuildClient(settings)
 
@@ -394,8 +392,11 @@ function BuildContent(settings, arch, conf)
 		end
 		-- dependencies
 		dl = Python("scripts/download.py")
-		AddJob({"other/sdl/include/SDL.h", "other/sdl/windows/lib" .. _arch .. "/SDL2.dll"}, "Downloading SDL2", dl .. " sdl")
-		AddJob({"other/freetype/include/ft2build.h", "other/freetype/windows/lib" .. _arch .. "/freetype.dll"}, "Downloading freetype", dl .. " freetype")
+		AddJob({
+				"other/freetype/include/ft2build.h", "other/freetype/windows/lib" .. _arch .. "/freetype.dll",
+				"other/sdl/include/SDL.h", "other/sdl/windows/lib" .. _arch .. "/SDL2.dll"
+			}, "Downloading freetype and SDL2", dl .. " freetype sdl"
+		)
 		table.insert(content, CopyFile(settings.link.Output(settings, "") .. "/SDL2.dll", "other/sdl/windows/lib" .. _arch .. "/SDL2.dll"))
 		table.insert(content, CopyFile(settings.link.Output(settings, "") .. "/freetype.dll", "other/freetype/windows/lib" .. _arch .. "/freetype.dll"))
 		AddDependency(settings.link.Output(settings, "") .. "/SDL2.dll", "other/sdl/include/SDL.h")

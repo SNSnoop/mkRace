@@ -46,10 +46,10 @@ set(ORIGINAL_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
 set(OWN_CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 set(CMAKE_MODULE_PATH ${OWN_CMAKE_MODULE_PATH})
 
-if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-  set(TARGET_BITS "64")
-elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
+if(CMAKE_SIZEOF_VOID_P EQUAL 4)
   set(TARGET_BITS "32")
+else()
+  set(TARGET_BITS "64")
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
@@ -330,6 +330,11 @@ if(TARGET_OS AND TARGET_OS STREQUAL "mac")
   endif()
 
   find_program(HDIUTIL hdiutil)
+  if(HDIUTIL)
+    set(HDIUTIL_FOUND ON)
+  else()
+    set(HDIUTIL_FOUND OFF)
+  endif()
 endif()
 
 message(STATUS "******** Teeworlds ********")
@@ -389,7 +394,7 @@ endif()
 
 if(TARGET_OS STREQUAL "windows")
   set(PLATFORM_CLIENT)
-  set(PLATFORM_CLIENT_LIBS opengl32 glu32 winmm)
+  set(PLATFORM_CLIENT_LIBS opengl32 winmm)
   set(PLATFORM_LIBS ws2_32) # Windows sockets
 elseif(TARGET_OS STREQUAL "mac")
   find_library(CARBON Carbon)
@@ -405,7 +410,7 @@ else()
   set(PLATFORM_CLIENT)
   find_package(OpenGL)
   find_package(X11)
-  set(PLATFORM_CLIENT_LIBS ${OPENGL_gl_LIBRARY} ${OPENGL_glu_LIBRARY} ${X11_X11_LIB})
+  set(PLATFORM_CLIENT_LIBS ${OPENGL_gl_LIBRARY} ${X11_X11_LIB})
   set(PLATFORM_CLIENT_INCLUDE_DIRS ${OPENGL_INCLUDE_DIR} ${X11_X11_INCLUDE_PATH})
   if(TARGET_OS STREQUAL "linux")
     set(PLATFORM_LIBS rt) # clock_gettime for glibc < 2.17
@@ -879,6 +884,7 @@ set(EXPECTED_DATA
   editor/automap/desert_main.json
   editor/automap/grass_doodads.json
   editor/automap/grass_main.json
+  editor/automap/jungle_deathtiles.json
   editor/automap/jungle_main.json
   editor/automap/winter_main.json
   editor/background.png
@@ -1320,6 +1326,8 @@ set_src(ENGINE_SHARED GLOB src/engine/shared
   huffman.h
   jobs.cpp
   jobs.h
+  jsonwriter.cpp
+  jsonwriter.h
   kernel.cpp
   linereader.cpp
   linereader.h
@@ -1353,6 +1361,7 @@ set(ENGINE_GENERATED_SHARED src/generated/nethash.cpp src/generated/protocol.cpp
 set_src(GAME_SHARED GLOB src/game
   collision.cpp
   collision.h
+  commands.h
   gamecore.cpp
   gamecore.h
   layers.cpp
@@ -1457,7 +1466,9 @@ if(CLIENT)
     components/menus_callback.cpp
     components/menus_demo.cpp
     components/menus_ingame.cpp
+    components/menus_listbox.cpp
     components/menus_popups.cpp
+    components/menus_scrollregion.cpp
     components/menus_settings.cpp
     components/menus_start.cpp
     components/motd.cpp
@@ -1723,6 +1734,7 @@ if(GTEST_FOUND OR DOWNLOAD_GTEST)
     fs.cpp
     git_revision.cpp
     hash.cpp
+    jsonwriter.cpp
     storage.cpp
     str.cpp
     test.cpp

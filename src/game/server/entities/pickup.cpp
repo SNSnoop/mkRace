@@ -123,8 +123,8 @@ void CPickup::Tick()
 				pChr->GetPlayer()->GetCID(), Server()->ClientName(pChr->GetPlayer()->GetCID()), m_Type);
 			GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "game", aBuf);
 
-			if(g_Config.m_SvPickupRespawn > -1)
-				m_SpawnTick[ClientID] = Server()->Tick() + Server()->TickSpeed() * g_Config.m_SvPickupRespawn;
+			if(Config()->m_SvPickupRespawn > -1)
+				m_SpawnTick[ClientID] = Server()->Tick() + Server()->TickSpeed() * Config()->m_SvPickupRespawn;
 			else
 				m_SpawnTick[ClientID] = 1;
 		}

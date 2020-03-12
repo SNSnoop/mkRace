@@ -4,7 +4,7 @@
 #define GAME_SERVER_PLAYER_H
 
 #include "alloc.h"
-
+#include "engine/shared/config.h"
 
 enum
 {
@@ -144,6 +144,7 @@ private:
 	CCharacter *m_pCharacter;
 	CGameContext *m_pGameServer;
 
+	CConfig * Config() const { return gConfig; }
 	CGameContext *GameServer() const { return m_pGameServer; }
 	IServer *Server() const;
 

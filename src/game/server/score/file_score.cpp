@@ -187,7 +187,7 @@ void CFileScore::OnMapLoad()
 
 CFileScore::CPlayerScore *CFileScore::SearchScoreByID(int ID, int *pPosition)
 {
-	/*if(g_Config.m_SvScoreIP)
+	/*if(GameServer()->Config()->m_SvScoreIP)
 	{
 		char aIP[16];
 		Server()->GetClientAddr(ID, aIP, sizeof(aIP));
@@ -258,7 +258,7 @@ void CFileScore::OnPlayerInit(int ClientID, bool PrintRank)
 	if(pPlayer)
 	{
 		m_aPlayerData[ClientID].SetTime(pPlayer->m_Time, pPlayer->m_aCpTime);
-		if(g_Config.m_SvLoadBest)
+		if(GameServer()->Config()->m_SvLoadBest)
 			m_aPlayerData[ClientID].UpdateCurTime(pPlayer->m_Time);
 	}
 }
@@ -268,7 +268,7 @@ void CFileScore::OnPlayerFinish(int ClientID, int Time, int *pCpTime)
 	bool NewPlayerRecord = m_aPlayerData[ClientID].UpdateTime(Time, pCpTime);
 	UpdateRecord(Time);
 
-	/*if(NewRecord && g_Config.m_SvShowTimes)
+	/*if(NewRecord && GameServer()->Config()->m_SvShowTimes)
 		GameServer()->SendRecord(-1);*/
 
 	if(!NewPlayerRecord)
@@ -321,7 +321,7 @@ void CFileScore::ShowRank(int ClientID, const char *pName)
 
 	if(pScore && Pos > -1)
 	{
-		if(g_Config.m_SvShowTimes)
+		if(GameServer()->Config()->m_SvShowTimes)
 			To = -1;
 		char aTime[64];
 		IRace::FormatTimeLong(aTime, sizeof(aTime), pScore->m_Time);
@@ -352,7 +352,7 @@ void CFileScore::ShowRank(int ClientID)
 
 	if(pScore && Pos > -1)
 	{
-		if(g_Config.m_SvShowTimes)
+		if(GameServer()->Config()->m_SvShowTimes)
 			To = -1;
 		char aTime[64];
 		IRace::FormatTimeLong(aTime, sizeof(aTime), pScore->m_Time);
@@ -369,6 +369,6 @@ void CFileScore::ShowRank(int ClientID)
 
 bool CFileScore::CheckSpamProtection(int ClientID)
 {
-	return g_Config.m_SvSpamprotection && m_LastPrintInChat[ClientID] &&
+	return GameServer()->Config()->m_SvSpamprotection && m_LastPrintInChat[ClientID] &&
 		m_LastPrintInChat[ClientID]+Server()->TickSpeed()*3 > Server()->Tick();
 }

@@ -10,15 +10,15 @@
 #include <engine/storage.h>
 
 #include <game/layers.h>
+#include <game/collision.h>
 #include <game/client/gameclient.h>
 #include <game/client/component.h>
 #include <game/client/render.h>
 
-#include <game/client/components/camera.h>
-#include <game/client/components/mapimages.h>
-#include <game/collision.h>
-#include <game/client/components/auto_tile.h>
-
+#include "auto_tile.h"
+#include "camera.h"
+#include "mapimages.h"
+#include "menus.h"
 #include "maplayers.h"
 
 CMapLayers::CMapLayers(int t)
@@ -47,37 +47,44 @@ void CMapLayers::OnStateChange(int NewState, int OldState)
 
 void CMapLayers::LoadBackgroundMap()
 {
-	if(!g_Config.m_ClShowMenuMap)
+	if(!Config()->m_ClShowMenuMap)
 		return;
 
 	int HourOfTheDay = time_houroftheday();
 	char aBuf[128];
 	// check for the appropriate day/night map
-	str_format(aBuf, sizeof(aBuf), "ui/themes/%s_%s.map", g_Config.m_ClMenuMap, (HourOfTheDay >= 6 && HourOfTheDay < 18) ? "day" : "night");
+	str_format(aBuf, sizeof(aBuf), "ui/themes/%s_%s.map", Config()->m_ClMenuMap, (HourOfTheDay >= 6 && HourOfTheDay < 18) ? "day" : "night");
 	if(!m_pMenuMap->Load(aBuf, m_pClient->Storage()))
 	{
 		// fall back on generic map
-		str_format(aBuf, sizeof(aBuf), "ui/themes/%s.map", g_Config.m_ClMenuMap);
+		str_format(aBuf, sizeof(aBuf), "ui/themes/%s.map", Config()->m_ClMenuMap);
 		if(!m_pMenuMap->Load(aBuf, m_pClient->Storage()))
 		{
 			// fall back on day/night alternative map
-			str_format(aBuf, sizeof(aBuf), "ui/themes/%s_%s.map", g_Config.m_ClMenuMap, (HourOfTheDay >= 6 && HourOfTheDay < 18) ? "night" : "day");
+			str_format(aBuf, sizeof(aBuf), "ui/themes/%s_%s.map", Config()->m_ClMenuMap, (HourOfTheDay >= 6 && HourOfTheDay < 18) ? "night" : "day");
 			if(!m_pMenuMap->Load(aBuf, m_pClient->Storage()))
 			{
-				str_format(aBuf, sizeof(aBuf), "map '%s' not found", g_Config.m_ClMenuMap);
+				str_format(aBuf, sizeof(aBuf), "map '%s' not found", Config()->m_ClMenuMap);
 				Console()->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "client", aBuf);
 				return;
 			}
 		}
 	}
 
-	str_format(aBuf, sizeof(aBuf), "loaded map '%s'", g_Config.m_ClMenuMap);
+	str_format(aBuf, sizeof(aBuf), "loaded map '%s'", Config()->m_ClMenuMap);
 	Console()->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "client", aBuf);
 
 	m_pMenuLayers->Init(Kernel(), m_pMenuMap);
 	RenderTools()->RenderTilemapGenerateSkip(m_pMenuLayers);
 	m_pClient->m_pMapimages->OnMenuMapLoad(m_pMenuMap);
 	LoadEnvPoints(m_pMenuLayers, m_lEnvPointsMenu);
+}
+
+int CMapLayers::GetInitAmount() const
+{
+	if(m_Type == TYPE_BACKGROUND)
+		return 15;
+	return 0;
 }
 
 void CMapLayers::OnInit()
@@ -400,7 +407,7 @@ void CMapLayers::OnRender()
 			continue;
 		}
 
-		if(!g_Config.m_GfxNoclip && pGroup->m_Version >= 2 && pGroup->m_UseClipping)
+		if(!Config()->m_GfxNoclip && pGroup->m_Version >= 2 && pGroup->m_UseClipping)
 		{
 			// set clipping
 			float Points[4];
@@ -493,7 +500,7 @@ void CMapLayers::OnRender()
 				continue;
 
 			// skip rendering if detail layers is not wanted
-			if(!(pLayer->m_Flags&LAYERFLAG_DETAIL && !g_Config.m_GfxHighDetail && !IsEntityLayer && (Client()->State() == IClient::STATE_ONLINE || Client()->State() == IClient::STATE_DEMOPLAYBACK)))
+			if(!(pLayer->m_Flags&LAYERFLAG_DETAIL && !Config()->m_GfxHighDetail && !IsGameLayer && (Client()->State() == IClient::STATE_ONLINE || Client()->State() == IClient::STATE_DEMOPLAYBACK)))
 			{
 				if(pLayer->m_Type == LAYERTYPE_TILES && Input()->KeyIsPressed(KEY_LCTRL) && Input()->KeyIsPressed(KEY_LSHIFT) && Input()->KeyPress(KEY_KP_0))
 				{
@@ -517,8 +524,8 @@ void CMapLayers::OnRender()
 				}
 
 				if(Render && !IsEntityLayer
-					&& !(g_Config.m_GfxGameTiles >= 2 && !g_Config.m_GfxKeepBackgroundAlways)
-					&& !(g_Config.m_GfxGameTiles >= 2 && m_Type != TYPE_BACKGROUND && g_Config.m_GfxKeepBackgroundAlways)
+					&& !(Config()->m_GfxGameTiles >= 2 && !Config()->m_GfxKeepBackgroundAlways)
+					&& !(Config()->m_GfxGameTiles >= 2 && m_Type != TYPE_BACKGROUND && Config()->m_GfxKeepBackgroundAlways)
 					)
 				{
 				// if(!IsGameLayer)
@@ -572,11 +579,11 @@ void CMapLayers::OnRender()
 				}
 			}
 		}
-		if(!g_Config.m_GfxNoclip)
+		if(!Config()->m_GfxNoclip)
 			Graphics()->ClipDisable();
 	}
 
-	if (g_Config.m_GfxGameTiles && FrontLayerId != -1)
+	if (Config()->m_GfxGameTiles && FrontLayerId != -1)
 	{ 
 		RenderTools()->MapScreenToGroup(Center.x, Center.y, pGameGroup, m_pClient->m_pCamera->GetZoom());
 		CMapItemLayer *pLayer = pLayers->GetLayer(pGameGroup->m_StartLayer + FrontLayerId);
@@ -585,15 +592,15 @@ void CMapLayers::OnRender()
 		CTile *pTiles;
 		vec4 Color;
 		{
-			if (g_Config.m_GfxGameTiles == 1)
+			if (Config()->m_GfxGameTiles == 1)
 				Color = vec4(pTMap->m_Color.r / 255.0f, pTMap->m_Color.g / 255.0f, pTMap->m_Color.b / 255.0f, pTMap->m_Color.a*0.8f / 255.0f); // bit of alpha
-			else if (g_Config.m_GfxGameTiles == 2)
+			else if (Config()->m_GfxGameTiles == 2)
 				Color = vec4(pTMap->m_Color.r / 255.0f, pTMap->m_Color.g / 255.0f, pTMap->m_Color.b / 255.0f, pTMap->m_Color.a*0.9f / 255.0f); // lil bit of alpha
 			else
 				Color = vec4(pTMap->m_Color.r / 255.0f, pTMap->m_Color.g / 255.0f, pTMap->m_Color.b / 255.0f, pTMap->m_Color.a / 255.0f);
 		}
 		// the game tiles now
-		Graphics()->TextureSet(g_Config.m_GfxGameTiles == 3 ? m_pClient->m_pMapimages->GetAutoEntities() : m_pClient->m_pMapimages->GetEntities());
+		Graphics()->TextureSet(Config()->m_GfxGameTiles == 3 ? m_pClient->m_pMapimages->GetAutoEntities() : m_pClient->m_pMapimages->GetEntities());
 		Graphics()->BlendNone();
 		pTiles = (CTile *)pLayers->Map()->GetData(DataIndex);
 		RenderTools()->RenderTilemap(pTiles, pTMap->m_Width, pTMap->m_Height, 32.0f, Color, TILERENDERFLAG_EXTEND | LAYERRENDERFLAG_OPAQUE,
@@ -603,7 +610,7 @@ void CMapLayers::OnRender()
 			EnvelopeEval, this, pTMap->m_ColorEnv, pTMap->m_ColorEnvOffset);
 	}
 
-	if (g_Config.m_GfxGameTiles && TeleLayerId != -1)
+	if (Config()->m_GfxGameTiles && TeleLayerId != -1)
 	{
 		RenderTools()->MapScreenToGroup(Center.x, Center.y, pGameGroup, m_pClient->m_pCamera->GetZoom());
 		CMapItemLayer *pLayer = pLayers->GetLayer(pGameGroup->m_StartLayer + TeleLayerId);
@@ -613,9 +620,9 @@ void CMapLayers::OnRender()
 		Graphics()->BlendNone();
 		vec4 Color;
 		{
-			if (g_Config.m_GfxGameTiles == 1)
+			if (Config()->m_GfxGameTiles == 1)
 				Color = vec4(pTMap->m_Color.r / 255.0f, pTMap->m_Color.g / 255.0f, pTMap->m_Color.b / 255.0f, pTMap->m_Color.a*0.8f / 255.0f); // bit of alpha
-			else if (g_Config.m_GfxGameTiles == 2)
+			else if (Config()->m_GfxGameTiles == 2)
 				Color = vec4(pTMap->m_Color.r / 255.0f, pTMap->m_Color.g / 255.0f, pTMap->m_Color.b / 255.0f, pTMap->m_Color.a*0.9f / 255.0f); // lil bit of alpha
 			else
 				Color = vec4(pTMap->m_Color.r / 255.0f, pTMap->m_Color.g / 255.0f, pTMap->m_Color.b / 255.0f, pTMap->m_Color.a / 255.0f);
@@ -627,7 +634,7 @@ void CMapLayers::OnRender()
 		RenderTools()->RenderTeleOverlay(pTeleTiles, pTMap->m_Width, pTMap->m_Height, 32.0f);
 	}
 
-	/*if (g_Config.m_GfxGameTiles && SpeedupLayerId != -1)
+	/*if (Config()->m_GfxGameTiles && SpeedupLayerId != -1)
 	{
 		RenderTools()->MapScreenToGroup(Center.x, Center.y, pGameGroup, m_pClient->m_pCamera->GetZoom());
 		CMapItemLayer *pLayer = pLayers->GetLayer(pGameGroup->m_StartLayer + SpeedupLayerId);
@@ -636,15 +643,15 @@ void CMapLayers::OnRender()
 		CTile *pTiles;
 		vec4 Color;
 		{
-			if (g_Config.m_GfxGameTiles == 1)
+			if (Config()->m_GfxGameTiles == 1)
 				Color = vec4(pTMap->m_Color.r / 255.0f, pTMap->m_Color.g / 255.0f, pTMap->m_Color.b / 255.0f, pTMap->m_Color.a*0.8f / 255.0f); // bit of alpha
-			else if (g_Config.m_GfxGameTiles == 2)
+			else if (Config()->m_GfxGameTiles == 2)
 				Color = vec4(pTMap->m_Color.r / 255.0f, pTMap->m_Color.g / 255.0f, pTMap->m_Color.b / 255.0f, pTMap->m_Color.a*0.9f / 255.0f); // lil bit of alpha
 			else
 				Color = vec4(pTMap->m_Color.r / 255.0f, pTMap->m_Color.g / 255.0f, pTMap->m_Color.b / 255.0f, pTMap->m_Color.a / 255.0f);
 		}
 		// the game tiles now
-		Graphics()->TextureSet(g_Config.m_GfxGameTiles == 3 ? m_pClient->m_pMapimages->GetAutoEntities() : m_pClient->m_pMapimages->GetEntities());
+		Graphics()->TextureSet(Config()->m_GfxGameTiles == 3 ? m_pClient->m_pMapimages->GetAutoEntities() : m_pClient->m_pMapimages->GetEntities());
 		Graphics()->BlendNone();
 		pTiles = (CTile *)pLayers->Map()->GetData(DataIndex);
 		RenderTools()->RenderTilemap(pTiles, pTMap->m_Width, pTMap->m_Height, 32.0f, Color, TILERENDERFLAG_EXTEND | LAYERRENDERFLAG_OPAQUE,
@@ -654,7 +661,7 @@ void CMapLayers::OnRender()
 			EnvelopeEval, this, pTMap->m_ColorEnv, pTMap->m_ColorEnvOffset);
 	}*/
 
-	if (g_Config.m_GfxGameTiles && SwitchLayerId != -1)
+	if (Config()->m_GfxGameTiles && SwitchLayerId != -1)
 	{
 		RenderTools()->MapScreenToGroup(Center.x, Center.y, pGameGroup, m_pClient->m_pCamera->GetZoom());
 		CMapItemLayer *pLayer = pLayers->GetLayer(pGameGroup->m_StartLayer + SwitchLayerId);
@@ -663,15 +670,15 @@ void CMapLayers::OnRender()
 		CTile *pTiles;
 		vec4 Color;
 		{
-			if (g_Config.m_GfxGameTiles == 1)
+			if (Config()->m_GfxGameTiles == 1)
 				Color = vec4(pTMap->m_Color.r / 255.0f, pTMap->m_Color.g / 255.0f, pTMap->m_Color.b / 255.0f, pTMap->m_Color.a*0.8f / 255.0f); // bit of alpha
-			else if (g_Config.m_GfxGameTiles == 2)
+			else if (Config()->m_GfxGameTiles == 2)
 				Color = vec4(pTMap->m_Color.r / 255.0f, pTMap->m_Color.g / 255.0f, pTMap->m_Color.b / 255.0f, pTMap->m_Color.a*0.9f / 255.0f); // lil bit of alpha
 			else
 				Color = vec4(pTMap->m_Color.r / 255.0f, pTMap->m_Color.g / 255.0f, pTMap->m_Color.b / 255.0f, pTMap->m_Color.a / 255.0f);
 		}
 		// the game tiles now
-		Graphics()->TextureSet(g_Config.m_GfxGameTiles == 3 ? m_pClient->m_pMapimages->GetAutoEntities() : m_pClient->m_pMapimages->GetEntities());
+		Graphics()->TextureSet(Config()->m_GfxGameTiles == 3 ? m_pClient->m_pMapimages->GetAutoEntities() : m_pClient->m_pMapimages->GetEntities());
 		Graphics()->BlendNone();
 		pTiles = (CTile *)pLayers->Map()->GetData(DataIndex);
 
@@ -699,7 +706,7 @@ void CMapLayers::OnRender()
 	}
 
 	// render automap/game tiles
-	if(g_Config.m_GfxGameTiles && (GameLayerId != -1))
+	if(Config()->m_GfxGameTiles && (GameLayerId != -1))
 	{
 		RenderTools()->MapScreenToGroup(Center.x, Center.y, pGameGroup, m_pClient->m_pCamera->GetZoom());
 
@@ -716,15 +723,15 @@ void CMapLayers::OnRender()
 		CTile *pTiles;
 		vec4 Color;
 		{
-			if(g_Config.m_GfxGameTiles == 1)
+			if(Config()->m_GfxGameTiles == 1)
 				Color = vec4(pTMap->m_Color.r/255.0f, pTMap->m_Color.g/255.0f, pTMap->m_Color.b/255.0f, pTMap->m_Color.a*0.8f/255.0f); // bit of alpha
-			else if(g_Config.m_GfxGameTiles == 2)
+			else if(Config()->m_GfxGameTiles == 2)
 				Color = vec4(pTMap->m_Color.r/255.0f, pTMap->m_Color.g/255.0f, pTMap->m_Color.b/255.0f, pTMap->m_Color.a*0.9f/255.0f); // lil bit of alpha
 			else
 				Color = vec4(pTMap->m_Color.r/255.0f, pTMap->m_Color.g/255.0f, pTMap->m_Color.b/255.0f, pTMap->m_Color.a/255.0f);
 		}
 
-		if(g_Config.m_GfxGameTiles == 3 && m_Type != TYPE_BACKGROUND)
+		if(Config()->m_GfxGameTiles == 3 && m_Type != TYPE_BACKGROUND)
 		{
 			dbg_assert(pLayers && (bool)pLayers->Map(), "no map");
 			if(m_AutolayerUpdate) // need to update auto ressources
@@ -735,7 +742,7 @@ void CMapLayers::OnRender()
 			}
 
 			// render doodads first
-			if(g_Config.m_GfxAutomapDoodads && m_pAutoDoodads)
+			if(Config()->m_GfxAutomapDoodads && m_pAutoDoodads)
 			{
 				pTiles = m_pAutoDoodads;
 				Graphics()->TextureSet(m_pClient->m_pMapimages->GetAutoDoodads());
@@ -761,7 +768,7 @@ void CMapLayers::OnRender()
 		}
 
 		// the game tiles now
-		Graphics()->TextureSet(g_Config.m_GfxGameTiles == 3 ? m_pClient->m_pMapimages->GetAutoEntities() : m_pClient->m_pMapimages->GetEntities());
+		Graphics()->TextureSet(Config()->m_GfxGameTiles == 3 ? m_pClient->m_pMapimages->GetAutoEntities() : m_pClient->m_pMapimages->GetEntities());
 		Graphics()->BlendNone();
 		pTiles = (CTile *)pLayers->Map()->GetData(DataIndex);
 		RenderTools()->RenderTilemap(pTiles, pTMap->m_Width, pTMap->m_Height, 32.0f, Color, TILERENDERFLAG_EXTEND|LAYERRENDERFLAG_OPAQUE,
@@ -829,7 +836,7 @@ void CMapLayers::OnRender()
 		}*/
 	}
 
-	if(!g_Config.m_GfxNoclip)
+	if(!Config()->m_GfxNoclip)
 		Graphics()->ClipDisable();
 
 	// reset the screen like it was before
@@ -860,9 +867,9 @@ void CMapLayers::LoadPainters(CLayers *pLayers)
 	delete(m_pAutoDoodads);
 
 	char aBuf[64];
-	str_format(aBuf, sizeof(aBuf), "%s_main", g_Config.m_GfxAutomapLayer);
+	str_format(aBuf, sizeof(aBuf), "%s_main", Config()->m_GfxAutomapLayer);
 	LoadAutomapperRules(pLayers, aBuf);
-	str_format(aBuf, sizeof(aBuf), "%s_doodads", g_Config.m_GfxAutomapLayer);
+	str_format(aBuf, sizeof(aBuf), "%s_doodads", Config()->m_GfxAutomapLayer);
 	LoadAutomapperRules(pLayers, aBuf);
 	
 	// fill m_pAutoTiles
@@ -949,7 +956,7 @@ void CMapLayers::LoadAutomapperRules(CLayers *pLayers, const char* pName)
 
 	// clean up
 	json_value_free(pJsonData);
-	// if(m_pTilesetPainter && g_Config.m_Debug)
+	// if(m_pTilesetPainter && Config()->m_Debug)
 	// {
 	// 	str_format(aBuf, sizeof(aBuf),"loaded %s.json (%s)", pName, IAutoMapper::GetTypeName(m_pTilesetPainter->GetType()));
 	// 	Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "editor", aBuf);
@@ -977,11 +984,11 @@ void CMapLayers::Con_Automap(IConsole::IResult *pResult, void *pUserData)
 	CMapLayers *pSelf = (CMapLayers *)pUserData;
 	if(!pResult->GetString(0)[0])
 	{
-		g_Config.m_GfxGameTiles = 0;
+		pSelf->Config()->m_GfxGameTiles = 0;
 		return;
 	}
-	g_Config.m_GfxGameTiles = 3;
-	str_copy(g_Config.m_GfxAutomapLayer, pResult->GetString(0), sizeof(g_Config.m_GfxAutomapLayer));
+	pSelf->Config()->m_GfxGameTiles = 3;
+	str_copy(pSelf->Config()->m_GfxAutomapLayer, pResult->GetString(0), sizeof(pSelf->Config()->m_GfxAutomapLayer));
 	pSelf->ReloadPainters();
 }
 
