@@ -70,8 +70,9 @@ bool CCharacter::Spawn(CPlayer *pPlayer, vec2 Pos)
 	m_Pos = Pos;
 
 	m_Core.Reset();
-	m_Core.Init(&GameServer()->m_World.m_Core, GameServer()->Collision(), &GameServer()->Collision()->m_TeleOuts);
+	m_Core.Init(&GameWorld()->m_Core, GameServer()->Collision());
 	m_Core.m_Pos = m_Pos;
+	GameWorld()->m_Core.m_apCharacters[m_pPlayer->GetCID()] = &m_Core;
 	GameWorld()->m_Core.m_apCharacters[m_pPlayer->GetCID()] = &m_Core;
 
 	m_Core.m_Race.m_pfnPhysicsStepCallback = CCharacter::OnPhysicsStep;
@@ -224,7 +225,7 @@ void CCharacter::HandleNinja()
 {
 	if(m_ActiveWeapon != WEAPON_NINJA)
 		return;
-	
+
 	if ((Server()->Tick() - m_Ninja.m_ActivationTick) > (g_pData->m_Weapons.m_Ninja.m_Duration * Server()->TickSpeed() / 1000))
 	{
 		// time's up, return
@@ -254,11 +255,48 @@ void CCharacter::HandleNinja()
 	{
 		// Set velocity
 		m_Core.m_Vel = m_Ninja.m_ActivationDir * g_pData->m_Weapons.m_Ninja.m_Velocity;
-		//vec2 OldPos = m_Pos;
+		vec2 OldPos = m_Pos;
 		GameServer()->Collision()->MoveBox(&m_Core.m_Pos, &m_Core.m_Vel, vec2(GetProximityRadius(), GetProximityRadius()), 0.f);
 
 		// reset velocity so the client doesn't predict stuff
 		m_Core.m_Vel = vec2(0.f, 0.f);
+
+		// check if we Hit anything along the way
+		{
+			CCharacter *aEnts[MAX_CLIENTS];
+			vec2 Dir = m_Pos - OldPos;
+			float Radius = GetProximityRadius() * 2.0f;
+			vec2 Center = OldPos + Dir * 0.5f;
+			int Num = GameWorld()->FindEntities(Center, Radius, (CEntity**)aEnts, MAX_CLIENTS, CGameWorld::ENTTYPE_CHARACTER);
+
+			for (int i = 0; i < Num; ++i)
+			{
+				if (aEnts[i] == this)
+					continue;
+
+				// make sure we haven't Hit this object before
+				bool bAlreadyHit = false;
+				for (int j = 0; j < m_NumObjectsHit; j++)
+				{
+					if (m_apHitObjects[j] == aEnts[i])
+						bAlreadyHit = true;
+				}
+				if (bAlreadyHit)
+					continue;
+
+				// check so we are sufficiently close
+				if (distance(aEnts[i]->m_Pos, m_Pos) > (GetProximityRadius() * 2.0f))
+					continue;
+
+				// Hit a player, give him damage and stuffs...
+				GameServer()->CreateSound(aEnts[i]->m_Pos, SOUND_NINJA_HIT);
+				// set his velocity to fast upward (for now)
+				if(m_NumObjectsHit < 10)
+					m_apHitObjects[m_NumObjectsHit++] = aEnts[i];
+
+				aEnts[i]->TakeDamage(vec2(0, -10.0f), m_Ninja.m_ActivationDir*-1, g_pData->m_Weapons.m_Ninja.m_pBase->m_Damage, m_pPlayer->GetCID(), WEAPON_NINJA);
+			}
+		}
 
 		return;
 	}
@@ -343,7 +381,7 @@ void CCharacter::FireWeapon()
 
 	if(!WillFire)
 		return;
-	
+
 	// check if in freeze (allow gun to be fired anyways)
 	if(!m_aWeapons[m_ActiveWeapon].m_Ammo && m_ActiveWeapon != WEAPON_GUN)
 	{
@@ -485,7 +523,7 @@ void CCharacter::HandleWeapons()
 	//ninja
 	HandleNinja();
 	HandleJetpack();
-	
+
 	if(m_PainSoundTimer > 0)
 		m_PainSoundTimer--;
 
@@ -568,7 +606,7 @@ void CCharacter::OnPredictedInput(CNetObj_PlayerInput *pNewInput)
 	//mem_copy(&m_SavedInput, pNewInput, sizeof(m_SavedInput));
 	mem_copy(&m_Input, pNewInput, sizeof(m_Input));
 	if(m_FreezeTime > 0 || m_FreezeTime == -1)
-		mem_copy(&m_FreezedInput, pNewInput, sizeof(m_Input)); 
+		mem_copy(&m_FreezedInput, pNewInput, sizeof(m_Input));
 
 	m_NumInputs++;
 
@@ -611,9 +649,9 @@ void CCharacter::Tick()
 {
 	if (m_Paused)
 		return;
-	
+
 	DDRaceTick();
-	
+
 	m_Core.m_Input = m_Input;
 	m_Core.Tick(true);
 
@@ -634,7 +672,7 @@ void CCharacter::Tick()
 
 	// handle Weapons
 	HandleWeapons();
-	
+
 	DDRacePostCoreTick();
 
 	m_PrevPos = m_Core.m_Pos;
@@ -830,7 +868,7 @@ bool CCharacter::Freeze(int Seconds)
 		//m_Ninja.m_ActivationTick = m_FreezeTick;
 		return true;
 	}
-	
+
 	return false;
 }
 
@@ -916,7 +954,7 @@ void CCharacter::Snap(int SnappingClient)
 	pCharacter->m_AttackTick = m_AttackTick;
 
 	pCharacter->m_Direction = m_Input.m_Direction;
-	
+
 	// change eyes and use ninja graphic if player is freeze
 	if (m_DeepFreeze)
 	{
@@ -1139,7 +1177,7 @@ void CCharacter::HandleTiles(int Index)
 		m_Core.m_Jumped = 0;
 		m_Core.m_JumpedTotal = 0;
 	}
-	
+
 	// handle switch tiles
 	if(GameServer()->Collision()->IsSwitch(MapIndex) == TILE_SWITCHOPEN && GameServer()->Collision()->GetSwitchNumber(MapIndex) > 0)
 	{
@@ -1195,7 +1233,7 @@ void CCharacter::HandleTiles(int Index)
 			m_Core.m_Jumps = newJumps;
 		}
 	}
-	
+
 	// freeze
 	if(((m_TileIndex == TILE_FREEZE) || (m_TileFIndex == TILE_FREEZE)) && !m_DeepFreeze)
 		Freeze();

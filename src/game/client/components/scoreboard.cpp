@@ -38,7 +38,7 @@ void CScoreboard::ConKeyScoreboard(IConsole::IResult *pResult, void *pUserData)
 		pScoreboard->m_Active = false;
 	}
 	else if(!pScoreboard->m_Active)
-		pScoreboard->m_Activate = true;	
+		pScoreboard->m_Activate = true;
 }
 
 void CScoreboard::OnReset()

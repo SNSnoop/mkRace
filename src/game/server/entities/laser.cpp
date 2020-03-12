@@ -28,9 +28,9 @@ bool CLaser::HitCharacter(vec2 From, vec2 To)
 	CCharacter *pHit;
 	//for m_Bounces==0 avoid owner. player can shoot himself
 	if(m_Bounces)
-		 pHit = GameServer()->m_World.IntersectCharacter(m_Pos, To, 0.f, At, 0);
-	else 
-		pHit = GameServer()->m_World.IntersectCharacter(m_Pos, To, 0.f, At, pOwnerChar);
+		pHit = GameWorld()->IntersectCharacter(m_Pos, To, 0.f, At, 0);
+	else
+		pHit = GameWorld()->IntersectCharacter(m_Pos, To, 0.f, At, pOwnerChar);
 
 
 	if(!pHit)
