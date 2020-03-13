@@ -285,7 +285,8 @@ int CNetServer::Send(CNetChunk *pChunk, TOKEN Token)
 		int Flags = 0;
 		dbg_assert(pChunk->m_ClientID >= 0, "errornous client id");
 		dbg_assert(pChunk->m_ClientID < NET_MAX_CLIENTS, "errornous client id");
-		dbg_assert(m_aSlots[pChunk->m_ClientID].m_Connection.State() != NET_CONNSTATE_OFFLINE, "errornous client id");
+		if(m_aSlots[pChunk->m_ClientID].m_Connection.State() == NET_CONNSTATE_OFFLINE)
+			return 0; // dummy
 
 		if(pChunk->m_Flags&NETSENDFLAG_VITAL)
 			Flags = NET_CHUNKFLAG_VITAL;
