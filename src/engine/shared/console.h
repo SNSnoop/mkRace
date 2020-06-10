@@ -124,12 +124,14 @@ class CConsole : public IConsole
 	int ParseArgs(CResult *pResult, const char *pFormat);
 
 	/*
-	this function will set pFormat to the next parameter (i,s,r,v,?) it contains and
-	return the parameter; descriptions in brackets like [file] will be skipped;
-	returns '\0' if there is no next parameter; expects pFormat to point at a
-	parameter
+	This function will set pFormat to the next parameter (i,s,r,v,?) it contains and
+	pNext to the command.
+	Descriptions in brackets like [file] will be skipped.
+	Returns true on failure.
+	Expects pFormat to point at a parameter.
 	*/
-	char NextParam(const char *&pFormat);
+	bool NextParam(char *pNext, const char *&pFormat);
+
 	class CExecutionQueue
 	{
 		CHeap m_Queue;
@@ -138,8 +140,7 @@ class CConsole : public IConsole
 		struct CQueueEntry
 		{
 			CQueueEntry *m_pNext;
-			FCommandCallback m_pfnCommandCallback;
-			void *m_pCommandUserData;
+			CCommand *m_pCommand;
 			CResult m_Result;
 		} *m_pFirst, *m_pLast;
 
@@ -195,6 +196,7 @@ public:
 	virtual void Chain(const char *pName, FChainCommandCallback pfnChainFunc, void *pUser);
 	virtual void StoreCommands(bool Store);
 
+	virtual bool ArgStringIsValid(const char *pFormat);
 	virtual bool LineIsValid(const char *pStr);
 	virtual void ExecuteLine(const char *pStr, int ClientID = -1, bool InterpretSemicolons = true);
 	virtual void ExecuteLineFlag(const char *pStr, int FlagMask);
@@ -207,7 +209,7 @@ public:
 	virtual int ParseCommandArgs(const char *pArgs, const char *pFormat, FCommandCallback pfnCallback, void *pContext);
 
 	void SetAccessLevel(int AccessLevel) { m_AccessLevel = clamp(AccessLevel, (int)(ACCESS_LEVEL_ADMIN), (int)(ACCESS_LEVEL_MOD)); }
-	
+
 	// mkRace
 	void SetFlagMask(int FlagMask) { m_FlagMask = FlagMask; }
 };

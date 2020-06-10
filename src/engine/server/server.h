@@ -152,13 +152,11 @@ public:
 	IEngineMap *m_pMap;
 
 	int64 m_GameStartTime;
-	int m_RunServer;
-	int m_MapReload;
+	bool m_RunServer;
+	bool m_MapReload;
 	int m_RconClientID;
 	int m_RconAuthLevel;
 	int m_PrintCBIndex;
-
-	int64 m_Lastheartbeat;
 
 	// map
 	enum
@@ -254,10 +252,12 @@ public:
 
 	void PumpNetwork();
 
+	virtual void ChangeMap(const char *pMap);
 	const char *GetMapName();
 	int LoadMap(const char *pMapName);
 
 	void InitRegister(CNetServer *pNetServer, IEngineMasterServer *pMasterServer, CConfig *pConfig, IConsole *pConsole);
+	void InitInterfaces(CConfig *pConfig, IConsole *pConsole, IGameServer *pGameServer, IEngineMap *pMap, IStorage *pStorage);
 	int Run();
 
 	static int MapListEntryCallback(const char *pFilename, int IsDir, int DirType, void *pUser);
@@ -277,6 +277,7 @@ public:
 	static void ConchainModCommandUpdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConchainConsoleOutputLevelUpdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConchainRconPasswordSet(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
+	static void ConchainMapUpdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 
 	void RegisterCommands();
 

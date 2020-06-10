@@ -2323,6 +2323,10 @@ void str_timestamp(char *buffer, int buffer_size)
 #pragma GCC diagnostic pop
 #endif
 
+int str_span(const char *str, const char *set)
+{
+	return strcspn(str, set);
+}
 
 int mem_comp(const void *a, const void *b, int size)
 {
@@ -2332,7 +2336,8 @@ int mem_comp(const void *a, const void *b, int size)
 int mem_has_null(const void *block, unsigned size)
 {
 	const unsigned char *bytes = block;
-	for(unsigned i = 0; i < size; i++)
+	unsigned i;        
+	for(i = 0; i < size; i++)
 	{
 		if(bytes[i] == 0)
 		{
@@ -2363,7 +2368,7 @@ int str_utf8_is_whitespace(int code)
 {
 	// check if unicode is not empty
 	if(code > 0x20 && code != 0xA0 && code != 0x034F && (code < 0x2000 || code > 0x200F) && (code < 0x2028 || code > 0x202F) &&
-		(code < 0x205F || code > 0x2064) && (code < 0x206A || code > 0x206F) && (code < 0xFE00 || code > 0xFE0F) &&
+		(code < 0x205F || code > 0x2064) && (code < 0x206A || code > 0x206F) && code != 0x3000  && (code < 0xFE00 || code > 0xFE0F) &&
 		code != 0xFEFF && (code < 0xFFF9 || code > 0xFFFC))
 	{
 		return 0;

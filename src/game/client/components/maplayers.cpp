@@ -47,9 +47,6 @@ void CMapLayers::OnStateChange(int NewState, int OldState)
 
 void CMapLayers::LoadBackgroundMap()
 {
-	if(!Config()->m_ClShowMenuMap)
-		return;
-
 	int HourOfTheDay = time_houroftheday();
 	char aBuf[128];
 	// check for the appropriate day/night map
@@ -83,7 +80,7 @@ void CMapLayers::LoadBackgroundMap()
 int CMapLayers::GetInitAmount() const
 {
 	if(m_Type == TYPE_BACKGROUND)
-		return 15;
+		return 1 + (Config()->m_ClShowMenuMap ? 14 : 0);
 	return 0;
 }
 
@@ -93,8 +90,12 @@ void CMapLayers::OnInit()
 	{
 		m_pMenuLayers = new CLayers;
 		m_pMenuMap = CreateEngineMap();
-
-		LoadBackgroundMap();
+		m_pClient->m_pMenus->RenderLoading(1);
+		if(Config()->m_ClShowMenuMap)
+		{
+			LoadBackgroundMap();
+			m_pClient->m_pMenus->RenderLoading(14);
+		}
 	}
 
 	m_pEggTiles = 0;
@@ -508,7 +509,7 @@ void CMapLayers::OnRender()
 					CTile *pTiles = (CTile *)pLayers->Map()->GetData(pTMap->m_Data);
 					CServerInfo CurrentServerInfo;
 					Client()->GetServerInfo(&CurrentServerInfo);
-					char aFilename[256];
+					char aFilename[IO_MAX_PATH_LENGTH];
 					str_format(aFilename, sizeof(aFilename), "dumps/tilelayer_dump_%s-%d-%d-%dx%d.txt", CurrentServerInfo.m_aMap, g, l, pTMap->m_Width, pTMap->m_Height);
 					IOHANDLE File = Storage()->OpenFile(aFilename, IOFLAG_WRITE, IStorage::TYPE_SAVE);
 					if(File)
@@ -584,7 +585,7 @@ void CMapLayers::OnRender()
 	}
 
 	if (Config()->m_GfxGameTiles && FrontLayerId != -1)
-	{ 
+	{
 		RenderTools()->MapScreenToGroup(Center.x, Center.y, pGameGroup, m_pClient->m_pCamera->GetZoom());
 		CMapItemLayer *pLayer = pLayers->GetLayer(pGameGroup->m_StartLayer + FrontLayerId);
 		CMapItemLayerTilemap *pTMap = (CMapItemLayerTilemap *)pLayer;
@@ -717,7 +718,7 @@ void CMapLayers::OnRender()
 
 		//else if(TuneLayerId != -1)
 		//	pLayer = pLayers->GetLayer(pGameGroup->m_StartLayer+TuneLayerId);
-		
+
 		//dbg_assert(pLayer->m_Type == LAYERTYPE_TILES || pTMap->m_Image == -1, "not the game layer");
 
 		CTile *pTiles;
@@ -786,7 +787,7 @@ void CMapLayers::OnRender()
 				if(pLayer->m_Type != LAYERTYPE_TILES)
 					continue;
 				CMapItemLayerTilemap *pTilemap = reinterpret_cast<CMapItemLayerTilemap *>(pLayer);
-				
+
 				char aName[12];
 				IntsToStr(pTilemap->m_aName, sizeof(aName)/sizeof(int), aName);
 
@@ -871,7 +872,7 @@ void CMapLayers::LoadPainters(CLayers *pLayers)
 	LoadAutomapperRules(pLayers, aBuf);
 	str_format(aBuf, sizeof(aBuf), "%s_doodads", Config()->m_GfxAutomapLayer);
 	LoadAutomapperRules(pLayers, aBuf);
-	
+
 	// fill m_pAutoTiles
 	if(m_pTilesetPainter)
 	{
@@ -881,7 +882,7 @@ void CMapLayers::LoadPainters(CLayers *pLayers)
 		mem_copy(m_pAutoTiles, pTilesOriginal, sizeof(CTile) * pTMap->m_Width * pTMap->m_Height);
 
 		// cleanup game tiles from anything but hookable and unhookable
-		int MaxIndex = pTMap->m_Width * pTMap->m_Height;	
+		int MaxIndex = pTMap->m_Width * pTMap->m_Height;
 		for(int i = 0 ; i < MaxIndex; i++)
 		{
 			if(m_pAutoTiles[i].m_Index != CCollision::COLFLAG_SOLID && m_pAutoTiles[i].m_Index != (CCollision::COLFLAG_NOHOOK|CCollision::COLFLAG_SOLID)) // hookable and unhookable
@@ -1008,7 +1009,7 @@ void CMapLayers::BackgroundMapUpdate()
 	{
 		// unload map
 		m_pMenuMap->Unload();
-
-		LoadBackgroundMap();
+		if(Config()->m_ClShowMenuMap)
+			LoadBackgroundMap();
 	}
 }

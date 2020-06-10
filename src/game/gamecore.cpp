@@ -56,6 +56,8 @@ float VelocityRamp(float Value, float Start, float Range, float Curvature)
 	return 1.0f/powf(Curvature, (Value-Start)/Range);
 }
 
+const float CCharacterCore::PHYS_SIZE = 28.0f;
+
 void CCharacterCore::Init(CWorldCore *pWorld, CCollision *pCollision)
 {
 	m_pWorld = pWorld;
@@ -97,7 +99,6 @@ void CCharacterCore::Reset()
 
 void CCharacterCore::Tick(bool UseInput)
 {
-	float PhysSize = 28.0f;
 	int MapIndex = m_pCollision->GetPureMapIndex(m_Pos);
 	int MapIndexL = m_pCollision->GetPureMapIndex(vec2(m_Pos.x + (28/2)+4,m_Pos.y));
 	int MapIndexR = m_pCollision->GetPureMapIndex(vec2(m_Pos.x - (28/2)-4,m_Pos.y));
@@ -127,9 +128,9 @@ void CCharacterCore::Tick(bool UseInput)
 
 	// get ground state
 	bool Grounded = false;
-	if(m_pCollision->CheckPoint(m_Pos.x+PhysSize/2, m_Pos.y+PhysSize/2+5))
+	if(m_pCollision->CheckPoint(m_Pos.x+PHYS_SIZE/2, m_Pos.y+PHYS_SIZE/2+5))
 		Grounded = true;
-	if(m_pCollision->CheckPoint(m_Pos.x-PhysSize/2, m_Pos.y+PhysSize/2+5))
+	if(m_pCollision->CheckPoint(m_Pos.x-PHYS_SIZE/2, m_Pos.y+PHYS_SIZE/2+5))
 		Grounded = true;
 
 	vec2 TargetDirection = normalize(vec2(m_Input.m_TargetX, m_Input.m_TargetY));
@@ -176,7 +177,7 @@ void CCharacterCore::Tick(bool UseInput)
 			if(m_HookState == HOOK_IDLE)
 			{
 				m_HookState = HOOK_FLYING;
-				m_HookPos = m_Pos+TargetDirection*PhysSize*1.5f;
+				m_HookPos = m_Pos+TargetDirection*PHYS_SIZE*1.5f;
 				m_HookDir = TargetDirection;
 				m_HookedPlayer = -1;
 				m_HookTick = 0;
@@ -263,7 +264,7 @@ void CCharacterCore::Tick(bool UseInput)
 					continue;
 
 				vec2 ClosestPoint = closest_point_on_line(m_HookPos, NewPos, pCharCore->m_Pos);
-				if(distance(pCharCore->m_Pos, ClosestPoint) < PhysSize+2.0f)
+				if(distance(pCharCore->m_Pos, ClosestPoint) < PHYS_SIZE+2.0f)
 				{
 					if (m_HookedPlayer == -1 || distance(m_HookPos, pCharCore->m_Pos) < Distance)
 					{
@@ -289,7 +290,7 @@ void CCharacterCore::Tick(bool UseInput)
 				m_TriggeredEvents |= COREEVENTFLAG_HOOK_HIT_NOHOOK;
 				m_HookState = HOOK_RETRACT_START;
 			}
-			
+
 			if (GoingThroughTele && m_pTeleOuts && m_pTeleOuts->size() && (*m_pTeleOuts)[teleNr - 1].size())
 			{
 				m_TriggeredEvents = 0;
@@ -297,7 +298,7 @@ void CCharacterCore::Tick(bool UseInput)
 
 				m_NewHook = true;
 				int Num = (*m_pTeleOuts)[teleNr - 1].size();
-				m_HookPos = (*m_pTeleOuts)[teleNr - 1][(Num == 1) ? 0 : rand() % Num] + TargetDirection * PhysSize*1.5f;
+				m_HookPos = (*m_pTeleOuts)[teleNr - 1][(Num == 1) ? 0 : rand() % Num] + TargetDirection * PHYS_SIZE*1.5f;
 				m_HookDir = TargetDirection;
 				m_HookTeleBase = m_HookPos;
 			}
@@ -377,9 +378,9 @@ void CCharacterCore::Tick(bool UseInput)
 			// handle player <-> player collision
 			float Distance = distance(m_Pos, pCharCore->m_Pos);
 			vec2 Dir = normalize(m_Pos - pCharCore->m_Pos);
-			if(m_pWorld->m_Tuning.m_PlayerCollision && Distance < PhysSize*1.25f && Distance > 0.0f)
+			if(m_pWorld->m_Tuning.m_PlayerCollision && Distance < PHYS_SIZE*1.25f && Distance > 0.0f)
 			{
-				float a = (PhysSize*1.45f - Distance);
+				float a = (PHYS_SIZE*1.45f - Distance);
 				float Velocity = 0.5f;
 
 				// make sure that we don't add excess force by checking the
@@ -397,7 +398,7 @@ void CCharacterCore::Tick(bool UseInput)
 
 			if(pCharCore->m_HookedPlayer != -1 && m_pWorld->m_apCharacters[pCharCore->m_HookedPlayer] == this && m_pWorld->m_Tuning.m_PlayerHooking)
 			{
-				if(Distance > PhysSize * 1.50f) // TODO: fix tweakable variable
+				if(Distance > PHYS_SIZE * 1.50f) // TODO: fix tweakable variable
 				{
 					// add force to the hooked player
 					vec2 Temp = m_Vel;
@@ -442,7 +443,7 @@ void CCharacterCore::Tick(bool UseInput)
 			}
 			if(m_HookedPlayer == i && m_pWorld->m_Tuning.m_PlayerHooking)
 			{
-				if(Distance > PhysSize * 1.50f) // TODO: fix tweakable variable
+				if(Distance > PHYS_SIZE * 1.50f) // TODO: fix tweakable variable
 				{
 					// add a little bit force to the guy who has the grip
 					vec2 Temp;
@@ -494,7 +495,6 @@ void CCharacterCore::Move()
 	if(!m_pWorld)
 		return;
 
-	float PhysSize = 28.0f;
 	float RampValue = VelocityRamp(length(m_Vel)*50, m_pWorld->m_Tuning.m_VelrampStart, m_pWorld->m_Tuning.m_VelrampRange, m_pWorld->m_Tuning.m_VelrampCurvature);
 
 	m_Vel.x = m_Vel.x*RampValue;
@@ -502,7 +502,7 @@ void CCharacterCore::Move()
 	vec2 NewPos = m_Pos;
 	vec2 OldVel = m_Vel;
 	m_Race.m_Teleported = 0;
-	m_pCollision->MoveBox(&NewPos, &m_Vel, vec2(PhysSize, PhysSize), 0, &m_Race, &m_Death);
+	m_pCollision->MoveBox(&NewPos, &m_Vel, vec2(PHYS_SIZE, PHYS_SIZE), 0, &m_Race, &m_Death);
 
 	if(m_Race.m_Teleported)
 	{
@@ -541,7 +541,7 @@ void CCharacterCore::Move()
 				if(!pCharCore || pCharCore == this)
 					continue;
 				float D = distance(Pos, pCharCore->m_Pos);
-				if(D < PhysSize && D >= 0.0f)
+				if(D < PHYS_SIZE && D >= 0.0f)
 				{
 					if(a > 0.0f)
 						m_Pos = LastPos;
@@ -600,4 +600,3 @@ void CCharacterCore::Quantize()
 	Write(&Core);
 	Read(&Core);
 }
-
